@@ -1,6 +1,7 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: F01 (base técnica, cuentas y roles).
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles) implementada y probada**.
+> Informe de pruebas y seguridad: `sdd/reports/F01-testing-report.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general
 
@@ -94,9 +95,11 @@ selftaught/
 - Revisitar si: llega una petición de borrado por RGPD.
 
 ### ADR-6: Bloqueo de login en BD (`login_attempt`)
-- Motivo: sin librerías ni Redis; 5 fallos por cuenta o 20 por IP en 15 minutos; el identificador se guarda hasheado.
+- Motivo: sin librerías ni Redis; 5 fallos seguidos por cuenta o 20 por IP en 15 minutos (un login correcto reinicia el
+  contador de la cuenta); el identificador se guarda hasheado. La misma tabla (`kind = MAIL`) limita a 10 envíos de
+  correo por IP y 15 minutos en registro, reenvío y recuperación, para que la API no sirva para enviar correo masivo.
 - Alternativas descartadas: Bucket4j, Redis.
-- Revisitar si: hay varias instancias del backend.
+- Revisitar si: hay varias instancias del backend, o si hace falta limitar por destinatario (ver `sdd/BACKLOG.md`).
 
 ### ADR-7: Respuestas genéricas anti-enumeración
 - Motivo: registro, reenvío, recuperación y login responden igual exista o no la cuenta (el 404 de menores ajenos
@@ -113,11 +116,21 @@ selftaught/
 
 ### ADR-10: Perfiles de Compose
 - Motivo: `prod` publica solo el frontend en `127.0.0.1`; `dev` (con `compose.dev.yaml`) añade backend, BD y Mailpit
-  también en `127.0.0.1`; `test` usa `db-test` efímera. HTTPS (Caddy) se resuelve al desplegar.
+  también en `127.0.0.1`; `test` usa `db-test` efímera y dos contenedores de un solo uso (`backend-test`,
+  `frontend-test`, etiquetados `studylab.runner` y sin healthcheck). Backend y frontend corren con sistema de ficheros de
+  solo lectura, sin capacidades y sin root. HTTPS (Caddy) se resuelve al desplegar.
+- Desviación respecto a `PROJECT.md` §4b: el perfil `dev` **no** tiene recarga en caliente; el frontend de dev es el mismo
+  nginx de producción. Revisitar si el ciclo de desarrollo del frontend se vuelve lento.
 
 ### ADR-11: CSRF solo en peticiones autenticadas
 - Motivo: los endpoints públicos de `/api/auth` no tienen sesión que abusar; el login entrega `XSRF-TOKEN`
   para el resto. Con `SameSite=Strict` es una segunda capa.
+
+### ADR-12: Tests de caja negra por HTTP con SMTP en memoria
+- Motivo: los tests solo dependen de la API y de la BD de pruebas (GreenMail en lugar de Mailpit), así que no
+  fijan detalles internos y no envían correo real.
+- Límite conocido: MockMvc no ejercita cookies reales con `csrf()`; todo flujo de sesión o CSRF nuevo debe tener además un
+  test sin `csrf()` (ver `CsrfCookieFlowTest`) y una prueba con el stack levantado.
 
 ### ADR-13: JDBC (JdbcClient) en lugar de JPA
 - Motivo: pocas consultas, todas explícitas y parametrizadas; sin ORM entre el SQL y los permisos de BD. El rol de la
@@ -143,6 +156,10 @@ selftaught/
   usuarios compartirían cuota. Al desplegar hay que configurar `real_ip` en nginx y pasar `X-Forwarded-Proto` del proxy
   de TLS para que la cookie salga con `Secure`.
 
-### ADR-12: Tests de caja negra por HTTP con SMTP en memoria
-- Motivo: los tests solo dependen de la API y de la BD de pruebas (GreenMail en lugar de Mailpit), así que no
-  fijan detalles internos y no envían correo real.
+### ADR-17: Comprobación de secretos como listener y correo síncrono sin propagar errores
+- Motivo (secretos): `RequiredSettingsCheck` escucha `ApplicationPreparedEvent`, así falla antes de crear ningún bean y
+  ve también las propiedades que inyectan los tests; el error nombra las propiedades que faltan y nunca sus valores.
+- Motivo (correo): el envío es síncrono, fuera de la transacción, y un fallo de SMTP se registra sin destinatario ni enlace y
+  no cambia la respuesta (para no revelar si la cuenta existe). Contrapartida: la respuesta tarda más cuando se envía un
+  correo, lo que permite una enumeración por tiempo (🟡 en `sdd/BACKLOG.md`).
+- Revisitar si: se pasa a envío asíncrono con cola.

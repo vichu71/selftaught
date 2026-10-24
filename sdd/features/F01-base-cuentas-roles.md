@@ -27,3 +27,27 @@ reutilizarán las demás features (cada dato pertenece a un usuario).
 
 Fuera de alcance: login social, recuperación de contraseña por correo (valorar si es imprescindible),
 panel de administración.
+
+---
+
+## Actualización tras la implementación (FASE 8, 25-10-2026)
+
+Estado: **hecha y probada** (211 tests en verde). Especificación refinada: `sdd/specs/US-F01-base-cuentas-roles.md`;
+informe: `sdd/reports/F01-testing-report.md`; pendientes: `sdd/BACKLOG.md`.
+
+**Cambios de alcance decididos con el usuario durante el ciclo**
+- La recuperación de contraseña **por correo entró en F01** (y con ella la verificación del correo y el envío SMTP).
+- La baja de un menor es una **desactivación reversible** con **auditoría** de solo añadir (no hay borrado).
+- El identificador de acceso del menor lo **genera el sistema** (el nombre visible puede repetirse).
+- HTTPS (Caddy) se **aplaza al despliegue**; el perfil `dev` no tiene recarga en caliente.
+
+**Casos borde que no estaban en la feature original y aparecieron al implementar**
+- La cookie `XSRF-TOKEN` se borraba tras la primera petición autenticada (403 en el navegador). Corregido, con regresión.
+- Cuota de correo por IP para que registro, reenvío y recuperación no sirvan para enviar correo masivo.
+- Los límites por IP son inútiles (o bloquean a todos) si el proxy no pasa la IP real del cliente: se resuelve al desplegar.
+- Doble envío del alta de un menor: se resuelve con el nombre visible único entre los menores activos del tutor.
+- Un identificador reservado por un menor dado de baja no se reutiliza.
+
+**Fuera de alcance real (documentado, no hecho)**
+Purga de `login_attempt`, límite de correos por destinatario, caducidad de sesión por inactividad, comprobación de
+contraseñas comunes, recarga en caliente en `dev`, envío real por Gmail sin probar. Detalle en `sdd/BACKLOG.md`.
