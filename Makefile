@@ -4,7 +4,7 @@ COMPOSE = docker compose $(if $(ENV_FILE),--env-file $(ENV_FILE),)
 DEV     = $(COMPOSE) -f compose.yaml -f compose.dev.yaml --profile dev
 TEST    = $(COMPOSE) -f compose.yaml --profile test
 
-.PHONY: up down logs health test-backend test-frontend test-env seed reset-dev-db
+.PHONY: up down logs health test-backend test-frontend test-env seed reset-dev-db pull-embedding-model benchmark
 
 up:
 	$(DEV) up -d --build --wait
@@ -37,3 +37,14 @@ reset-dev-db:
 	$(DEV) rm -sf backend db
 	docker volume rm studylab_db-data
 	$(MAKE) up
+
+# Descarga el modelo de embeddings en el Ollama del contenedor (una sola vez; queda en el volumen ollama-data)
+EMBEDDING_MODEL ?= nomic-embed-text
+pull-embedding-model:
+	$(DEV) exec ollama ollama pull $(EMBEDDING_MODEL)
+
+# GASTA DINERO REAL: llama a los proveedores indicados en APP_AI_BENCHMARK_MODELS con tus claves, hasta el tope del run.
+# El informe queda en sdd/benchmarks/. Pide confirmación.
+benchmark:
+	@printf "Esto llama a APIs de pago con tus claves (tope del run: APP_AI_BENCHMARK_BUDGET_USD, 5 USD por defecto). Escribe 'si' para continuar: " && read answer && [ "$$answer" = "si" ]
+	$(COMPOSE) -f compose.yaml --profile benchmark run --rm --build benchmark

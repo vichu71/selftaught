@@ -82,7 +82,7 @@ class AiGatewayTest extends AiTestBase {
         assertThat(row.get("input_tokens")).isEqualTo(1000);
         assertThat(row.get("output_tokens")).isEqualTo(500);
         assertThat(row.get("status")).isEqualTo("OK");
-        assertThat(row.get("attempt")).isEqualTo((short) 1);
+        assertThat(((Number) row.get("attempt")).intValue()).isEqualTo(1);
         assertThat((Integer) row.get("duration_ms")).isGreaterThanOrEqualTo(0);
         assertThat(row.get("request_id")).isEqualTo(response.requestId());
         assertThat(row.toString()).doesNotContain("RESPUESTA-CONFIDENCIAL-777").doesNotContain("DATO-CONFIDENCIAL-555");
@@ -133,7 +133,7 @@ class AiGatewayTest extends AiTestBase {
         assertThat(fake.calls()).hasSize(3);
         assertThat(usage()).hasSize(3);
         assertThat(usage().stream().map(r -> r.get("status"))).containsExactly("ERROR", "ERROR", "OK");
-        assertThat(usage().stream().map(r -> r.get("attempt"))).containsExactly((short) 1, (short) 2, (short) 3);
+        assertThat(usage().stream().map(r -> ((Number) r.get("attempt")).intValue())).containsExactly(1, 2, 3);
         assertThat(usage().stream().map(r -> r.get("request_id")).distinct()).hasSize(1);
     }
 

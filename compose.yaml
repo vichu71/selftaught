@@ -47,6 +47,23 @@ services:
       SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
       SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:?Falta SPRING_MAIL_USERNAME en .env}
       SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:?Falta SPRING_MAIL_PASSWORD en .env}
+      # F02: qué proveedor y modelo usa cada tarea (sin valor, el backend no arranca; en dev el predeterminado es el falso)
+      APP_AI_TASKS_OUTLINE_PROVIDER: ${APP_AI_TASKS_OUTLINE_PROVIDER:-}
+      APP_AI_TASKS_OUTLINE_MODEL: ${APP_AI_TASKS_OUTLINE_MODEL:-}
+      APP_AI_TASKS_LESSON_PROVIDER: ${APP_AI_TASKS_LESSON_PROVIDER:-}
+      APP_AI_TASKS_LESSON_MODEL: ${APP_AI_TASKS_LESSON_MODEL:-}
+      APP_AI_TASKS_ASSESSMENT_PROVIDER: ${APP_AI_TASKS_ASSESSMENT_PROVIDER:-}
+      APP_AI_TASKS_ASSESSMENT_MODEL: ${APP_AI_TASKS_ASSESSMENT_MODEL:-}
+      APP_AI_TASKS_TUTOR_PROVIDER: ${APP_AI_TASKS_TUTOR_PROVIDER:-}
+      APP_AI_TASKS_TUTOR_MODEL: ${APP_AI_TASKS_TUTOR_MODEL:-}
+      APP_AI_TASKS_EMBEDDING_PROVIDER: ${APP_AI_TASKS_EMBEDDING_PROVIDER:-}
+      APP_AI_TASKS_EMBEDDING_MODEL: ${APP_AI_TASKS_EMBEDDING_MODEL:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_MONTHLY_LIMIT_USD: ${AI_MONTHLY_LIMIT_USD:-}
+      AI_BUDGET_MODE: ${AI_BUDGET_MODE:-WARN}
     read_only: true
     tmpfs:
       - /tmp
@@ -143,6 +160,45 @@ services:
       target: test
     labels:
       studylab.runner: "true"
+
+  # ---------- perfil benchmark (F02): gasta dinero real, solo lo lanza el usuario con `make benchmark` ----------
+
+  benchmark:
+    profiles: ["benchmark"]
+    build:
+      context: ./backend
+      target: runtime
+    labels:
+      studylab.runner: "true"
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: benchmark
+      SPRING_MAIN_WEB_APPLICATION_TYPE: none
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/studylab
+      SPRING_DATASOURCE_USERNAME: studylab_app
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en .env}
+      SPRING_FLYWAY_USER: studylab_owner
+      SPRING_FLYWAY_PASSWORD: ${DB_OWNER_PASSWORD:?Falta DB_OWNER_PASSWORD en .env}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Falta APP_PUBLIC_URL en .env}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AI_MONTHLY_LIMIT_USD: ${AI_MONTHLY_LIMIT_USD:-}
+      APP_AI_BENCHMARK_MODELS: ${APP_AI_BENCHMARK_MODELS:-}
+      APP_AI_BENCHMARK_BUDGET_USD: ${APP_AI_BENCHMARK_BUDGET_USD:-5.00}
+      APP_AI_BENCHMARK_OUT_DIR: /out
+    volumes:
+      - ./sdd/benchmarks:/out # el informe se deja en el repositorio
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
 
 volumes:
   db-data:

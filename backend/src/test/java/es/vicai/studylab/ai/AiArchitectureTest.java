@@ -52,7 +52,8 @@ class AiArchitectureTest extends AiTestBase {
     void ac2_noModelNameIsWrittenInTheCode() throws IOException {
         for (Path file : javaFiles()) {
             assertThat(Files.readString(file)).as(file.toString())
-                    .doesNotContainPattern("\"(claude|gpt|gemini|o[1-9]|nomic)[-a-z0-9.]*\"");
+                    // Un modelo lleva versión tras el nombre ("claude-…", "gpt-…", "gemini-…", "o3-…"); el nombre del proveedor solo no cuenta
+                    .doesNotContainPattern("\"((claude|gpt|gemini|nomic)-[-a-z0-9.]*|o[1-9](-[-a-z0-9.]*)?)\"");
         }
     }
 

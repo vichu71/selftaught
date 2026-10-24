@@ -17,6 +17,7 @@ import java.time.Duration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
@@ -115,7 +116,7 @@ class AnthropicProviderTest {
 
     // ---------- errores (https://platform.claude.com/docs/en/api/errors) ----------
 
-    private ProviderException failWith(HttpStatus status, String body, String retryAfter) {
+    private ProviderException failWith(HttpStatusCode status, String body, String retryAfter) {
         server.reset();
         var response = withStatus(status).contentType(MediaType.APPLICATION_JSON).body(body);
         if (retryAfter != null) response = response.header("retry-after", retryAfter);
@@ -136,7 +137,7 @@ class AnthropicProviderTest {
         assertThat(failWith(HttpStatus.NOT_FOUND, error("not_found_error", "model: x"), null).kind()).isEqualTo(ProviderErrorKind.MODEL_NOT_FOUND);
         assertThat(failWith(HttpStatus.PAYLOAD_TOO_LARGE, error("request_too_large", "x"), null).kind()).isEqualTo(ProviderErrorKind.BAD_REQUEST);
         assertThat(failWith(HttpStatus.INTERNAL_SERVER_ERROR, error("api_error", "x"), null).kind()).isEqualTo(ProviderErrorKind.SERVER_ERROR);
-        assertThat(failWith(HttpStatus.valueOf(529), error("overloaded_error", "x"), null).kind()).isEqualTo(ProviderErrorKind.SERVER_ERROR);
+        assertThat(failWith(HttpStatusCode.valueOf(529), error("overloaded_error", "x"), null).kind()).isEqualTo(ProviderErrorKind.SERVER_ERROR);
         assertThat(failWith(HttpStatus.GATEWAY_TIMEOUT, error("timeout_error", "x"), null).kind()).isEqualTo(ProviderErrorKind.TIMEOUT);
     }
 

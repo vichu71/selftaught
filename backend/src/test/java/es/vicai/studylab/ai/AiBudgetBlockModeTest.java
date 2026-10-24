@@ -27,8 +27,9 @@ class AiBudgetBlockModeTest extends AiTestBase {
 
         assertThat(e.kind()).isEqualTo(AiErrorKind.BUDGET_BLOCKED);
         assertThat(fake.calls()).isEmpty();
-        assertThat(usage().get(0).get("status")).isEqualTo("BLOCKED");
-        assertThat(usage().get(0).get("error_kind")).isEqualTo("BUDGET_BLOCKED");
+        var row = usage().get(usage().size() - 1); // la primera fila es el gasto previo insertado por el test
+        assertThat(row.get("status")).isEqualTo("BLOCKED");
+        assertThat(row.get("error_kind")).isEqualTo("BUDGET_BLOCKED");
         assertThat(auditActions()).contains("AI_BUDGET_BLOCKED");
     }
 
