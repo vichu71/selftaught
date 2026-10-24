@@ -43,7 +43,7 @@ Otros comandos:
 |---|---|
 | `make logs` | Sigue los logs de todos los servicios |
 | `make down` | Para el entorno (conserva los datos) |
-| `make seed` | Carga datos de ejemplo en desarrollo |
+| `SEED_PASSWORD='tu-clave-demo-1' make seed` | Carga en desarrollo un adulto (`demo@example.com`) y dos menores (Hugo y Lola); la contraseña la eliges tú (≥ 10 caracteres). Es idempotente |
 | `make reset-dev-db` | Borra y recrea la BD de **desarrollo** (pide confirmación) |
 
 El `Makefile` es un envoltorio fino de `docker compose`: si no tienes `make` (p. ej. en Windows),

@@ -47,7 +47,11 @@ public class SecurityConfig {
 
         http
                 .csrf(csrf -> csrf.csrfTokenRepository(csrfRepository).csrfTokenRequestHandler(csrfHandler)
-                        .ignoringRequestMatchers(PUBLIC_AUTH))
+                        .ignoringRequestMatchers(PUBLIC_AUTH)
+                        // Por defecto Spring borra la cookie XSRF-TOKEN en cada petición que ve como "autenticación
+                        // nueva", y con nuestro filtro sin HttpSession eso es TODA petición autenticada: las
+                        // escrituras siguientes darían 403. El token se genera en cada login, así que no hace falta.
+                        .sessionAuthenticationStrategy((authentication, request, response) -> { }))
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
