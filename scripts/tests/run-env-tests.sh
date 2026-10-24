@@ -4,7 +4,9 @@
 set -eu
 
 cd "$(dirname "$0")/../.."
-out="$(mktemp -d)"
+# Dentro del repo y no en /tmp: Docker Desktop (Windows) no ve las rutas temporales del shell
+out="$PWD/.tmp-env-tests"
+rm -rf "$out" && mkdir -p "$out"
 trap 'rm -rf "$out"' EXIT
 
 # --no-interpolate conserva ${VAR:?...}: así se comprueba que los secretos son obligatorios

@@ -27,11 +27,19 @@ class StartupSecretsTest {
                 .run(extraArgs);
     }
 
-    private static String[] concat(String[] a, String... b) {
-        String[] all = new String[a.length + b.length];
-        System.arraycopy(a, 0, all, 0, a.length);
-        System.arraycopy(b, 0, all, a.length, b.length);
-        return all;
+    /**
+     * Sustituye los argumentos de {@code base} que tengan la misma clave que alguno de {@code overrides}.
+     * Hace falta porque Spring concatena los valores de una opción repetida en la línea de comandos.
+     */
+    private static String[] concat(String[] base, String... overrides) {
+        java.util.List<String> all = new java.util.ArrayList<>();
+        for (String arg : base) {
+            String key = arg.substring(0, arg.indexOf('='));
+            boolean overridden = java.util.Arrays.stream(overrides).anyMatch(o -> o.startsWith(key + "="));
+            if (!overridden) all.add(arg);
+        }
+        all.addAll(java.util.Arrays.asList(overrides));
+        return all.toArray(new String[0]);
     }
 
     private static String fullMessage(Throwable t) {

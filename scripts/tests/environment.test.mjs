@@ -30,6 +30,8 @@ test('AC-12 el entorno define frontend, backend, db, ollama y, en test, db-test'
 test('AC-12 todos los servicios tienen healthcheck', () => {
   for (const cfg of all) {
     for (const [name, s] of services(cfg)) {
+      // Los contenedores de un solo uso (ejecutan los tests y terminan) se marcan con esta etiqueta
+      if (s.labels?.['studylab.runner'] === 'true') continue;
       assert.ok(s.healthcheck?.test, `${name} no tiene healthcheck`);
     }
   }
@@ -72,7 +74,9 @@ test('AC-11 los secretos de Compose son obligatorios: ${VAR:?mensaje}, nunca un 
   for (const cfg of all) {
     for (const [name, s] of services(cfg)) {
       for (const [key, value] of Object.entries(s.environment ?? {})) {
-        if (/PASSWORD|SECRET|TOKEN/.test(key) && !/MAILPIT/.test(key)) {
+        // Único literal permitido: la credencial pública de Mailpit en dev (no valida usuarios)
+        const mailpitDevCredential = name === 'backend' && key === 'SPRING_MAIL_PASSWORD' && value === 'mailpit';
+        if (/PASSWORD|SECRET|TOKEN/.test(key) && !mailpitDevCredential) {
           assert.match(String(value), /^\$\{[A-Z_]+:\?.+\}$/, `${name}.${key} debe exigirse con \${VAR:?...}`);
         }
       }
@@ -96,8 +100,10 @@ test('AC-14 el Makefile ofrece los scripts estándar', () => {
 
 test('AC-14 los tests se ejecutan en contenedor, sin docker.sock', () => {
   const makefile = read('Makefile');
-  assert.match(makefile, /docker compose[^\n]*(run|exec)[^\n]*backend/);
-  assert.match(makefile, /docker compose[^\n]*(run|exec)[^\n]*frontend/);
+  // El Makefile usa variables ($(TEST), $(DEV)...) que expanden a "docker compose ..."
+  const compose = /(docker compose|\$\((COMPOSE|DEV|TEST)\))/.source;
+  assert.match(makefile, new RegExp(`${compose}[^\\n]*(run|exec)[^\\n]*backend-test`));
+  assert.match(makefile, new RegExp(`${compose}[^\\n]*(run|exec)[^\\n]*frontend-test`));
 });
 
 // ---------- AC-15: seguridad del entorno ----------

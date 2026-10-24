@@ -21,7 +21,7 @@ class RegistrationAndVerificationTest extends IntegrationTestBase {
         postPublic("/api/auth/register", registrationBody("Ana@Example.com", "Ana")).andExpect(status().isAccepted());
 
         Map<String, Object> row = owner.queryForMap(
-                "SELECT kind, status, email, password_hash FROM app_user");
+                "SELECT kind, status, email::text AS email, password_hash FROM app_user");
         assertThat(row.get("kind")).isEqualTo("ADULT");
         assertThat(row.get("status")).isEqualTo("PENDING_VERIFICATION");
         assertThat(row.get("email")).isEqualTo("ana@example.com"); // normalizado a minúsculas

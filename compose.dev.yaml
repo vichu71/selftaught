@@ -1,0 +1,32 @@
+# Añadidos del perfil dev: puertos de depuración (solo 127.0.0.1) y Mailpit para ver los correos.
+# Se usa siempre junto a compose.yaml: docker compose -f compose.yaml -f compose.dev.yaml --profile dev ...
+services:
+  backend:
+    ports:
+      - "127.0.0.1:8081:8080"
+    depends_on:
+      mailpit:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: dev
+      # Mailpit no valida credenciales: valores públicos de desarrollo, no son secretos
+      SPRING_MAIL_HOST: mailpit
+      SPRING_MAIL_PORT: "1025"
+      SPRING_MAIL_USERNAME: mailpit
+      SPRING_MAIL_PASSWORD: mailpit
+
+  db:
+    ports:
+      - "127.0.0.1:5432:5432"
+
+  mailpit:
+    image: axllent/mailpit:v1.27.8
+    profiles: ["dev"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8025:8025"
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 5s
+      timeout: 5s
+      retries: 10

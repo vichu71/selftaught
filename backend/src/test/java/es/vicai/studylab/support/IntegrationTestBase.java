@@ -6,6 +6,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.icegreen.greenmail.configuration.GreenMailConfiguration;
 import com.icegreen.greenmail.junit5.GreenMailExtension;
 import com.icegreen.greenmail.util.ServerSetupTest;
 import jakarta.mail.Address;
@@ -51,7 +52,8 @@ public abstract class IntegrationTestBase {
     protected static final Pattern TOKEN = Pattern.compile("token=([A-Za-z0-9_-]+)");
 
     @RegisterExtension
-    protected static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP);
+    protected static GreenMailExtension greenMail = new GreenMailExtension(ServerSetupTest.SMTP)
+            .withConfiguration(GreenMailConfiguration.aConfig().withDisabledAuthentication());
 
     @DynamicPropertySource
     static void smtp(DynamicPropertyRegistry registry) {
