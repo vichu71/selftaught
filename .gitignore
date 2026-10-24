@@ -1,0 +1,26 @@
+# Secretos: nunca al repositorio (la plantilla documentada es .env.example)
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Claude Code: configuración local de cada máquina
+.claude/settings.local.json
+
+# Backend (Maven)
+backend/target/
+*.class
+
+# Frontend
+node_modules/
+frontend/dist/
+coverage/
+
+# IDE y sistema
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+*.log
