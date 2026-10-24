@@ -14,8 +14,9 @@ familiar con base multiusuario. Es un laboratorio, no formación reglada.
 - Todo endpoint comprueba quién puede llamarlo y filtra los datos por propietario.
 - Validación en el backend; SQL parametrizado; nada de `v-html` con datos de usuario o de IA.
 - Secretos solo en variables de entorno del backend; si falta uno obligatorio, la app falla al arrancar.
-- Toda llamada a IA pasa por la capa de proveedor, queda registrada (tokens y coste) y respeta el
-  tope mensual y una sola generación concurrente por usuario. Los tests usan un proveedor falso.
+- Toda llamada a IA pasa por la capa de proveedor (`AiGateway`), queda registrada (tokens y coste, nunca el contenido),
+  avisa al llegar al 80 % y al 100 % del tope mensual (corte opcional con `AI_BUDGET_MODE=BLOCK`) y respeta una sola
+  generación concurrente por usuario. Los tests usan un proveedor falso: ningún test llama a una API de pago.
 - Usuario menor: datos mínimos, filtrado de contenido y adulto tutor que ve toda su actividad.
 - Al terminar una feature que toque seguridad o IA: skills `security-checklist` y `llm-integration-review`.
 
@@ -36,6 +37,8 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   `docker compose … --profile test rm -sf db-test` al terminar; `sh scripts/tests/run-env-tests.sh` para el entorno.
 - `SEED_PASSWORD='…' make seed` (o `sh scripts/seed.sh`) · `make reset-dev-db`: datos de ejemplo y reinicio de la BD de
   desarrollo (este último borra datos: solo si el usuario lo pide).
+- `make pull-embedding-model` (descarga `nomic-embed-text` en el contenedor `ollama`) · `make benchmark` (**gasta dinero real**: solo
+  lo lanza el usuario, con sus claves y el tope del run; nunca desde un test ni en el arranque normal).
 - **Nunca leer ni escribir el `.env` real.** Para verificar con el stack levantado se usa un fichero de variables ficticio fuera
   del repositorio (`--env-file`). Ese stack deja volúmenes con contraseñas ficticias: antes de usar el `.env` real hay que borrar
   `studylab_db-data` (la BD solo fija sus contraseñas al crearse), y eso solo lo decide el usuario.
@@ -48,6 +51,16 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - El adulto se registra con correo verificado y recupera la contraseña por correo. Respuestas genéricas: nunca revelar si una cuenta existe.
 - Un menor ajeno o inexistente responde igual (404). Sesión en cookie HttpOnly; nada de tokens en `localStorage`.
 - Variables obligatorias en `.env.example`; el `.env` real no se lee ni se escribe desde aquí.
+
+## Reglas de F02 (capa de IA)
+- Las features usan `AiGateway` y `GenerationLock`; **nadie importa un adaptador** (`ai.provider`) ni escribe un nombre de modelo o un host
+  de proveedor fuera de `ai/` (lo comprueba `AiArchitectureTest`). Contrato y errores: `sdd/specs/US-F02-capa-ia-control-gasto.md`.
+- El texto del usuario o del material va **siempre** como dato (`AiRequest.data(...)`), nunca en la plantilla de instrucciones.
+- Nunca se registra ni se loguea contenido de prompts o respuestas, ni mensajes del proveedor, ni claves. Las claves van en cabeceras,
+  no en la URL. No se envía `temperature`.
+- Un modelo nuevo exige su precio en `ai-pricing.properties` (con la fecha en que se verificó) y su tarea en la configuración.
+- Una tarea nueva de IA debe tener su propio tope de salida y su plantilla en `prompts/`.
+- Los tests de adaptadores solo prueban el formato **según la documentación**; la confirmación definitiva es el run del benchmark.
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

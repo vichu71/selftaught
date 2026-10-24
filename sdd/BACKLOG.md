@@ -32,3 +32,9 @@
 
 Nombre definitivo del producto · benchmark de modelos (F02) · filtrado de contenido para menores (F04/F07) ·
 ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por RGPD.
+
+## Efectos de decisiones de F02 en features posteriores
+
+- **F07 (tutor IA):** su ficha dice "si se alcanza el tope, muestra un mensaje". Con el modo `WARN` (decisión del usuario, 25-10-2026) la
+  app no corta al llegar al tope; solo en modo `BLOCK` el tutor recibiría `BUDGET_BLOCKED`. Revisar la ficha al llegar a F07.
+- **F04–F07:** usar `GenerationLock` solo en generaciones de curso; el chat del tutor no lo toma (ADR-20).

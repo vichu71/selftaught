@@ -11,7 +11,8 @@ con una lista de lo comprobado y lo pendiente. Marca cada punto como OK, FALLA o
   directamente desde la lógica de negocio.
 - El modelo se elige por tarea desde configuración, no está escrito en el código.
 - Cada llamada registra tarea, modelo, tokens de entrada/salida, coste, usuario y curso.
-- Existe tope de gasto mensual con corte automático y límite de tokens de salida por llamada.
+- Existe tope de gasto mensual con aviso al 80 % y al 100 % (el corte es opcional por configuración: modo `BLOCK`;
+  el tope duro lo ponen las cuentas de los proveedores) y límite de tokens de salida por llamada.
 - Una sola generación concurrente por usuario (cerrojo real, no solo en el frontend).
 - Los reintentos están acotados; un fallo del proveedor no provoca bucles de llamadas.
 - Nunca se regenera lo ya generado; hay caché o comprobación previa.

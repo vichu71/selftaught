@@ -30,7 +30,9 @@ va por variables de entorno).
    jerga técnica. Preguntas con opciones por defecto y un "como tú veas".
 2. **Laboratorio, no academia**: autoevaluación, no acreditación. Todo contenido lleva aviso de
    "generado por IA" y, si hay material del usuario, citas a la fuente.
-3. **Coste controlado**: el gasto en IA se mide, se limita y nunca se desborda en silencio.
+3. **Coste controlado**: el gasto en IA se mide y la app avisa al llegar al 80 % y al 100 % del tope mensual, así que
+   nunca se desborda en silencio. El tope duro lo ponen las cuentas de los proveedores (decisión del usuario, 25-10-2026);
+   el corte automático dentro de la app es opcional (`AI_BUDGET_MODE=BLOCK`).
 4. **Privacidad del menor**: se guardan los mínimos datos personales posibles.
 5. **Nunca regenerar lo que ya existe**: el curso se guarda y se reutiliza.
 6. **Preparado para crecer, sin construir un SaaS**: multiusuario y compartir por código sí; pagos,
@@ -41,7 +43,7 @@ va por variables de entorno).
 | Capa | Tecnología | Motivo |
 |------|-----------|--------|
 | Frontend | Vue 3 + TypeScript (web responsive) | Elección del usuario |
-| Backend | Spring Boot (Java) | Elección del usuario; Spring AI cubre varios proveedores y pgvector |
+| Backend | Spring Boot (Java) | Elección del usuario. La capa de IA es propia, con adaptadores HTTP por proveedor (ADR-18); pgvector se usa por JDBC |
 | Base de datos | PostgreSQL + pgvector | Relacional + búsqueda vectorial para RAG en un solo sistema |
 | Embeddings | Modelo local vía Ollama | Coste cero en indexado |
 | Despliegue | Docker Compose | Puertos internos (backend, BD) no expuestos a Internet |
@@ -86,10 +88,13 @@ Claude pueda operar el entorno (si el usuario se lo concede) sin instalar nada e
 | Tutor (chat) | Rápido, barato, fiable | Medio / barato |
 | Embeddings | Barato y constante | Local (Ollama) |
 
-- **Controles obligatorios**: registro de tokens y coste por llamada, curso y usuario; tope de gasto
-  mensual configurable con corte automático; límite de tokens de salida por llamada; **una sola
-  generación concurrente por usuario**; caché de prompts y batch cuando aplique. No hay límite diario
-  de cursos (decisión del usuario), solo estos topes.
+- **Controles obligatorios**: registro de tokens y coste por llamada, curso y usuario (sin guardar el contenido de
+  prompts ni respuestas); tope de gasto mensual configurable **con aviso al 80 % y al 100 %** (el corte automático es
+  opcional: `AI_BUDGET_MODE=BLOCK`; por defecto `WARN`, porque las cuentas de los proveedores ya tienen su tope); límite
+  de tokens de salida por llamada; **una sola generación concurrente por usuario**; caché de prompts y batch cuando
+  aplique (se valora en F05). No hay límite diario de cursos (decisión del usuario), solo estos controles.
+- El coste se calcula con una tabla de precios por modelo en configuración, con su fecha de verificación: es una
+  **estimación**, que se contrasta con el panel de cada proveedor.
 - Las llamadas a IA en tests siempre usan un proveedor falso.
 - Antes de elegir proveedor se revisa su política de datos (menores).
 
