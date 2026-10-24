@@ -1,0 +1,10 @@
+# Los ficheros que se ejecutan en contenedores Linux deben conservar LF aunque se editen en Windows
+*.sh text eol=lf
+Dockerfile* text eol=lf
+Makefile text eol=lf
+*.yaml text eol=lf
+*.yml text eol=lf
+*.conf text eol=lf
+*.mjs text eol=lf
+*.properties text eol=lf
+*.sql text eol=lf

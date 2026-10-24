@@ -1,0 +1,149 @@
+# Study Lab: entorno completo en Docker Compose (ver sdd/PROJECT.md sección 4b).
+# prod (por defecto): solo el frontend publica puerto, en 127.0.0.1.
+# dev: añade compose.dev.yaml (backend, BD y Mailpit en 127.0.0.1).
+# test: db-test efímera y contenedores de tests (backend-test, frontend-test).
+# Los secretos se exigen con ${VAR:?}: si falta uno, Compose no arranca.
+name: studylab
+
+services:
+  db:
+    image: pgvector/pgvector:pg17
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: studylab
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Falta DB_OWNER_PASSWORD en .env}
+      APP_DB_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en .env}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      # -h 127.0.0.1: durante el initdb solo escucha el socket unix, así no se da por sano antes de tiempo
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d studylab"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: ./backend
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/studylab
+      SPRING_DATASOURCE_USERNAME: studylab_app
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en .env}
+      SPRING_FLYWAY_USER: studylab_owner
+      SPRING_FLYWAY_PASSWORD: ${DB_OWNER_PASSWORD:?Falta DB_OWNER_PASSWORD en .env}
+      APP_PUBLIC_URL: ${APP_PUBLIC_URL:?Falta APP_PUBLIC_URL en .env}
+      MAIL_ENABLED: ${MAIL_ENABLED:-true}
+      MAIL_FROM: ${MAIL_FROM:?Falta MAIL_FROM en .env}
+      SPRING_MAIL_HOST: ${SPRING_MAIL_HOST:?Falta SPRING_MAIL_HOST en .env}
+      SPRING_MAIL_PORT: ${SPRING_MAIL_PORT:-587}
+      SPRING_MAIL_USERNAME: ${SPRING_MAIL_USERNAME:?Falta SPRING_MAIL_USERNAME en .env}
+      SPRING_MAIL_PASSWORD: ${SPRING_MAIL_PASSWORD:?Falta SPRING_MAIL_PASSWORD en .env}
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 30s
+
+  frontend:
+    build:
+      context: ./frontend
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/healthz | grep -q ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  # En F01 solo se levanta y se comprueba su salud; el modelo de embeddings se instala en F03.
+  ollama:
+    image: ollama/ollama:0.12.5
+    restart: unless-stopped
+    volumes:
+      - ollama-data:/root/.ollama
+    healthcheck:
+      test: ["CMD", "ollama", "list"]
+      interval: 10s
+      timeout: 10s
+      retries: 6
+      start_period: 10s
+
+  # ---------- perfil test ----------
+
+  db-test:
+    image: pgvector/pgvector:pg17
+    profiles: ["test"]
+    environment:
+      POSTGRES_DB: studylab
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Falta POSTGRES_PASSWORD en .env}
+      DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Falta DB_OWNER_PASSWORD en .env}
+      APP_DB_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en .env}
+    tmpfs:
+      - /var/lib/postgresql/data # efímera: se pierde al pararla
+    volumes:
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U postgres -d studylab"]
+      interval: 3s
+      timeout: 5s
+      retries: 20
+
+  # Contenedores de un solo uso: ejecutan los tests y terminan (por eso no llevan healthcheck)
+  backend-test:
+    profiles: ["test"]
+    build:
+      context: ./backend
+      target: test
+    labels:
+      studylab.runner: "true"
+    depends_on:
+      db-test:
+        condition: service_healthy
+    environment:
+      TEST_DB_URL: jdbc:postgresql://db-test:5432/studylab
+      TEST_DB_APP_USER: studylab_app
+      TEST_DB_APP_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?Falta SPRING_DATASOURCE_PASSWORD en .env}
+      TEST_DB_OWNER_USER: studylab_owner
+      TEST_DB_OWNER_PASSWORD: ${DB_OWNER_PASSWORD:?Falta DB_OWNER_PASSWORD en .env}
+
+  frontend-test:
+    profiles: ["test"]
+    build:
+      context: ./frontend
+      target: test
+    labels:
+      studylab.runner: "true"
+
+volumes:
+  db-data:
+  ollama-data:

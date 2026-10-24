@@ -17,6 +17,9 @@ node_modules/
 frontend/dist/
 coverage/
 
+# Temporales de los scripts
+.tmp-env-tests/
+
 # IDE y sistema
 .idea/
 .vscode/
