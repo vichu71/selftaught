@@ -9,7 +9,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 ## Stack
 
 - Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx
-- Backend: Spring Boot 3 (Java 21), Spring Security, Spring Data JPA, Flyway
+- Backend: Spring Boot 3 (Java 21), Spring Security, Spring JDBC (JdbcClient), Flyway
 - Base de datos: PostgreSQL + pgvector
 - Embeddings: Ollama (contenedor; el modelo se instala en F03)
 - Correo: SMTP por variables de entorno (Mailpit en desarrollo)

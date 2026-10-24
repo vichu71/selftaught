@@ -1,0 +1,139 @@
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --text: #1c2330;
+  --muted: #5b6577;
+  --primary: #2f5bea;
+  --primary-text: #ffffff;
+  --border: #d5d9e2;
+  --danger: #b3261e;
+  --ok: #1b7a43;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #12151c;
+    --surface: #1b2029;
+    --text: #e8ebf2;
+    --muted: #9aa3b5;
+    --primary: #6f8cff;
+    --primary-text: #0d1220;
+    --border: #2f3646;
+    --danger: #ff8a80;
+    --ok: #6fd69b;
+  }
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font: 16px/1.5 system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Móvil primero: 16 px de margen lateral y sin scroll horizontal */
+.page {
+  width: 100%;
+  max-width: 34rem;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 3rem;
+}
+
+.page.wide { max-width: 52rem; }
+
+h1 { font-size: 1.5rem; margin: 0 0 1rem; }
+h2 { font-size: 1.15rem; margin: 0 0 .75rem; }
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: .75rem;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+}
+
+label { display: block; font-weight: 600; margin: .75rem 0 .25rem; }
+
+input {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: .5rem .75rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: var(--bg);
+  color: var(--text);
+  font: inherit;
+}
+
+input:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+button {
+  min-height: 2.75rem;
+  padding: .5rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: .5rem;
+  background: var(--surface);
+  color: var(--text);
+  font: inherit;
+  cursor: pointer;
+}
+
+button.primary {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--primary-text);
+  font-weight: 600;
+  width: 100%;
+  margin-top: 1rem;
+}
+
+button:disabled { opacity: .6; cursor: not-allowed; }
+
+a { color: var(--primary); }
+
+.error { color: var(--danger); margin: .5rem 0 0; }
+.field-error { color: var(--danger); font-size: .9rem; margin: .25rem 0 0; }
+.success { color: var(--ok); margin: .5rem 0 0; }
+.muted { color: var(--muted); }
+.links { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin-top: 1rem; }
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+
+.notice {
+  border-left: 4px solid var(--primary);
+  background: var(--surface);
+  padding: .75rem 1rem;
+  border-radius: .25rem;
+  margin-bottom: 1rem;
+}
+
+/* Lista de menores: en móvil cada fila apila nombre y acciones */
+.students { list-style: none; margin: 0; padding: 0; }
+
+.student {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.student:first-child { border-top: 0; }
+.student .actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.badge { font-size: .8rem; color: var(--muted); }
+
+@media (min-width: 40rem) {
+  .student { flex-direction: row; align-items: center; justify-content: space-between; }
+}

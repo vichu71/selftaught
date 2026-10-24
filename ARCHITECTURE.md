@@ -27,7 +27,7 @@ app_user      id, kind (ADULT|MINOR), display_name, email (adulto), login_id (me
 guardianship  tutor_id → app_user, student_id → app_user (UNIQUE: un tutor por menor en v1)
 email_token   user_id, purpose (VERIFY_EMAIL|RESET_PASSWORD), token_hash, expires_at, used_at
 auth_session  user_id, token_hash, created_at, expires_at, revoked_at
-login_attempt identifier_hash, ip, succeeded, at
+login_attempt kind (LOGIN|MAIL), identifier_hash, ip, succeeded, at   (MAIL = cuota de envíos de correo por IP)
 audit_event   id, occurred_at, actor_user_id, subject_user_id, action, outcome, ip, details (JSONB)
 ```
 
@@ -60,8 +60,8 @@ selftaught/
 │     src/main/resources/db/migration/   # migraciones Flyway
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
-├─ ollama/                           # imagen mínima con healthcheck
-├─ scripts/                          # seed, reset-dev-db y tests de política del entorno
+├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
+├─ scripts/                          # seed y tests de política del entorno
 └─ sdd/                              # PROJECT.md, features/, specs/, proceso SDD
 ```
 
@@ -118,6 +118,16 @@ selftaught/
 ### ADR-11: CSRF solo en peticiones autenticadas
 - Motivo: los endpoints públicos de `/api/auth` no tienen sesión que abusar; el login entrega `XSRF-TOKEN`
   para el resto. Con `SameSite=Strict` es una segunda capa.
+
+### ADR-13: JDBC (JdbcClient) en lugar de JPA
+- Motivo: pocas consultas, todas explícitas y parametrizadas; sin ORM entre el SQL y los permisos de BD. El rol de la
+  aplicación no tiene DDL y la tabla `audit_event` es de solo añadir, algo que un ORM no deja ver.
+- Alternativas descartadas: Spring Data JPA.
+- Revisitar si: el modelo de dominio de cursos (F05+) crece lo bastante como para justificar un ORM.
+
+### ADR-14: Dos roles de BD y vistas sin carga diferida
+- Motivo: `studylab_owner` solo lo usa Flyway; `studylab_app` no puede cambiar el esquema. El frontend importa sus vistas
+  directamente porque la app es pequeña.
 
 ### ADR-12: Tests de caja negra por HTTP con SMTP en memoria
 - Motivo: los tests solo dependen de la API y de la BD de pruebas (GreenMail en lugar de Mailpit), así que no
