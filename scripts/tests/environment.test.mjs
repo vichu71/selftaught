@@ -12,7 +12,8 @@ const read = (path) => readFileSync(`${REPO}/${path}`, 'utf8');
 const base = load('base'); // compose.yaml con el perfil prod
 const dev = load('dev'); // compose.yaml + compose.dev.yaml con el perfil dev
 const testEnv = load('test'); // compose.yaml con el perfil test
-const all = [base, dev, testEnv];
+const bench = load('benchmark'); // compose.yaml con el perfil benchmark (F02)
+const all = [base, dev, testEnv, bench];
 const services = (cfg) => Object.entries(cfg.services ?? {});
 const published = (cfg) =>
   services(cfg).flatMap(([name, s]) => (s.ports ?? []).map((p) => ({ name, ...p })));
@@ -178,4 +179,59 @@ test('AC-16 los logs van a stdout (sin ficheros de log dentro de la imagen)', ()
     ? read('backend/src/main/resources/application.properties')
     : '';
   assert.doesNotMatch(props, /logging\.file/);
+});
+
+// ---------- F02: capa de IA ----------
+
+test('F02 el benchmark es un contenedor de un solo uso, sin puertos y detrás de su propio perfil', () => {
+  const b = bench.services?.benchmark;
+  assert.ok(b, 'falta el servicio benchmark');
+  assert.deepEqual(b.profiles, ['benchmark']);
+  assert.equal(b.labels?.['studylab.runner'], 'true');
+  assert.equal(b.ports, undefined, 'el benchmark no publica puertos');
+  assert.equal(b.depends_on?.db?.condition, 'service_healthy');
+  assert.match(String(b.environment?.SPRING_PROFILES_ACTIVE), /benchmark/);
+  for (const cfg of [base, dev, testEnv]) {
+    assert.equal(cfg.services?.benchmark, undefined, 'el benchmark no debe existir fuera de su perfil');
+  }
+});
+
+test('F02 las claves de los proveedores son opcionales y nunca llevan un valor escrito en Compose', () => {
+  for (const cfg of all) {
+    for (const [name, s] of services(cfg)) {
+      for (const [key, value] of Object.entries(s.environment ?? {})) {
+        if (/_API_KEY$/.test(key)) {
+          assert.match(String(value), /^\$\{[A-Z_]+:-\}$/, `${name}.${key} debe ser \${VAR:-} (vacío si no se usa)`);
+        }
+      }
+    }
+  }
+  const keys = Object.keys(base.services.backend.environment);
+  for (const k of ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY']) assert.ok(keys.includes(k), `backend sin ${k}`);
+});
+
+test('F02 Ollama se alcanza por la red interna por defecto (la misma imagen sirve en producción)', () => {
+  assert.match(String(base.services.backend.environment.OLLAMA_BASE_URL), /^\$\{OLLAMA_BASE_URL:-http:\/\/ollama:11434\}$/);
+});
+
+test('F02 .env.example documenta las variables de IA sin claves reales', () => {
+  const lines = read('.env.example').split('\n').filter((l) => /^[A-Z_]+=/.test(l));
+  const env = Object.fromEntries(lines.map((l) => [l.split('=')[0], l.slice(l.indexOf('=') + 1).trim()]));
+  for (const key of ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY', 'OLLAMA_BASE_URL', 'AI_MONTHLY_LIMIT_USD', 'AI_BUDGET_MODE']) {
+    assert.ok(key in env, `.env.example no documenta ${key}`);
+  }
+  for (const key of ['ANTHROPIC_API_KEY', 'OPENAI_API_KEY', 'GEMINI_API_KEY']) assert.equal(env[key], '', `${key} debe ir vacía`);
+  assert.match(env.AI_BUDGET_MODE, /^(WARN|BLOCK)$/);
+});
+
+test('F02 el Makefile ofrece benchmark y la descarga del modelo de embeddings', () => {
+  const makefile = read('Makefile');
+  for (const target of ['benchmark', 'pull-embedding-model']) {
+    assert.match(makefile, new RegExp(`^${target}:`, 'm'), `falta el objetivo ${target}`);
+  }
+});
+
+test('F02 el informe del benchmark se escribe en sdd/benchmarks y esa carpeta existe en el repositorio', () => {
+  assert.match(JSON.stringify(bench.services.benchmark.volumes ?? []), /sdd\/benchmarks/);
+  assert.ok(existsSync(`${REPO}/sdd/benchmarks`), 'falta sdd/benchmarks');
 });
