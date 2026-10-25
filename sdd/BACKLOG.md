@@ -56,6 +56,7 @@
 | F6-2 | 🟡 «Una corrección de IA a la vez por usuario» está en memoria: con varias instancias del backend debe pasar a la BD | ADR-52 |
 | F6-3 | 🟡 La exportación del curso lleva soluciones y respuestas correctas: si se usa antes de examinarse, rompe la autoevaluación | ADR-50 |
 | F6-4 | El tutor ve los intentos de su menor (texto de las respuestas, notas y fallos) | Llega con F08; el dato ya se guarda en `exercise_attempt` y `exam_attempt` |
+| F6-6 | 🟡 Validar al arrancar que `app.study.max-submissions-per-hour` no supere a `max-attempts-per-piece` (la poda de intentos dejaría sin efecto el límite por hora) | Hoy solo está documentado en `StudyProperties` |
 | F6-5 | Más tipos de pregunta (verdadero/falso, huecos, respuesta abierta en examen) y motor de cálculo para matemáticas y ciencias | v2; F05 solo genera test |
 
 ## Mejoras (🟡)
