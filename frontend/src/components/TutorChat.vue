@@ -27,6 +27,7 @@ const sending = ref(false)
 const error = ref('')
 const confirming = ref(false)
 const end = ref<HTMLElement | null>(null)
+const input = ref<HTMLTextAreaElement | null>(null)
 
 onMounted(async () => {
   try {
@@ -66,6 +67,8 @@ async function send() {
     error.value = explain(e) // la pregunta se queda en la caja para poder reenviarla
   } finally {
     sending.value = false
+    await nextTick() // el cuadro estaba desactivado mientras se esperaba: se devuelve el foco para seguir escribiendo
+    input.value?.focus?.()
   }
 }
 
@@ -109,7 +112,7 @@ async function clear() {
     <p v-if="error" class="error" role="alert" data-testid="tutor-error">{{ error }}</p>
 
     <label for="tutor-input" class="visually-hidden">Tu pregunta</label>
-    <textarea id="tutor-input" v-model="question" rows="3" :maxlength="MAX_QUESTION" placeholder="Escribe tu duda sobre esta lección" data-testid="tutor-input" :disabled="sending"
+    <textarea id="tutor-input" ref="input" v-model="question" rows="3" :maxlength="MAX_QUESTION" placeholder="Escribe tu duda sobre esta lección" data-testid="tutor-input" :disabled="sending"
               @keydown.enter.exact="onEnter"></textarea>
     <p class="actions">
       <button type="button" class="primary" data-testid="tutor-send" :disabled="sending" @click="send">Preguntar</button>
@@ -123,6 +126,6 @@ async function clear() {
       <button type="button" data-testid="tutor-clear-cancel" @click="confirming = false">No</button>
     </p>
 
-    <p class="muted" data-testid="tutor-ai-notice">Contenido generado por IA: puede tener errores. Contrástalo con tus apuntes o con tu profesor.</p>
+    <p class="muted" data-testid="tutor-ai-notice">Texto generado por IA: el tutor puede equivocarse.</p>
   </section>
 </template>

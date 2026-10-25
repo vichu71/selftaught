@@ -68,6 +68,7 @@
 | F7-3 | 🟡 Un alumno que pegue un enunciado de examen y pida la solución: el tutor no tiene soluciones ni exámenes, pero podría razonarla; las instrucciones piden pistas | Medirlo con F7-1 |
 | F7-4 | El tutor adulto lee las conversaciones, los bloqueos y los filtrados de su menor | Llega con F08; el dato ya se guarda en `tutor_message` |
 | F7-5 | 🟡 Streaming de la respuesta, voz, imágenes y memoria entre cursos | Fuera de v1 (ADR-58) |
+| F7-6 | 🟡 Un adulto que vacía una conversación borra también las preguntas que cuentan para el límite por hora y por día: puede preguntar más de 30 por hora vaciando entre medias | Solo adultos (el menor no puede vaciar) y el tope mensual del usuario sigue cortando; arreglo posible: contar las llamadas `TUTOR` de `ai_usage` o una tabla de eventos |
 
 ## Mejoras (🟡)
 
