@@ -127,3 +127,5 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F8-4 | 🟡 Sin notificaciones (correo), informes en PDF ni control del tiempo de uso | Fuera de alcance de v1 |
 | F8-5 | 🟡 Un adulto no puede cambiar el tope de gasto de un alumno desde el panel | Hoy es configuración (A1, ADR-62) |
 | F8-6 | 🟡 Segunda capa del filtro de menores y otros idiomas (F4-3, F5-5, F7-2) | Sigue pendiente; el panel solo muestra lo que el filtro actual ya detecta |
+| F8-7 | 🟡 Sin límite de frecuencia en las lecturas del panel (un adulto autenticado puede pedirlas en bucle) y el contador de avisos del resumen se acota a 1 000 | Son consultas de solo lectura sobre datos acotados; si se abusa, límite por usuario en la BD como en F04 a F07 |
+| F8-8 | 🟡 Cada intento de un adulto sobre un alumno ajeno añade un `ACCESS_DENIED` a la auditoría (F01): un bucle la haría crecer | Valorar agrupar o limitar esos eventos al desplegar |
