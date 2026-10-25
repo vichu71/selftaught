@@ -120,6 +120,7 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   un fallo conserva la respuesta. Para un menor, `ContentGuard` sobre su respuesta **antes** de enviarla y sobre el comentario antes de guardarlo.
 - **Las respuestas del alumno no van a logs ni a la auditoría** (solo ids y resultados). Límites en la BD (`app.study.*`): 120 envíos por hora, 20 correcciones al día, 200 intentos por pieza.
 - Frontend: el contenido del modelo y del alumno se pinta siempre como texto o con `MarkdownContent`; nada de `v-html`. Los estados de carga y los errores nunca enseñan el código del backend.
+- Lecciones de F06: los envíos por hora se cuentan sobre los intentos conservados (`max-submissions-per-hour` ≤ `max-attempts-per-piece`, ADR-54). Un botón que desaparece tras el primer clic no se puede pulsar dos veces en un test: se prueba un clic y que ya no está. La verificación con el stack usa el servidor simulado `f06-stub` (responde también a la corrección).
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

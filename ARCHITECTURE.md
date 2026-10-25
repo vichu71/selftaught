@@ -576,3 +576,9 @@ selftaught/
   sobre las propias tablas, sin depender de la IP (D1). Cierra A2 para F06.
 - Alternativas descartadas: limitar por IP (no vale detrás del proxy), no limitar (un bucle de «Corregir con IA» gasta hasta el tope).
 - Revisitar si: el tutor necesita ver el texto exacto de las respuestas de su menor (F08: lo leerá de estas mismas tablas, no de los logs).
+
+### ADR-54: Los envíos por hora se cuentan sobre los intentos conservados
+- Motivo: el límite por usuario (120 envíos por hora entre ejercicios y exámenes) se calcula contando filas de `exercise_attempt` y de `exam_attempt` de la última hora; no hay ningún contador aparte que se
+  desincronice. La retención (200 intentos por pieza) borra lo antiguo, así que el límite por hora no puede superar al de intentos por pieza o la poda dejaría el límite sin efecto. Los valores por defecto lo cumplen.
+- Alternativas descartadas: un contador por usuario y hora (otra tabla que mantener y purgar), no podar (la BD crece sin fin).
+- Revisitar si: se quiere cambiar alguno de los dos valores (F6-6: validarlo al arrancar) o si el tutor necesita conservar todos los intentos de un menor (F08).
