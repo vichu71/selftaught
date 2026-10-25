@@ -66,7 +66,7 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Una generación larga **renueva** el cerrojo (`Lease.renew()`) entre llamadas de IA y aborta si devuelve `false`.
 - Una `AiException` que sale por un endpoint ya tiene estado HTTP y mensaje seguro en `GlobalExceptionHandler`: no la envuelvas ni
   mapees a mano. En producción la URL base de un proveedor de pago debe ser `https://`.
-- Aún **no hay tope de gasto por usuario** (A1 del backlog): no abras endpoints de generación para menores sin resolverlo antes.
+- Cada usuario tiene un **tope mensual propio** que corta siempre (`USER_LIMIT`, A1/ADR-29): menor 2 USD, adulto 10 USD. Aún falta el límite de frecuencia (A2).
 - Verificar un adaptador nuevo también por HTTP real (servidor simulado en la red de Docker) y no solo con `MockRestServiceServer`.
 
 ## Lecciones de F01 (no obvias en el código)

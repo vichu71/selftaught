@@ -267,6 +267,19 @@ selftaught/
   llevando ese coste en la excepción (`AiException.costUsd()`), que el benchmark suma a su gasto. Solo un cuerpo sin la estructura esperada
   (`content`, `choices`, `candidates`) es una respuesta inválida del adaptador. Antes se registraba con coste 0 y el gasto quedaba subestimado.
 - Motivo (HTTP): `GlobalExceptionHandler` traduce cada `AiErrorKind` a un estado y un mensaje genérico (`BUDGET_BLOCKED` 429, `GENERATION_BUSY`
-  409, `INPUT_TOO_LARGE` 413, `USER_NOT_ALLOWED` 403, `PROVIDER_QUOTA` y `PROVIDER_UNAVAILABLE` 503, el resto 502), con código `AI_<TIPO>`.
+  409, `INPUT_TOO_LARGE` 413, `USER_NOT_ALLOWED` 403, `USER_LIMIT` 429 (ADR-29), `PROVIDER_QUOTA` y `PROVIDER_UNAVAILABLE` 503, el resto 502), con código `AI_<TIPO>`.
   Así ninguna feature improvisa su propio mapeo ni filtra texto del proveedor.
 - Revisitar si: se necesita distinguir más casos hacia el frontend.
+
+### ADR-29: Tope de gasto por usuario (A1)
+- Motivo: en modo `WARN` (decisión del usuario) el tope global solo avisa, así que un usuario, también un menor, podía consumir todo el
+  presupuesto antes de que nadie lo notara; el único freno duro eran los topes de las cuentas de los proveedores.
+- Decisión: cada usuario tiene un **tope mensual propio** (mes natural de Madrid, como el global) con importe distinto para menores
+  (`AI_USER_LIMIT_MINOR_USD`, 2,00 USD) y adultos (`AI_USER_LIMIT_ADULT_USD`, 10,00 USD). **Corta siempre**, también en `WARN`: se
+  rechaza la llamada si el gasto del usuario más el peor caso de la llamada supera su tope (`USER_LIMIT`, HTTP 429, auditoría
+  `AI_USER_LIMIT_REACHED`, fila `BLOCKED`, sin importes). El gasto cuenta todo intento que el proveedor cobró. Los embeddings locales (coste 0) nunca se
+  bloquean. El tope personal se comprueba antes que el global.
+- `GET /api/ai/usage`: el adulto ve su tope y el de cada menor suyo con `limitReached`; el menor solo ve `limitReached`, nunca importes.
+- Límites conocidos: con varias llamadas simultáneas del mismo usuario el sobrepaso queda acotado por las llamadas en curso (la generación
+  de curso va con `GenerationLock`). El importe no lo cambia el tutor desde la app: es configuración.
+- Revisitar si: el tutor debe poder ajustar el tope de cada menor, o hace falta un límite de frecuencia además del de gasto (A2).

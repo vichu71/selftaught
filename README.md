@@ -4,7 +4,7 @@ Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el 
 con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas. Pendiente del run real del benchmark
-> con tus claves y del tope de gasto por usuario (ver `sdd/BACKLOG.md`).
+> con tus claves (ver `sdd/BACKLOG.md`). El tope de gasto por usuario ya está hecho (ADR-29).
 
 ## Stack
 
@@ -63,6 +63,7 @@ modelos reales se configura, **por tarea**, en tu `.env` (nunca en el código):
 | `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Solo se exige la de los proveedores que alguna tarea use; si falta, el backend no arranca |
 | `AI_MONTHLY_LIMIT_USD` | Tope mensual en USD (obligatorio con un proveedor real) |
 | `AI_BUDGET_MODE` | `WARN` (por defecto): avisa al 80 % y al 100 % y sigue. `BLOCK`: además rechaza llamadas al alcanzar el tope |
+| `AI_USER_LIMIT_MINOR_USD`, `AI_USER_LIMIT_ADULT_USD` | Tope mensual por usuario en USD (2,00 y 10,00 por defecto). Corta siempre, también en `WARN` |
 | `OLLAMA_BASE_URL` | Por defecto `http://ollama:11434` (el contenedor) |
 
 - Los precios por modelo están en `backend/src/main/resources/ai-pricing.properties`; un modelo sin precio impide arrancar. Está vacío a

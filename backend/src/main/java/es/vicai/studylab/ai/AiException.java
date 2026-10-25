@@ -38,6 +38,7 @@ public class AiException extends RuntimeException {
     public static AiException of(AiErrorKind kind) {
         return new AiException(kind, switch (kind) {
             case BUDGET_BLOCKED -> "Se ha alcanzado el tope de gasto mensual de IA";
+            case USER_LIMIT -> "Has alcanzado tu tope mensual de uso de IA. Se renueva el mes que viene";
             case PROVIDER_UNAVAILABLE -> "El servicio de IA no está disponible ahora mismo. Inténtalo más tarde";
             case PROVIDER_QUOTA -> "El proveedor de IA ha agotado su cuota o su tope de gasto";
             case PROVIDER_AUTH -> "El proveedor de IA rechaza las credenciales configuradas";

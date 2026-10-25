@@ -122,6 +122,14 @@ class AiStartupSettingsTest {
     }
 
     @Test
+    void a1_aUserLimitThatIsNotPositiveFailsNamingTheProperty() {
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.budget.user-limit-minor-usd=0"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.budget.user-limit-minor-usd"));
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.budget.user-limit-adult-usd=-1"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.budget.user-limit-adult-usd"));
+    }
+
+    @Test
     void edge_anUnconfiguredTaskFailsNamingIt() {
         assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.tasks.tutor.provider="})))
                 .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.tasks.tutor"));

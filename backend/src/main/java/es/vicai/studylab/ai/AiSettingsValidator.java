@@ -45,6 +45,13 @@ public final class AiSettingsValidator {
             problems.add("app.ai.budget.monthly-limit-usd (debe ser mayor que 0)");
         }
 
+        if (props.budget().userLimitMinorUsd() == null || props.budget().userLimitMinorUsd().signum() <= 0) {
+            problems.add("app.ai.budget.user-limit-minor-usd (AI_USER_LIMIT_MINOR_USD, debe ser mayor que 0)");
+        }
+        if (props.budget().userLimitAdultUsd() == null || props.budget().userLimitAdultUsd().signum() <= 0) {
+            problems.add("app.ai.budget.user-limit-adult-usd (AI_USER_LIMIT_ADULT_USD, debe ser mayor que 0)");
+        }
+
         // En el run del benchmark las tareas no se usan: el propio runner valida su plan
         if (!benchmarkProfile) {
             for (AiTask task : AiTask.values()) {

@@ -28,7 +28,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(AiException.class)
     ResponseEntity<Map<String, String>> handleAi(AiException e) {
         HttpStatus status = switch (e.kind()) {
-            case BUDGET_BLOCKED -> HttpStatus.TOO_MANY_REQUESTS;
+            case BUDGET_BLOCKED, USER_LIMIT -> HttpStatus.TOO_MANY_REQUESTS;
             case GENERATION_BUSY -> HttpStatus.CONFLICT;
             case INPUT_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
             case USER_NOT_ALLOWED -> HttpStatus.FORBIDDEN;

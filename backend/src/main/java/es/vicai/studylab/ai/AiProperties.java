@@ -52,8 +52,18 @@ public record AiProperties(
 
     public enum BudgetMode { WARN, BLOCK }
 
+    /**
+     * Tope global (avisa; corta solo en BLOCK) y topes personales por usuario (A1), que cortan siempre: así un usuario, también un
+     * menor, no puede gastar todo el presupuesto antes de que nadie lo note.
+     */
     public record Budget(BigDecimal monthlyLimitUsd, @DefaultValue("80") int warnAtPercent,
-                         @DefaultValue("WARN") BudgetMode mode) {
+                         @DefaultValue("WARN") BudgetMode mode,
+                         @DefaultValue("2.00") BigDecimal userLimitMinorUsd,
+                         @DefaultValue("10.00") BigDecimal userLimitAdultUsd) {
+        public BigDecimal userLimit(boolean minor) {
+            return minor ? userLimitMinorUsd : userLimitAdultUsd;
+        }
+
         /** Límite que se usa para calcular porcentajes; solo se puede omitir con el proveedor falso (desarrollo). */
         public BigDecimal effectiveLimit() {
             return monthlyLimitUsd == null ? new BigDecimal("5.00") : monthlyLimitUsd;

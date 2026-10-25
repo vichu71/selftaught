@@ -64,6 +64,8 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       AI_MONTHLY_LIMIT_USD: ${AI_MONTHLY_LIMIT_USD:-}
       AI_BUDGET_MODE: ${AI_BUDGET_MODE:-WARN}
+      AI_USER_LIMIT_MINOR_USD: ${AI_USER_LIMIT_MINOR_USD:-2.00}
+      AI_USER_LIMIT_ADULT_USD: ${AI_USER_LIMIT_ADULT_USD:-10.00}
     read_only: true
     tmpfs:
       - /tmp

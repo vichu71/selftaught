@@ -21,6 +21,7 @@ class AiExceptionHandlingTest {
     @Test
     void everyKindMapsToTheAgreedStatus() {
         assertThat(handle(AiErrorKind.BUDGET_BLOCKED).getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
+        assertThat(handle(AiErrorKind.USER_LIMIT).getStatusCode()).isEqualTo(HttpStatus.TOO_MANY_REQUESTS);
         assertThat(handle(AiErrorKind.GENERATION_BUSY).getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
         assertThat(handle(AiErrorKind.INPUT_TOO_LARGE).getStatusCode()).isEqualTo(HttpStatus.PAYLOAD_TOO_LARGE);
         assertThat(handle(AiErrorKind.USER_NOT_ALLOWED).getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);

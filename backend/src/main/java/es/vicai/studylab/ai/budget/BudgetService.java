@@ -38,15 +38,33 @@ public class BudgetService {
         this.audit = audit;
     }
 
-    /** Solo actúa en modo BLOCK. Una llamada de coste 0 (embeddings locales) nunca se bloquea. */
+    /**
+     * Tope personal del usuario (siempre) y, en modo BLOCK, tope global. Una llamada de coste 0 (embeddings locales) nunca se
+     * bloquea. El tope personal se comprueba primero: es el que explica el rechazo a quien lo ha alcanzado.
+     */
     public void checkBeforeCall(UUID userId, BigDecimal worstCaseUsd) {
-        if (props.budget().mode() != AiProperties.BudgetMode.BLOCK || worstCaseUsd.signum() == 0) return;
+        if (worstCaseUsd.signum() == 0) return;
+        BigDecimal userSpent = usage.userMonthSpend(userId);
+        if (userSpent.add(worstCaseUsd).compareTo(props.budget().userLimit(usage.isMinor(userId))) > 0) {
+            audit.record("AI_USER_LIMIT_REACHED", AuditService.DENIED, userId, userId, null, Map.of("month", usage.currentMonth()));
+            log.warn("Llamada de IA rechazada: tope mensual personal alcanzado");
+            throw AiException.of(AiErrorKind.USER_LIMIT);
+        }
+        if (props.budget().mode() != AiProperties.BudgetMode.BLOCK) return;
         BigDecimal spent = usage.monthSpend();
         if (spent.add(worstCaseUsd).compareTo(props.budget().effectiveLimit()) > 0) {
             audit.record("AI_BUDGET_BLOCKED", AuditService.DENIED, userId, userId, null, Map.of("month", usage.currentMonth()));
             log.warn("Llamada de IA rechazada: tope mensual alcanzado");
             throw AiException.of(AiErrorKind.BUDGET_BLOCKED);
         }
+    }
+
+    /** Tope personal de un usuario y si ya lo alcanzó este mes. */
+    public record UserLimit(BigDecimal limitUsd, boolean reached) {}
+
+    public UserLimit userLimit(boolean minor, BigDecimal spentUsd) {
+        BigDecimal limit = props.budget().userLimit(minor);
+        return new UserLimit(limit, spentUsd.compareTo(limit) >= 0);
     }
 
     /** Tras una llamada con coste: avisa una vez por mes al llegar al umbral y al 100 %. */

@@ -51,7 +51,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 
 | # | Qué | Prioridad |
 |---|-----|-----------|
-| A1 | **Tope de gasto por usuario**, empezando por los menores: en modo `WARN` cualquiera puede consumir todo el presupuesto antes del aviso | 🟠 antes de F04–F07 |
+| A1 | ✅ **Hecho (25-10-2026, ADR-29):** tope de gasto por usuario (menor 2 USD, adulto 10 USD al mes), corta siempre. Pendiente menor: que el tutor pueda ajustar el tope de cada menor desde la app | ✅ |
 | A2 | Límite de **frecuencia** por usuario en los endpoints de generación (el cerrojo limita la concurrencia, no el volumen) | 🟡 F04–F07 |
 | A3 | Punto de enganche para **filtrar contenido de menores** (la especificación lo prometía; no se implementó): diseñarlo con F04 | 🟡 F04 |
 | A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | F05 |

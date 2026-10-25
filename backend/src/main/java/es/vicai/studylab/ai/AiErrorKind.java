@@ -4,6 +4,8 @@ package es.vicai.studylab.ai;
 public enum AiErrorKind {
     /** Modo BLOCK: el tope mensual se ha alcanzado o esta llamada lo superaría. */
     BUDGET_BLOCKED,
+    /** El usuario alcanzó su tope mensual personal (A1), o esta llamada lo superaría. Corta también en modo WARN. */
+    USER_LIMIT,
     /** El proveedor no respondió bien tras los reintentos permitidos. */
     PROVIDER_UNAVAILABLE,
     /** El proveedor dice que se agotó la cuota o el tope de gasto de su cuenta. */

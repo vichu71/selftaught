@@ -83,6 +83,15 @@ menor  → {month, you:{calls}}
   quien define el filtro. Hasta entonces no hay hook en la capa.
 - Los timeouts son **por proveedor** (el mayor de las tareas que lo usan), no por tarea.
 
+## Ampliación A1 (25-10-2026): tope de gasto por usuario
+
+| # | Criterio |
+|---|----------|
+| AC-19 | Cada usuario tiene un tope mensual propio (mes natural de Madrid): menor `AI_USER_LIMIT_MINOR_USD` (2,00), adulto `AI_USER_LIMIT_ADULT_USD` (10,00). Debe ser mayor que 0 o el arranque falla nombrando la variable. |
+| AC-20 | Corta **siempre**, también en modo `WARN`: se rechaza (`USER_LIMIT`, 429, `AI_USER_LIMIT`) si el gasto del usuario más el peor caso de la llamada supera su tope, sin llegar al proveedor. Fila `BLOCKED` y auditoría `AI_USER_LIMIT_REACHED` sin importes. El gasto de un usuario no cuenta contra otro y se reinicia cada mes. |
+| AC-21 | Los embeddings locales (coste 0) no se bloquean. |
+| AC-22 | `GET /api/ai/usage`: el adulto ve `limitUsd` y `limitReached` propios y de cada menor suyo; el menor solo ve `limitReached` (nunca importes ni topes). |
+
 ## Casos borde cubiertos (ver tests)
 
 Sin conteo de tokens (se estima y se marca) · respuesta truncada o vacía · clave inválida y cuota agotada del proveedor (sin reintento) ·

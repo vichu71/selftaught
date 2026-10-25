@@ -64,6 +64,18 @@ public class UsageRepository {
                 .param("month", month).param("threshold", threshold).update() > 0;
     }
 
+    /** Gasto del usuario en el mes (cualquier intento que el proveedor cobró), para su tope personal. */
+    public BigDecimal userMonthSpend(UUID userId) {
+        return jdbc.sql("SELECT COALESCE(SUM(cost_usd), 0) FROM ai_usage WHERE user_id = :user AND " + IN_MONTH)
+                .param("user", userId).query(BigDecimal.class).single();
+    }
+
+    /** True si el usuario es un menor; un usuario inexistente se trata como menor (el tope más estricto). */
+    public boolean isMinor(UUID userId) {
+        return !"ADULT".equals(jdbc.sql("SELECT kind FROM app_user WHERE id = :id").param("id", userId)
+                .query(String.class).optional().orElse("MINOR"));
+    }
+
     /** Llamadas con éxito y gasto de un usuario en el mes. Los intentos fallidos o bloqueados no cuentan como llamadas. */
     public UserUsage userMonth(UUID userId) {
         return jdbc.sql("SELECT count(*) FILTER (WHERE status = 'OK') AS calls, COALESCE(SUM(cost_usd), 0) AS spend "

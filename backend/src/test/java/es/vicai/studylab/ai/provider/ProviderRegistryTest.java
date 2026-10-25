@@ -21,7 +21,7 @@ class ProviderRegistryTest {
 
     @SuppressWarnings("unchecked")
     private static ProviderRegistry registry(Map<String, ProviderConfig> providers) {
-        AiProperties props = new AiProperties(Map.of(), providers, Map.of(), new AiProperties.Budget(null, 80, AiProperties.BudgetMode.WARN),
+        AiProperties props = new AiProperties(Map.of(), providers, Map.of(), new AiProperties.Budget(null, 80, AiProperties.BudgetMode.WARN, new java.math.BigDecimal("2.00"), new java.math.BigDecimal("10.00")),
                 16000, 60000, new AiProperties.Retry(2, Duration.ofMillis(1)), Duration.ofMinutes(20), new AiProperties.Embedding(8),
                 new AiProperties.Benchmark(false, null, BigDecimal.ONE, "/tmp"));
         ObjectProvider<RestClient.Builder> builders = mock(ObjectProvider.class);

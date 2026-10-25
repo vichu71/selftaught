@@ -37,7 +37,7 @@ public class RequiredSettingsCheck implements ApplicationListener<ApplicationPre
 
         // F02: la configuración de IA (proveedores, modelos, precios, claves y tope) se valida antes de crear ningún bean
         AiProperties ai = Binder.get(env).bind("app.ai", Bindable.of(AiProperties.class))
-                .orElseGet(() -> new AiProperties(null, null, null, new AiProperties.Budget(null, 80, AiProperties.BudgetMode.WARN),
+                .orElseGet(() -> new AiProperties(null, null, null, new AiProperties.Budget(null, 80, AiProperties.BudgetMode.WARN, new java.math.BigDecimal("2.00"), new java.math.BigDecimal("10.00")),
                         16000, 60000, new AiProperties.Retry(2, java.time.Duration.ofSeconds(1)), java.time.Duration.ofMinutes(20),
                         new AiProperties.Embedding(768), new AiProperties.Benchmark(true, null, new java.math.BigDecimal("5.00"), "/out")));
         missing.addAll(AiSettingsValidator.validate(ai, env.acceptsProfiles(Profiles.of("prod")),

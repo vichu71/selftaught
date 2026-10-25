@@ -53,10 +53,44 @@ class AiUsageEndpointTest extends AiTestBase {
         String body = getAs(ana, "/api/ai/usage").andReturn().getResponse().getContentAsString();
 
         assertThat(JsonPath.<Map<String, Object>>read(body, "$").keySet()).containsExactlyInAnyOrder("month", "you", "budget", "minors");
-        assertThat(JsonPath.<Map<String, Object>>read(body, "$.you").keySet()).containsExactlyInAnyOrder("calls", "spendUsd");
+        assertThat(JsonPath.<Map<String, Object>>read(body, "$.you").keySet())
+                .containsExactlyInAnyOrder("calls", "spendUsd", "limitUsd", "limitReached");
         assertThat(JsonPath.<Map<String, Object>>read(body, "$.budget").keySet()).containsExactlyInAnyOrder("percent", "level");
         assertThat(JsonPath.<Map<String, Object>>read(body, "$.minors[0]").keySet())
-                .containsExactlyInAnyOrder("id", "displayName", "calls", "spendUsd");
+                .containsExactlyInAnyOrder("id", "displayName", "calls", "spendUsd", "limitUsd", "limitReached");
+    }
+
+    @Test
+    void a1_anAdultSeesTheirLimitAndEachMinorsLimitAndWhetherItWasReached() throws Exception {
+        String ana = adultSession("ana@example.com");
+        String hugoId = createStudent(ana, "Hugo", "hugo");
+        owner.update("""
+                INSERT INTO ai_usage (request_id, attempt, user_id, source, task, provider, model, input_tokens,
+                                      output_tokens, tokens_estimated, cost_usd, status, duration_ms)
+                VALUES (gen_random_uuid(), 1, ?, 'APP', 'OUTLINE', 'fake', 'fake-1', 0, 0, false, 1.00, 'OK', 1)""",
+                UUID.fromString(hugoId));
+
+        getAs(ana, "/api/ai/usage")
+                .andExpect(jsonPath("$.you.limitUsd").value(5.0))
+                .andExpect(jsonPath("$.you.limitReached").value(false))
+                .andExpect(jsonPath("$.minors[0].limitUsd").value(1.0))
+                .andExpect(jsonPath("$.minors[0].limitReached").value(true));
+    }
+
+    @Test
+    void a1_aMinorOnlyLearnsWhetherTheyReachedTheirLimitNeverTheAmount() throws Exception {
+        String ana = adultSession("ana@example.com");
+        String hugoId = createStudent(ana, "Hugo", "hugo");
+        owner.update("""
+                INSERT INTO ai_usage (request_id, attempt, user_id, source, task, provider, model, input_tokens,
+                                      output_tokens, tokens_estimated, cost_usd, status, duration_ms)
+                VALUES (gen_random_uuid(), 1, ?, 'APP', 'OUTLINE', 'fake', 'fake-1', 0, 0, false, 1.00, 'OK', 1)""",
+                UUID.fromString(hugoId));
+
+        String body = getAs(login("hugo", PASSWORD), "/api/ai/usage").andReturn().getResponse().getContentAsString();
+
+        assertThat(JsonPath.<Boolean>read(body, "$.you.limitReached")).isTrue();
+        assertThat(body).doesNotContain("limitUsd").doesNotContain("spendUsd");
     }
 
     @Test
@@ -90,7 +124,7 @@ class AiUsageEndpointTest extends AiTestBase {
         String body = getAs(hugo, "/api/ai/usage").andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
         assertThat(JsonPath.<Map<String, Object>>read(body, "$").keySet()).containsExactlyInAnyOrder("month", "you");
-        assertThat(JsonPath.<Map<String, Object>>read(body, "$.you").keySet()).containsExactly("calls");
+        assertThat(JsonPath.<Map<String, Object>>read(body, "$.you").keySet()).containsExactlyInAnyOrder("calls", "limitReached");
         assertThat(body).doesNotContain("spendUsd").doesNotContain("budget");
     }
 
