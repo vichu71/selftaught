@@ -115,7 +115,7 @@ function restart() {
       <h2>Esto es lo que vamos a montar</h2>
       <p>Un curso de <strong>«{{ course.topic }}»</strong>.</p>
       <ul v-if="chosenAnswers.length > 0">
-        <li v-for="(a, i) in chosenAnswers" :key="i">{{ a.label }}</li>
+        <li v-for="(a, i) in chosenAnswers" :key="i"><span class="muted">{{ a.question }}</span> <strong>{{ a.label }}</strong></li>
       </ul>
       <p v-if="course.wantsMaterial && course.documentIds.length > 0" class="muted">
         Con {{ course.documentIds.length }} {{ course.documentIds.length === 1 ? 'documento tuyo' : 'documentos tuyos' }}.

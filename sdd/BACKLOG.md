@@ -34,7 +34,7 @@
 | F4-2 | Desbloqueo de un tema concreto por el tutor, y revisión periódica de `blocked-terms.txt` | Hoy un tema escolar legítimo bloqueado solo remite al adulto (ADR-39) |
 | F4-3 | El filtro local solo cubre español; un menor puede pedir lo mismo en otro idioma (lo frena la valoración del modelo) | ADR-39 |
 | F4-4 | Pantalla del tutor con los intentos bloqueados de sus menores | Llega con F08; el dato ya se guarda |
-| F4-5 | Medir con un modelo real barato cuántas veces el JSON del asistente llega mal formado y ajustar la plantilla | FASE 7 de F04 |
+| F4-5 | 🟠 Medir con un modelo real barato cuántas veces el JSON del asistente llega mal formado y ajustar la plantilla. Si un menor recibe JSON inservible, el tema se acepta sin la valoración del modelo: F05 debe volver a comprobarlo antes de generar | Lo prueba el usuario con su modelo (APP_AI_TASKS_INTAKE_*) |
 
 ## Mejoras (🟡)
 
