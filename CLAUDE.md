@@ -131,6 +131,14 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - La respuesta se valida con `TutorAnswerValidator` (no vacía, ≤ 4 000 caracteres, sin HTML crudo ni enlaces peligrosos, citas `[n]` que existan; sin material no hay citas), con un reintento (ADR-58); sin streaming. En el frontend se pinta siempre con `MarkdownContent`.
 - El hilo es por lección y usuario; el adulto lo vacía, el **menor no** (403 `THREAD_PROTECTED`, su tutor lo ve) y el tutor adulto no lo lee por esta API hasta F08. Ni logs ni auditoría llevan preguntas, respuestas, lecciones ni fragmentos (lo comprueba `TutorArchitectureTest`).
 
+## Reglas de F08 (panel del adulto tutor)
+- Contrato y criterios de aceptación: `sdd/specs/US-F08-panel-tutor-adulto.md`; diseño y ADR-59 a 62: `sdd/specs/ART-F08-propuesta-panel.md` y `ARCHITECTURE.md`.
+- El paquete `guardian/` es de **solo lectura**: solo `GET`, sin SQL que escriba (salvo la auditoría), sin `AiGateway`, sin HTML (lo comprueba `GuardianArchitectureTest`). **Todo** endpoint empieza por `AccessGuard.requireStudentOf`; sin vínculo, alumno inexistente o id mal formado → 404 igual.
+  El curso y la pieza se buscan con el **id del alumno** como propietario: los de otro alumno → 404. Toda consulta lleva `owner_id` (o `user_id` en `ai_usage`, `actor_user_id` en `audit_event`).
+- El adulto ve respuestas, intentos y conversaciones de su menor (decisión de F08), pero **nunca** el texto de lecciones, ejercicios ni exámenes generados, ni las soluciones. Los avisos de tutor apuntan al hilo sin repetir la pregunta; el de tema rechazado sí lleva el tema.
+- Intentos, conversaciones, hilo y avisos se **auditan** como `GUARDIAN_VIEW` con ids (nunca contenido), fuera de transacción. Ni logs ni auditoría llevan lo que escribió el alumno. Lo devuelto va recortado: 20 intentos por ejercicio, 200 en total y 100 avisos.
+- Un alumno desactivado se puede consultar (`isTutorOf` no mira el estado). El aviso al menor de que su adulto lo ve vive en `HomeView` y en el chat del tutor: si cambia, que siga nombrando respuestas, intentos y conversaciones.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

@@ -85,6 +85,17 @@ public class UsageRepository {
                 .single();
     }
 
+    public record TaskUsage(String task, BigDecimal spendUsd, long calls) {}
+
+    /** Gasto del usuario en el mes repartido por tarea, de más a menos (panel del adulto tutor, F08). Solo tareas que usó. */
+    public List<TaskUsage> userMonthByTask(UUID userId) {
+        return jdbc.sql("SELECT task, COALESCE(SUM(cost_usd), 0) AS spend, count(*) FILTER (WHERE status = 'OK') AS calls "
+                        + "FROM ai_usage WHERE user_id = :user AND " + IN_MONTH + " GROUP BY task ORDER BY spend DESC, task")
+                .param("user", userId)
+                .query((rs, i) -> new TaskUsage(rs.getString("task"), rs.getBigDecimal("spend"), rs.getLong("calls")))
+                .list();
+    }
+
     /** Uso de los menores de un tutor (todos, aunque no hayan usado la IA). */
     public List<MinorUsage> minorsMonth(UUID tutorId) {
         return jdbc.sql("""

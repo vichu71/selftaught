@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) terminada en su rama, pendiente de fusionar. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) y **F08** (panel del adulto tutor, ADR-59 a 62) terminadas. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -155,6 +155,19 @@ y si fallaste ejercicios de ese capítulo, sabe cuáles (solo el enunciado y que
   Si se alcanza el tope o el proveedor falla, ves un mensaje claro en el chat y tu pregunta sigue en la caja.
 - **Menores:** su pregunta, los fragmentos del material y la respuesta del tutor pasan por el filtro de contenido; si salta, ven «Contenido inapropiado. Consulta con tu adulto.» (o un texto fijo) y queda en el hilo para su tutor.
 - Lo que se dice en el chat no se guarda en logs ni en la auditoría. Sin variables nuevas: los límites son valores de ingeniería (`app.tutor.*`).
+
+## Panel del adulto tutor (F08)
+
+En «Tus alumnos», cada menor (también uno dado de baja) tiene un enlace **Ver actividad** que abre su panel, **solo de lectura**: nada de lo que ves se puede cambiar desde ahí.
+
+- **Avisos:** lo que el filtro de menores ha parado, lo más reciente primero: preguntas bloqueadas al tutor, respuestas del tutor sustituidas, temas de curso rechazados, respuestas de ejercicio que no se enviaron a corregir y piezas no generadas por contenido bloqueado.
+  Sin correos: se ven al entrar.
+- **Cursos:** estado y avance de cada curso del alumno y, dentro, el avance por tema, las notas de examen y sus intentos: lo que respondió en cada ejercicio (con su autocorrección y el veredicto de la IA) y las preguntas de examen que falló.
+  No se abre el texto de las lecciones, ejercicios ni exámenes generados.
+- **Conversaciones:** los hilos del alumno con el tutor IA, incluidas las preguntas bloqueadas y las respuestas filtradas, marcadas como tales.
+- **Consumo de IA:** lo que ha gastado el alumno este mes frente a su tope personal y cómo se reparte por tarea (sin tokens).
+- **Transparencia:** cada vez que consultas intentos, conversaciones o avisos de un alumno queda anotado en la auditoría (quién, a quién y qué pantalla, nunca el contenido). El menor ve en su pantalla principal que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones.
+- Solo ves a tus alumnos; cualquier otro responde como si no existiera. Sin variables nuevas ni llamadas a la IA.
 
 ## Tests
 

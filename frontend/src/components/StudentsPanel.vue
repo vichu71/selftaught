@@ -103,6 +103,7 @@ async function setActive(id: string, active: boolean) {
           <span class="badge"> · usuario: {{ s.loginId }} · {{ s.status === 'ACTIVE' ? 'Activo' : 'De baja' }}</span>
         </div>
         <div class="actions">
+          <RouterLink :to="`/alumnos/${s.id}`" :data-testid="`student-activity-${s.id}`">Ver actividad</RouterLink>
           <button type="button" :data-testid="`reset-${s.id}`" @click="openReset(s.id)">Cambiar contraseña</button>
           <button v-if="s.status === 'ACTIVE'" type="button" :data-testid="`deactivate-${s.id}`" @click="setActive(s.id, false)">Dar de baja</button>
           <button v-else type="button" :data-testid="`reactivate-${s.id}`" @click="setActive(s.id, true)">Reactivar</button>

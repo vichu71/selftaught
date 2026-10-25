@@ -143,6 +143,21 @@ no van a logs ni a la auditoría. Los límites (120 envíos por hora, 20 correcc
 El hilo vive en `tutor_message`. La pregunta nace `PENDING` (reserva el límite y la «respuesta a la vez» con un cerrojo de la BD, así que vale con varias instancias) y, si el modelo falla, pasa a `FAILED` y no se ve: no hay mensajes huérfanos y los
 fallos cuentan para el límite. El tutor usa la tarea `TUTOR` (sin `GenerationLock`) y no recibe nada de los exámenes ni las soluciones de los ejercicios. Ni logs ni auditoría llevan lo que se dice en el chat.
 
+## Panel del adulto tutor (F08)
+
+```
+ Adulto ──► GET /api/tutor/students/{id}/…        (ROLE_TUTOR en /api/tutor/**; todo es de solo lectura)                                         AC-1..13
+   1. AccessGuard.requireStudentOf(adulto, id): sin vínculo, inexistente o mal formado → 404 igual + ACCESS_DENIED en la auditoría (ADR-59)
+   2. el curso y la pieza se buscan con el id del ALUMNO como propietario: los de otro alumno → 404
+   3. overview ─► cursos y avance (StudyService, variantes por id de alumno: el mismo cálculo que ve él), última actividad, avisos de 30 días y consumo del mes (ADR-62)
+      courses/{c} ─► avance por tema y notas de examen; nunca el texto de lecciones, ejercicios ni exámenes
+   4. attempts · conversations · …/tutor · alerts ─► respuestas del alumno, hilos con BLOCKED/FILTERED y avisos; cada consulta audita GUARDIAN_VIEW con ids (ADR-61)
+ Avisos (ADR-60): tutor_message BLOCKED/FILTERED · course_intake BLOCKED (con tema y categoría) · audit_event STUDY_ANSWER_BLOCKED y COURSE_CONTENT_BLOCKED del alumno
+```
+
+El paquete `guardian` no escribe nada (salvo la auditoría), no habla con el modelo y no genera HTML: un test de arquitectura lo exige. Recorta lo que devuelve: 20 intentos por ejercicio y 200 en total, 100 avisos. El menor ve en su pantalla principal
+que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones. Ni los logs ni la auditoría llevan lo que el alumno escribió.
+
 ## Modelo de datos
 
 ```
@@ -197,6 +212,9 @@ exam_attempt        id, owner_id, course_id, piece_id (examen), status (STARTED|
 tutor_message       id, owner_id, course_id, piece_id (una lección), role (USER|TUTOR), status (PENDING|OK|FAILED|BLOCKED|FILTERED), content (≤ 6 000),
                     sources (jsonb [{n, page}], solo respuestas con material), created_at · FK compuestas → course_piece y course, ON DELETE CASCADE ·
                     índices (owner_id, piece_id, created_at) y (owner_id, created_at)
+
+-- F08 (migración V8): sin tablas nuevas; solo un índice para leer los avisos de la auditoría por actor
+audit_event         + índice audit_event_actor_idx (actor_user_id, action, occurred_at)
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -232,6 +250,7 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `POST …/pieces/{pid}/exam/attempts` · `…/{a}/submit` · `GET …/{a}` | propietario | empezar (sin respuestas) · entregar `{answers}` (200 nota y correcciones, idempotente) · ver un intento entregado |
 | `GET …/pieces/{pid}/attempts` | propietario | historial `{kind, attempts}`, el más reciente primero |
 | `GET/POST/DELETE /api/courses/{id}/pieces/{pid}/tutor` | propietario | hilo de la lección · pregunta `{question}` (201 `{user, tutor}`; 400 · 404 · 409 lección sin generar · 429 `TUTOR_RATE_LIMITED`, `TUTOR_BUSY`, `AI_*` · 502 `TUTOR_FAILED`) · vaciar (adulto: 204; menor: 403 `THREAD_PROTECTED`) |
+| `GET /api/tutor/students/{id}/overview` · `/courses/{c}` · `/courses/{c}/attempts` · `/conversations` · `/courses/{c}/pieces/{p}/tutor` · `/alerts` | adulto vinculado | panel de solo lectura de un alumno (F08): resumen y consumo · avance de un curso · intentos · conversaciones · hilo · avisos; 401 · 403 (menor) · 404 (sin vínculo, alumno, curso o pieza ajenos). Intentos, conversaciones, hilo y avisos se auditan (`GUARDIAN_VIEW`, solo ids) |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -249,7 +268,8 @@ selftaught/
 │     src/main/java/es/vicai/studylab/generation                 # F05: cola, generador, validadores de salida, SourcePack, hilos de fondo
 │     src/main/java/es/vicai/studylab/study                       # F06: progreso, intentos de ejercicio y examen, corrección con IA
 │     src/main/java/es/vicai/studylab/tutor                       # F07: hilo por lección, contexto, límites, filtro de menores y llamada al modelo
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor)
+│     src/main/java/es/vicai/studylab/guardian                    # F08: panel del adulto tutor (solo lectura): resumen, intentos, conversaciones, avisos y consumo
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -637,3 +657,27 @@ selftaught/
   una respuesta vacía o inservible se reintenta una vez y, si sigue mal, el alumno recibe un error amable y no se guarda nada. Un indicador de espera cubre los segundos de la llamada.
 - Alternativas descartadas: streaming (cambia todos los adaptadores y deja pasar texto sin filtrar), aceptar cualquier texto del modelo sin validar.
 - Revisitar si: la espera con un modelo real resulta larga para el alumno.
+
+### ADR-59: El panel es un paquete de solo lectura que reutiliza los servicios por id de alumno
+- Motivo: el adulto ve lo mismo que el alumno, calculado igual (avance y resultados), sin duplicar reglas: `StudyService` gana variantes que reciben el id del alumno. Cada endpoint empieza por `AccessGuard.requireStudentOf` y el curso o la pieza se buscan con el alumno como
+  propietario (los de otro alumno → 404). `guardian/` no escribe nada salvo la auditoría: un test de arquitectura prohíbe métodos que no sean `GET`, SQL de escritura, llamadas al modelo y HTML.
+- Se vio al implementar: el formato de los mensajes del hilo lo comparten el alumno y el panel (`TutorViews`) para no tener dos; `StudyService` ganó `overviewFor` y `courseSummaries`; y el gasto de un alumno por debajo de un céntimo se muestra como «menos de 0,01 USD».
+- Alternativas descartadas: dejar que el adulto use los endpoints del alumno con otro propietario (rompe «todo dato se filtra por su propietario»), copiar las consultas de F06 (dos fuentes de verdad), una vista materializada (sin necesidad a escala familiar).
+- Revisitar si: un alumno pasa a tener más de un adulto (v2) o aparece un rol de administración.
+
+### ADR-60: Los avisos se calculan de lo que ya se guarda, sin tabla nueva
+- Motivo: lo que el filtro para ya deja rastro: `tutor_message` (`BLOCKED`, `FILTERED`), `course_intake` (`BLOCKED`, con tema y categoría «para el tutor», ADR-37) y la auditoría (`STUDY_ANSWER_BLOCKED`, `COURSE_CONTENT_BLOCKED`, con ids). Una consulta con `UNION` los ordena y
+  acota a 100; solo hace falta un índice por actor en `audit_event`. Los avisos de tutor no repiten el texto (el adulto lo ve en el hilo) y el de tema rechazado sí lo lleva.
+- Alternativas descartadas: una tabla `guardian_alert` escrita por cada feature (acopla F04, F06 y F07 con el panel y duplica datos), avisos por correo (fuera de alcance).
+- Revisitar si: hay muchos eventos por alumno (paginar) o se purgan las consultas bloqueadas (F4-1): el aviso desaparecería con el dato.
+
+### ADR-61: Cada consulta de actividad se audita con ids
+- Motivo: leer conversaciones y respuestas de un menor es una operación sensible y el menor tiene derecho a saber que ocurre. `GUARDIAN_VIEW` registra adulto, alumno y pantalla (`ATTEMPTS`, `CONVERSATIONS`, `THREAD`, `ALERTS`) con los ids de curso y pieza, nunca el contenido.
+  El resumen y el curso (sin textos del alumno) no se auditan. Se escribe fuera de cualquier transacción (lección de F01).
+- Alternativas descartadas: auditar todo (ruido), no auditar (sin trazabilidad), mostrar al menor «tu adulto te vio» (posterior).
+- Revisitar si: el menor debe poder consultar quién vio su actividad.
+
+### ADR-62: Consumo del alumno: gasto del mes frente a su tope, repartido por tarea
+- Motivo: `ai_usage` ya guarda coste por usuario y tarea y el tope personal lo da `BudgetService.userLimit` (ADR-29). Se muestra USD y número de llamadas por tarea, no tokens ni modelos. Es el gasto del mes en curso, igual que `/api/ai/usage`.
+- Alternativas descartadas: tokens y modelos por llamada (detalle sin utilidad para un adulto), un histórico de meses (posterior).
+- Revisitar si: se quiere cambiar el tope de un alumno desde el panel (hoy es configuración).

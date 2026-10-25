@@ -91,15 +91,35 @@ public class StudyService {
         return out;
     }
 
+    /** Lo que muestra el panel del adulto tutor de cada curso de un alumno (F08): el mismo cálculo que {@link #progress} con los números a la vista. */
+    public record CourseSummary(UUID courseId, Integer percent, int lessonsDone, int lessonsTotal, int examsPassed, int examsTotal) {}
+
+    public Map<UUID, CourseSummary> courseSummaries(UUID ownerId) {
+        Map<UUID, Integer> done = repo.lessonsDoneByCourse(ownerId);
+        Map<UUID, Integer> passed = repo.examsPassedByCourse(ownerId, props.passPercent());
+        Map<UUID, CourseSummary> out = new LinkedHashMap<>();
+        for (StudyRepository.CourseTotals t : repo.courseTotals(ownerId)) {
+            int total = t.lessons() + t.exams();
+            int lessonsDone = done.getOrDefault(t.courseId(), 0);
+            int examsPassed = passed.getOrDefault(t.courseId(), 0);
+            out.put(t.courseId(), new CourseSummary(t.courseId(), total == 0 ? null : percent(lessonsDone + examsPassed, total), lessonsDone, t.lessons(), examsPassed, t.exams()));
+        }
+        return out;
+    }
+
     public Overview overview(AuthUser user, String rawCourseId) {
-        UUID courseId = id(rawCourseId);
-        if (!repo.courseExists(courseId, user.id())) throw ApiException.notFound();
+        return overviewFor(user.id(), id(rawCourseId));
+    }
+
+    /** El avance de un curso de {@code ownerId}; uno que no es suyo no existe. Lo usan el alumno y el panel de su adulto tutor. */
+    public Overview overviewFor(UUID ownerId, UUID courseId) {
+        if (!repo.courseExists(courseId, ownerId)) throw ApiException.notFound();
 
         Map<UUID, List<StudyRepository.ExamStat>> attempts = new HashMap<>();
-        for (StudyRepository.ExamStat stat : repo.examStats(courseId, user.id())) attempts.computeIfAbsent(stat.pieceId(), k -> new ArrayList<>()).add(stat);
+        for (StudyRepository.ExamStat stat : repo.examStats(courseId, ownerId)) attempts.computeIfAbsent(stat.pieceId(), k -> new ArrayList<>()).add(stat);
 
         Map<UUID, List<StudyRepository.StudyPiece>> byTopic = new LinkedHashMap<>();
-        for (StudyRepository.StudyPiece piece : repo.studyPieces(courseId, user.id())) byTopic.computeIfAbsent(piece.topicId(), k -> new ArrayList<>()).add(piece);
+        for (StudyRepository.StudyPiece piece : repo.studyPieces(courseId, ownerId)) byTopic.computeIfAbsent(piece.topicId(), k -> new ArrayList<>()).add(piece);
 
         List<TopicState> topics = new ArrayList<>();
         int lessonsDone = 0, lessonsTotal = 0, examsPassed = 0, examsTotal = 0;

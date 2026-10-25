@@ -39,6 +39,16 @@ describe('HomeView', () => {
     expect(byId(wrapper, 'guardian-notice').exists()).toBe(true)
   })
 
+  // F08 AC-10: el aviso nombra lo que el adulto puede ver, también respuestas e intentos
+  it('names answers, attempts and conversations in the notice for a minor', async () => {
+    const { wrapper } = await mountApp(HomeView, { user: minor })
+
+    const text = byId(wrapper, 'guardian-notice').text().toLowerCase()
+    expect(text).toContain('respuestas')
+    expect(text).toContain('intentos')
+    expect(text).toContain('conversaciones')
+  })
+
   it('does not show that notice to adults', async () => {
     const { wrapper } = await mountApp(HomeView, { user: adult })
     expect(byId(wrapper, 'guardian-notice').exists()).toBe(false)
