@@ -151,6 +151,29 @@ export interface MaterialList {
   minors: MinorMaterial[]
 }
 
+export type TutorRole = 'USER' | 'TUTOR'
+/** OK es un mensaje normal; BLOCKED, una pregunta que el filtro de menores no deja enviar; FILTERED, una respuesta sustituida por un texto fijo. */
+export type TutorMessageStatus = 'OK' | 'BLOCKED' | 'FILTERED'
+
+export interface TutorMessage {
+  id: string
+  role: TutorRole
+  status: TutorMessageStatus
+  content: string
+  sources?: { n: number; page?: number | null }[]
+  createdAt: string
+}
+
+export interface TutorThread {
+  canClear: boolean
+  messages: TutorMessage[]
+}
+
+export interface TutorExchange {
+  user: TutorMessage
+  tutor: TutorMessage
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -244,6 +267,9 @@ export const api = {
   getExamAttempt: (courseId: string, pieceId: string, attemptId: string) =>
     request<ExamResult>('GET', `${piecePath(courseId, pieceId)}/exam/attempts/${encodeURIComponent(attemptId)}`),
   getAttempts: (courseId: string, pieceId: string) => request<Attempts>('GET', `${piecePath(courseId, pieceId)}/attempts`),
+  getTutorThread: (courseId: string, pieceId: string) => request<TutorThread>('GET', `${piecePath(courseId, pieceId)}/tutor`),
+  askTutor: (courseId: string, pieceId: string, question: string) => request<TutorExchange>('POST', `${piecePath(courseId, pieceId)}/tutor`, { question }),
+  clearTutor: (courseId: string, pieceId: string) => request<void>('DELETE', `${piecePath(courseId, pieceId)}/tutor`),
   getResults: () => request<Results>('GET', '/api/results'),
   getUsage: () => request<Usage>('GET', '/api/ai/usage'),
 }

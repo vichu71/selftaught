@@ -1,6 +1,7 @@
 package es.vicai.studylab.tutor;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -21,8 +22,8 @@ class TutorAccessTest extends TutorTestBase {
         String path = "/api/courses/" + id + "/pieces/" + id + "/tutor";
 
         mvc.perform(get(path)).andExpect(status().isUnauthorized());
-        mvc.perform(post(path).contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"x\"}")).andExpect(status().isUnauthorized());
-        mvc.perform(delete(path)).andExpect(status().isUnauthorized());
+        mvc.perform(post(path).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"question\":\"x\"}")).andExpect(status().isUnauthorized());
+        mvc.perform(delete(path).with(csrf())).andExpect(status().isUnauthorized());
     }
 
     @Test

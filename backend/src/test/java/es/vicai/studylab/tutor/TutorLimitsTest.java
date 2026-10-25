@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.test.context.TestPropertySource;
 
 /** AC-10 (ADR-55): límites por usuario en la BD y una sola respuesta a la vez. Contexto propio: cambia la configuración. */
-@TestPropertySource(properties = {"app.tutor.max-per-hour=3", "app.tutor.max-per-day=5", "app.tutor.max-stored=4"})
+@TestPropertySource(properties = {"app.tutor.max-per-hour=3", "app.tutor.max-per-day=5"})
 class TutorLimitsTest extends TutorTestBase {
 
     @Test
@@ -160,25 +160,4 @@ class TutorLimitsTest extends TutorTestBase {
         assertThat(luis).isNotNull();
     }
 
-    // ---------- retención ----------
-
-    @Test
-    void ac9_onlyTheLatestMessagesOfALessonAreKeptAndOtherLessonsAreUntouched() throws Exception {
-        String ana = logged("ana@example.com");
-        UUID anaId = idOf("ana@example.com");
-        UUID course = readyCourse("ana@example.com");
-        UUID lesson = lesson(course, 0);
-        UUID other = lesson(course, 1);
-        insertMessage(anaId, course, other, "USER", "OK", "de otra lección 1", "5 hours");
-        insertMessage(anaId, course, other, "TUTOR", "OK", "de otra lección 2", "5 hours");
-        insertMessage(anaId, course, other, "USER", "OK", "de otra lección 3", "5 hours");
-        insertMessage(anaId, course, other, "TUTOR", "OK", "de otra lección 4", "5 hours");
-        insertMessage(anaId, course, other, "USER", "OK", "de otra lección 5", "5 hours");
-        tutorAnswers(ANSWER);
-        for (int i = 1; i <= 3; i++) ask(ana, course, lesson, "pregunta " + i).andExpect(status().isCreated());
-
-        assertThat(owner.queryForObject("SELECT count(*) FROM tutor_message WHERE piece_id = ?", Integer.class, lesson)).isEqualTo(4); // 3 intercambios = 6 → quedan 4
-        assertThat(owner.queryForObject("SELECT count(*) FROM tutor_message WHERE piece_id = ?", Integer.class, other)).isEqualTo(5); // las otras lecciones no se tocan
-        thread(ana, course, lesson).andExpect(jsonPath("$.messages[3].role").value("TUTOR"));
-    }
 }

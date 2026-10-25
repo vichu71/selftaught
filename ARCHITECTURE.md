@@ -135,7 +135,7 @@ no van a logs ni a la auditoría. Los límites (120 envíos por hora, 20 correcc
       fuentes: MaterialSearch sobre los documentos del curso (SourcePack; menor: sin los fragmentos que rechaza ContentGuard)
    5. AiGateway.complete(TUTOR) .course(id) → TutorAnswerValidator (no vacía, ≤ 4 000, sin HTML crudo, citas que existan); un reintento; si no, FAILED y 502 TUTOR_FAILED (ADR-58)
    6. MENOR: ContentGuard sobre la respuesta ── coincide ─► texto fijo FILTERED + auditoría TUTOR_ANSWER_FILTERED
-   7. una transacción: pregunta → OK, respuesta OK/FILTERED con sus fuentes [{n, page}], poda a 200 mensajes por lección; 201 con los dos mensajes
+   7. una transacción: pregunta → OK, respuesta OK/FILTERED con sus fuentes [{n, page}], poda a 400 mensajes por lección; 201 con los dos mensajes
  GET …/tutor    ─► hilo de la lección (OK, BLOCKED y FILTERED; nunca PENDING ni FAILED) y canClear (adulto)
  DELETE …/tutor ─► el adulto vacía su hilo; el menor recibe 403 THREAD_PROTECTED porque su adulto tutor lo ve (F08)
 ```

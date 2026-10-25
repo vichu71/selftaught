@@ -12,7 +12,7 @@
 | Frontend | Vue 3 + Pinia, sin librerías nuevas | `MarkdownContent` ya pinta las respuestas sin HTML |
 
 **Dependencias nuevas:** ninguna. **Configuración nueva** (`app.tutor.*`, valores de ingeniería sin variable de entorno): mensajes por hora (30) y por día (150), intercambios de historial que se envían (6) y su tope de caracteres (6 000),
-longitud máxima de pregunta (1 000) y de respuesta (4 000), mensajes conservados por lección (200) y la ventana en que una respuesta pendiente bloquea otra (2 minutos).
+longitud máxima de pregunta (1 000) y de respuesta (4 000), mensajes conservados por lección (400) y la ventana en que una respuesta pendiente bloquea otra (2 minutos).
 
 ## ART-002 · Modelo de datos (`V7__tutor.sql`)
 
@@ -31,7 +31,7 @@ tutor_message
   pasa a `FAILED` y **nunca** se ve (no hay mensajes huérfanos, AC-11). Un `PENDING` abandonado (el backend se cayó) deja de bloquear a los 2 minutos y no se ve.
 - **Límites (AC-10):** se cuentan los mensajes del alumno (`role = USER`, en cualquier estado) de la última hora y del último día, de modo que los bloqueados y los fallidos también cuentan. **Una a la vez:** existe un `PENDING` de ese usuario de hace menos de 2 minutos;
   la comprobación y la reserva se hacen en una transacción con un cerrojo de la BD por usuario (`pg_advisory_xact_lock`), así que vale con varias instancias del backend (ADR-55).
-- **Retención:** tras cada intercambio se borran los mensajes más antiguos de esa lección y ese usuario por encima de 200 (también los `FAILED`).
+- **Retención:** tras cada intercambio se borran los mensajes más antiguos de esa lección y ese usuario por encima de 400 (también los `FAILED`). Los límites por hora y por día se cuentan sobre lo conservado, así que el tope de conservación no puede bajar del doble del límite diario (150 × 2 = 300 ≤ 400): con 200, quien preguntara 150 veces en una sola lección nunca llegaría al límite del día porque la poda se llevaría sus preguntas antiguas.
 - **El adulto vacía su hilo** (`DELETE`): se borran todos sus mensajes de esa lección, incluidos los `PENDING`; la respuesta que llegue después se guarda en un hilo nuevo sin romperse (la actualización del `PENDING` que ya no existe no hace nada y la respuesta se inserta igualmente).
 - El rol `studylab_app` recibe `SELECT/INSERT/UPDATE/DELETE` sobre la tabla y nada que cambie el esquema. `ai_usage` ya admite la tarea `TUTOR`; no se toca.
 

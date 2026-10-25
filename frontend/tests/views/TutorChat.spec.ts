@@ -65,7 +65,7 @@ describe('Tutor chat', () => {
     vi.mocked(api.getPiece).mockResolvedValue({ id: 'p5', kind: 'EXAM', status: 'DONE', title: 'x', generatedByAi: true, sources: [], questions: [] } as never)
     const exam = await open()
     expect(byId(exam.wrapper, 'tutor-chat').exists()).toBe(false)
-    expect(api.getTutorThread).toHaveBeenCalledTimes(1) // solo la lección lo pidió
+    expect(api.getTutorThread).not.toHaveBeenCalled() // ninguna de las tres es una lección hecha
   })
 
   it('shows the earlier messages of the thread with the tutor ones rendered with format and its sources', async () => {

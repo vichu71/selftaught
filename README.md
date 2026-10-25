@@ -150,7 +150,7 @@ Desde «Tus cursos» entras en un curso: el temario muestra tu avance, qué lecc
 Debajo de cada lección ya generada hay un chat para preguntar tus dudas. El tutor conoce la lección, su capítulo y el resumen de tu curso; si el curso tiene **material propio**, busca fragmentos relevantes y los cita como «Fuente n (página)»;
 y si fallaste ejercicios de ese capítulo, sabe cuáles (solo el enunciado y que los fallaste, **nunca** tu respuesta ni las soluciones). Explica, da pistas y ejemplos, **no resuelve exámenes ni ejercicios por ti** y, si la pregunta no es del curso, te redirige.
 
-- **Conversación:** se guarda por lección (hasta 200 mensajes). Un adulto puede **vaciarla**; la de un menor no se borra porque su adulto tutor puede verla (su panel llega con F08) y el menor lo ve avisado en el chat.
+- **Conversación:** se guarda por lección (hasta 400 mensajes). Un adulto puede **vaciarla**; la de un menor no se borra porque su adulto tutor puede verla (su panel llega con F08) y el menor lo ve avisado en el chat.
 - **Límites por usuario:** 30 mensajes por hora y 150 al día (cuentan también los bloqueados y los fallidos) y una respuesta a la vez. Usa la tarea `TUTOR` (`APP_AI_TASKS_TUTOR_*`: un modelo medio o barato) y cuenta en tu tope mensual y en «Resultados».
   Si se alcanza el tope o el proveedor falla, ves un mensaje claro en el chat y tu pregunta sigue en la caja.
 - **Menores:** su pregunta, los fragmentos del material y la respuesta del tutor pasan por el filtro de contenido; si salta, ven «Contenido inapropiado. Consulta con tu adulto.» (o un texto fijo) y queda en el hilo para su tutor.
