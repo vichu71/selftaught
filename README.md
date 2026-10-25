@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41)
-> y **F05** (generación del curso, ADR-42 a 48). Pendientes: `sdd/BACKLOG.md`.
+> y **F05** (generación del curso, ADR-42 a 48). **F06** (estudio, ADR-49 a 53) en curso: documentada, aún sin código. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -130,6 +130,20 @@ Al aceptar el resumen, la IA prepara el curso en segundo plano: primero el **tem
 | `APP_AI_TASKS_OUTLINE_*` · `_LESSON_*` · `_ASSESSMENT_*` | Modelo de cada paso: temario, lecciones, ejercicios y exámenes (ya existían desde F02) |
 
 Valores de ingeniería sin variable de entorno (`app.generation.*`): 2 hilos, sondeo cada 3 s, máximo 150 piezas por curso, enfriamiento de «Reanudar» de 60 s.
+
+## Estudiar un curso (F06)
+
+Desde «Tus cursos» entras en un curso: el temario muestra tu avance, qué lecciones tienes hechas y la mejor nota de cada examen. Mientras el curso se genera puedes estudiar lo que ya está listo.
+
+- **Lección:** se lee con formato y la marcas con **«Marcar como hecha»** (se puede desmarcar); hay enlaces a la anterior y a la siguiente. El porcentaje del curso son las lecciones hechas más los exámenes superados.
+- **Ejercicios:** escribes tu respuesta y, al enviarla, ves la **solución y la explicación** (antes no salen del servidor). Marcas cómo te fue («Lo he acertado», «Casi», «No») y, si quieres, pulsas **«Corregir con IA»**: te da un
+  veredicto y un comentario, con el aviso de que puede equivocarse. Puedes repetir el ejercicio las veces que quieras.
+- **Examen por tema:** lo empiezas, eliges una opción por pregunta y lo entregas; el servidor lo corrige sin IA y te enseña la nota, tu respuesta, la correcta y la explicación. Con el **50 %** o más el tema cuenta como superado.
+  Se puede repetir sin límite (cuenta la mejor nota) y el historial te dice qué fallaste.
+- **Límites por usuario:** 120 envíos por hora entre ejercicios y exámenes, 20 correcciones de IA al día (y una a la vez) y los 200 últimos intentos de cada pieza. «Corregir con IA» usa el modelo de `ASSESSMENT` (el mismo de los
+  ejercicios) y cuenta en tu tope mensual; no hay variables nuevas.
+- **Menores:** su respuesta pasa por el filtro de contenido antes de enviarse a la IA (si coincide, se ve «Contenido inapropiado. Consulta con tu adulto.» y se puede autocorregir); su tutor verá los intentos en su panel (F08).
+- Lo que escribes (respuestas, intentos) no se guarda en logs ni en la auditoría.
 
 ## Tests
 

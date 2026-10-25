@@ -48,6 +48,16 @@
 | F5-6 | ✅ Hecho: indicador de actividad en la pantalla del curso («Comprobado hace N s» con rueda animada) y aviso «esperando a que termine tu otro curso» (`waitingForOther` en el detalle) | Cambio pequeño tras la primera prueba con modelos reales |
 | F5-5 | 🟡 Segunda capa de filtro para menores sobre cada lección (valoración del modelo o moderación) y otros idiomas | Junto con F4-3; decidir en F07/F08 |
 
+## Anotado en F06 (estudio)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F6-1 | 🟠 Medir con tu modelo real cuántas veces «Corregir con IA» acierta o se equivoca, y cuánto cuesta | Solo lo puede hacer el usuario; se verifica con un modelo simulado |
+| F6-2 | 🟡 «Una corrección de IA a la vez por usuario» está en memoria: con varias instancias del backend debe pasar a la BD | ADR-52 |
+| F6-3 | 🟡 La exportación del curso lleva soluciones y respuestas correctas: si se usa antes de examinarse, rompe la autoevaluación | ADR-50 |
+| F6-4 | El tutor ve los intentos de su menor (texto de las respuestas, notas y fallos) | Llega con F08; el dato ya se guarda en `exercise_attempt` y `exam_attempt` |
+| F6-5 | Más tipos de pregunta (verdadero/falso, huecos, respuesta abierta en examen) y motor de cálculo para matemáticas y ciencias | v2; F05 solo genera test |
+
 ## Mejoras (🟡)
 
 | # | Qué | Nota |
@@ -86,7 +96,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | # | Qué | Prioridad |
 |---|-----|-----------|
 | A1 | ✅ **Hecho (25-10-2026, ADR-29):** tope de gasto por usuario (menor 2 USD, adulto 10 USD al mes), corta siempre. Pendiente menor: que el tutor pueda ajustar el tope de cada menor desde la app | ✅ |
-| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41) y para «Reanudar» de F05 (60 s por curso, ADR-44); falta en la subida de material (F3-6) y en los endpoints de F06–F07 | 🟡 F06–F07 |
+| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41) , para «Reanudar» de F05 (60 s por curso, ADR-44) y para los envíos y las correcciones de IA de F06 (ADR-53); falta en la subida de material (F3-6) y en los endpoints de F07 | 🟡 F07 |
 | A3 | ✅ **Hecho en F04 (ADR-39):** `safety.ContentGuard` es el punto de enganche reutilizable. Falta usarlo en F05 (lecciones) y F07 (tutor) antes de enviar texto de un menor a un modelo de pago | ✅ |
 | A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | ✅ **Hecho en F05 (ADR-42 y 43):** cerrojo renovado antes de cada llamada y cuatro validadores de salida; verificado en el stack |
 | A5 | Timeout **por tarea** (hoy es el mayor de las tareas de cada proveedor) | 🟡 |
