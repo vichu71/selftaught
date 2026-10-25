@@ -50,9 +50,18 @@ public class CourseContentService {
 
     public record SourceView(int n, Integer page) {}
 
+    /** Un ejercicio tal como se ve antes de responder: sin solución ni explicación (ADR-50). */
+    public record ExerciseView(String difficulty, String statement) {}
+
+    /** Una pregunta tal como se ve antes de entregar: sin la opción correcta ni la explicación (ADR-50). */
+    public record QuestionView(String text, List<String> options) {}
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Navigation(UUID previous, UUID next) {}
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record PieceView(UUID id, String kind, String status, String title, boolean generatedByAi, String markdown,
-                            List<ExercisesParser.Item> exercises, List<ExamParser.Question> questions, List<SourceView> sources) {}
+                            List<ExerciseView> exercises, List<QuestionView> questions, List<SourceView> sources, Boolean done, Navigation navigation) {}
 
     private final CourseService courses;
     private final CourseContentRepository content;
@@ -117,12 +126,16 @@ public class CourseContentService {
         UUID pieceId = parse(rawPieceId);
         if (courseId == null || pieceId == null) throw ApiException.notFound();
         CourseContentRepository.PieceContent piece = content.piece(courseId, pieceId, user.id()).orElseThrow(ApiException::notFound);
-        boolean done = "DONE".equals(piece.status());
+        boolean ready = "DONE".equals(piece.status());
+        boolean lesson = ready && "LESSON".equals(piece.kind());
         return new PieceView(piece.id(), piece.kind(), piece.status(), piece.title(), true,
-                done && "LESSON".equals(piece.kind()) ? piece.markdown() : null,
-                done && "EXERCISES".equals(piece.kind()) ? exercises(piece) : null,
-                done && "EXAM".equals(piece.kind()) ? questions(piece) : null,
-                done && "LESSON".equals(piece.kind()) ? sources(piece) : List.of());
+                lesson ? piece.markdown() : null,
+                ready && "EXERCISES".equals(piece.kind()) ? exercises(piece).stream().map(i -> new ExerciseView(i.difficulty(), i.statement())).toList() : null,
+                ready && "EXAM".equals(piece.kind()) ? questions(piece).stream().map(q -> new QuestionView(q.text(), q.options())).toList() : null,
+                lesson ? sources(piece) : List.of(),
+                lesson ? content.lessonDone(piece.id(), user.id()) : null,
+                lesson ? new Navigation(content.neighbourLesson(courseId, user.id(), piece.seq(), true).orElse(null),
+                        content.neighbourLesson(courseId, user.id(), piece.seq(), false).orElse(null)) : null);
     }
 
     private List<ExercisesParser.Item> exercises(CourseContentRepository.PieceContent piece) {

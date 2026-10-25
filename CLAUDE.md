@@ -110,6 +110,18 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Los ejercicios y exámenes guardan la solución (F06 los corregirá): `ExamParser` exige una única opción correcta. Un curso nunca supera `app.generation.max-pieces` (150).
 - Lecciones de F05: en un test de seguridad del visor se comprueban los **atributos de los elementos** (`on…`), no el HTML como cadena (el HTML crudo se muestra como texto y puede nombrarlos). `ai_generation_lock.owner` es un `uuid`: un test que lo cambie usa `gen_random_uuid()`. El reclamo de la cola no toca a quien ya tiene un cerrojo vigente (ADR-48).
 
+## Reglas de F06 (estudio)
+- Contrato y criterios de aceptación: `sdd/specs/US-F06-estudio.md`; diseño y ADR-49 a 53: `sdd/specs/ART-F06-propuesta-estudio.md` y `ARCHITECTURE.md`.
+- El paquete `study/` lee piezas hechas (`course_piece`) y escribe `lesson_progress`, `exercise_attempt` y `exam_attempt`: **toda** consulta lleva `owner_id` (lo comprueba `StudyArchitectureTest`). Un intento o una pieza ajenos responden 404 igual que uno inexistente; el tutor no los lee por esta API (F08).
+- **La solución de un ejercicio y la opción correcta de un examen no salen del servidor hasta que el alumno responde o entrega** (ADR-50). La pieza de F05 ya no las lleva; la exportación del curso sí (es su contenido). Un examen se corrige siempre en el servidor, sin IA.
+- El **progreso no se guarda, se calcula** (ADR-49): lección hecha = fila en `lesson_progress` con su pieza `DONE`; examen superado = un intento entregado con `correct·100 ≥ total·pass-percent` (50). El denominador son todas las piezas del temario.
+- Un examen es un intento de **dos pasos e idempotente** (ADR-51): entregar dos veces devuelve el mismo resultado y un 400 no gasta el intento.
+- «Corregir con IA» usa la tarea **`ASSESSMENT`** con la plantilla `grade-exercise` (sin tarea ni variable nuevas), con la respuesta, el enunciado y la solución **como datos**; veredicto validado por `GradeParser` (un reintento). Una por intento, 20 al día y una a la vez por usuario;
+  un fallo conserva la respuesta. Para un menor, `ContentGuard` sobre su respuesta **antes** de enviarla y sobre el comentario antes de guardarlo.
+- **Las respuestas del alumno no van a logs ni a la auditoría** (solo ids y resultados). Límites en la BD (`app.study.*`): 120 envíos por hora, 20 correcciones al día, 200 intentos por pieza.
+- Frontend: el contenido del modelo y del alumno se pinta siempre como texto o con `MarkdownContent`; nada de `v-html`. Los estados de carga y los errores nunca enseñan el código del backend.
+- Lecciones de F06: los envíos por hora se cuentan sobre los intentos conservados (`max-submissions-per-hour` ≤ `max-attempts-per-piece`, ADR-54). Un botón que desaparece tras el primer clic no se puede pulsar dos veces en un test: se prueba un clic y que ya no está. La verificación con el stack usa el servidor simulado `f06-stub` (responde también a la corrección).
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

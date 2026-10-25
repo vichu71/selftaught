@@ -329,3 +329,18 @@ test('F05 la generación no añade puertos, volúmenes ni variables obligatorias
   const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
   assert.ok(!required.some((k) => /GENERATION/.test(k)), 'la generación no exige variables obligatorias nuevas');
 });
+
+test('F06 el estudio no añade dependencias al frontend ni variables obligatorias al entorno', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F06 no necesita librerías nuevas');
+  const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
+  assert.ok(!required.some((k) => /STUDY|GRADING/.test(k)), 'el estudio no exige variables obligatorias nuevas (la corrección con IA usa la tarea ASSESSMENT)');
+});
+
+test('F06 la plantilla de la corrección con IA está en el código, pide JSON y no lleva marcadores de datos del usuario', () => {
+  const file = 'backend/src/main/resources/prompts/grade-exercise.txt';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const text = read(file);
+  assert.doesNotMatch(text, /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
+  assert.match(text.toLowerCase(), /json/);
+});

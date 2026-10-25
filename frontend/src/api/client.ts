@@ -119,18 +119,16 @@ export interface CourseDetail extends Course {
   waitingForOther?: boolean
 }
 
+/** Un ejercicio antes de responder: la solución llega al enviar la respuesta (F06, ADR-50). */
 export interface Exercise {
   difficulty: 'LOW' | 'MEDIUM' | 'HIGH'
   statement: string
-  solution: string
-  explanation: string
 }
 
+/** Una pregunta antes de entregar: la opción correcta llega con el resultado (F06, ADR-50). */
 export interface ExamQuestion {
   text: string
   options: string[]
-  correct: number
-  explanation: string
 }
 
 /** Una pieza del curso. El contenido solo llega si está hecha (`DONE`). */
@@ -144,6 +142,8 @@ export interface Piece {
   exercises?: Exercise[]
   questions?: ExamQuestion[]
   sources: { n: number; page?: number | null }[]
+  done?: boolean
+  navigation?: { previous?: string; next?: string }
 }
 
 export interface MaterialList {
@@ -188,6 +188,8 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await response.json().catch(() => undefined)) as T
 }
 
+const piecePath = (courseId: string, pieceId: string) => `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`
+
 export const api = {
   register: (data: { email: string; password: string; displayName: string }) =>
     request<void>('POST', '/api/auth/register', data),
@@ -227,6 +229,21 @@ export const api = {
     request<Piece>('GET', `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`),
   resumeCourse: (id: string) => request<CourseDetail>('POST', `/api/courses/${encodeURIComponent(id)}/resume`),
   exportUrl: (id: string) => exportPath(id),
+  getStudyProgress: () => request<CourseProgress[]>('GET', '/api/study/progress'),
+  getStudy: (courseId: string) => request<StudyOverview>('GET', `/api/courses/${encodeURIComponent(courseId)}/study`),
+  setLessonDone: (courseId: string, pieceId: string, done: boolean) => request<void>('PUT', `${piecePath(courseId, pieceId)}/done`, { done }),
+  sendExerciseAnswer: (courseId: string, pieceId: string, item: number, answer: string) =>
+    request<ExerciseAnswered>('POST', `${piecePath(courseId, pieceId)}/exercises/${item}/attempts`, { answer }),
+  setExerciseResult: (courseId: string, pieceId: string, item: number, attemptId: string, result: ExerciseResult) =>
+    request<void>('PUT', `${piecePath(courseId, pieceId)}/exercises/${item}/attempts/${encodeURIComponent(attemptId)}/result`, { result }),
+  aiGrade: (courseId: string, pieceId: string, item: number, attemptId: string) =>
+    request<AiGrade>('POST', `${piecePath(courseId, pieceId)}/exercises/${item}/attempts/${encodeURIComponent(attemptId)}/ai-grade`),
+  startExam: (courseId: string, pieceId: string) => request<StartedExam>('POST', `${piecePath(courseId, pieceId)}/exam/attempts`),
+  submitExam: (courseId: string, pieceId: string, attemptId: string, answers: (number | null)[]) =>
+    request<ExamResult>('POST', `${piecePath(courseId, pieceId)}/exam/attempts/${encodeURIComponent(attemptId)}/submit`, { answers }),
+  getExamAttempt: (courseId: string, pieceId: string, attemptId: string) =>
+    request<ExamResult>('GET', `${piecePath(courseId, pieceId)}/exam/attempts/${encodeURIComponent(attemptId)}`),
+  getAttempts: (courseId: string, pieceId: string) => request<Attempts>('GET', `${piecePath(courseId, pieceId)}/attempts`),
   getResults: () => request<Results>('GET', '/api/results'),
   getUsage: () => request<Usage>('GET', '/api/ai/usage'),
 }
@@ -261,3 +278,85 @@ export interface Usage {
   you: { calls: number; spendUsd?: number; limitUsd?: number; limitReached: boolean }
   budget?: { percent: number; level: string }
 }
+
+// ---------- Estudio (F06) ----------
+
+export type ExerciseResult = 'CORRECT' | 'PARTIAL' | 'INCORRECT'
+
+export interface ExamState {
+  pieceId: string
+  status: PieceStatus
+  attempts: number
+  best?: number
+  last?: number
+  passed: boolean
+}
+
+export interface TopicStudy {
+  id: string
+  percent: number
+  lessons: { pieceId: string; status: PieceStatus; done: boolean }[]
+  exam?: ExamState
+}
+
+/** El avance del curso: lecciones hechas y exámenes superados sobre todo el temario. Sin temario no hay porcentaje. */
+export interface StudyOverview {
+  percent?: number
+  lessonsDone: number
+  lessonsTotal: number
+  examsPassed: number
+  examsTotal: number
+  topics: TopicStudy[]
+}
+
+export interface CourseProgress {
+  courseId: string
+  percent?: number
+}
+
+export interface ExerciseAnswered {
+  attemptId: string
+  solution: string
+  explanation: string
+}
+
+export interface AiGrade {
+  verdict: ExerciseResult
+  comment: string
+}
+
+export interface StartedExam {
+  attemptId: string
+  questions: { text: string; options: string[] }[]
+}
+
+export interface ExamResult {
+  correct: number
+  total: number
+  percent: number
+  passed: boolean
+  questions: { text: string; options: string[]; chosen?: number | null; correct: number; explanation: string; ok: boolean }[]
+}
+
+export interface ExerciseAttempt {
+  id: string
+  itemIndex: number
+  answer: string
+  selfResult?: ExerciseResult
+  aiResult?: ExerciseResult
+  aiComment?: string
+  createdAt: string
+}
+
+export interface ExamAttemptSummary {
+  id: string
+  correct: number
+  total: number
+  percent: number
+  passed: boolean
+  submittedAt: string
+}
+
+export type Attempts =
+  | { kind: 'EXERCISES'; attempts: ExerciseAttempt[] }
+  | { kind: 'EXAM'; attempts: ExamAttemptSummary[] }

@@ -2,8 +2,9 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type Piece } from '@/api/client'
-import ExamView from '@/components/ExamView.vue'
-import ExerciseList from '@/components/ExerciseList.vue'
+import ExamTake from '@/components/ExamTake.vue'
+import ExercisePractice from '@/components/ExercisePractice.vue'
+import LessonControls from '@/components/LessonControls.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 
 const route = useRoute()
@@ -50,11 +51,22 @@ watch(() => route.params.pieceId, (id, old) => {
       <p v-else-if="piece.status === 'FAILED'" class="card" data-testid="piece-failed">Esta parte del curso no se pudo preparar.</p>
 
       <article v-if="done" class="card">
-        <div v-if="piece.kind === 'LESSON'" data-testid="lesson">
-          <MarkdownContent :source="piece.markdown ?? ''" />
-        </div>
-        <ExerciseList v-else-if="piece.kind === 'EXERCISES'" :exercises="piece.exercises ?? []" />
-        <ExamView v-else :questions="piece.questions ?? []" />
+        <template v-if="piece.kind === 'LESSON'">
+          <div data-testid="lesson">
+            <MarkdownContent :source="piece.markdown ?? ''" />
+          </div>
+          <LessonControls :key="piece.id" :course-id="courseId" :piece-id="piece.id" :done="piece.done === true" :navigation="piece.navigation" />
+        </template>
+        <template v-else-if="piece.kind === 'EXERCISES'">
+          <ol class="exercises" data-testid="exercises">
+            <ExercisePractice v-for="(exercise, i) in piece.exercises ?? []" :key="`${piece.id}-${i}`" :course-id="courseId" :piece-id="piece.id" :index="i" :exercise="exercise" />
+          </ol>
+          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
+        </template>
+        <template v-else>
+          <ExamTake :key="piece.id" :course-id="courseId" :piece-id="piece.id" />
+          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
+        </template>
 
         <section v-if="sources.length > 0" data-testid="sources">
           <h2>Fuentes</h2>

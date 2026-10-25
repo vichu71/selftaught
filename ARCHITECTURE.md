@@ -101,6 +101,27 @@ Cada petición a la IA lleva los datos `pieza` (`temario | leccion | ejercicios 
 nombres de documento) y los ejercicios la `leccion` ya generada. La lección es Markdown y los ejercicios y exámenes JSON estricto (ADR-43). El frontend pinta el Markdown con `marked.lexer` y elementos Vue de
 una lista cerrada, sin HTML (ADR-45). El paquete `course/` sigue sin poder leer material: la generación vive en `generation/`, el único que usa `MaterialSearch`.
 
+## Estudio (F06)
+
+```
+ Alumno ──► GET /api/courses/{id}/study          progreso por lección, tema y curso, calculado en el servidor (ADR-49)               AC-1..4, 12
+       ──► PUT …/pieces/{lección}/done           «Marcar como hecha» (idempotente; desmarcable)                                          AC-3
+       ──► GET …/pieces/{pieza}                  lección con anterior/siguiente · ejercicios SIN solución · examen SIN opción correcta (ADR-50)
+ Ejercicio:  POST …/exercises/{i}/attempts {answer} ──► guarda el intento y devuelve solución y explicación                               AC-5
+             PUT  …/attempts/{a}/result            el alumno marca CORRECT | PARTIAL | INCORRECT
+             POST …/attempts/{a}/ai-grade ──► «Corregir con IA» (ADR-52): propietario → ya pedida → límites (hora/día) → una a la vez →
+                                              menor: ContentGuard sobre la respuesta → AiGateway ASSESSMENT (datos: enunciado, solución, respuesta)
+                                              → GradeParser (esquema estricto, un reintento) → veredicto y comentario (menor: comentario filtrado)   AC-6, 7
+ Examen:     POST …/exam/attempts ──► intento STARTED con las preguntas sin respuestas (reutiliza uno abierto)                             AC-8
+             POST …/exam/attempts/{a}/submit {answers} ──► ExamGrader corrige sin IA y devuelve nota, opción correcta y explicación; entregar
+                                              otra vez devuelve el mismo resultado (ADR-51); nota mínima 50 % para superar el tema         AC-9, 10
+             GET  …/attempts · …/exam/attempts/{a} ──► historial y «qué fallé»                                                           AC-11
+```
+
+El **progreso no se guarda**: una lección cuenta si hay fila en `lesson_progress` y su pieza está `DONE`, y un examen si algún intento entregado llega al 50 %. El denominador son todas las piezas del temario.
+La solución de un ejercicio y la opción correcta de un examen **no salen del servidor** hasta que el alumno responde o entrega (la exportación del curso sí las lleva: es su propio contenido). Las respuestas del alumno
+no van a logs ni a la auditoría. Los límites (120 envíos por hora, 20 correcciones de IA al día, 200 intentos guardados por pieza) se cuentan en la BD.
+
 ## Modelo de datos
 
 ```
@@ -143,6 +164,13 @@ course_chapter      id, topic_id + owner_id (FK compuesta → course_topic, CASC
 course_piece        id, course_id, owner_id, topic_id, chapter_id (nulo en el examen), kind (LESSON|EXERCISES|EXAM), seq (UNIQUE por curso), status (PENDING|DONE|FAILED),
                     error_kind, attempts, content_md (lección), content_json (ejercicios, examen), sources (jsonb [{n, documentId, page}], sin FK), created_at, generated_at
 ai_usage            índice por course_id: el coste del curso se suma al consultarlo, no se guarda
+
+-- F06 (migración V6)
+course_piece        + UNIQUE (id, owner_id) para enlazar con clave compuesta
+lesson_progress     owner_id, piece_id (lección), course_id, completed_at · PK (piece_id, owner_id) · FK compuestas → course_piece y course, ON DELETE CASCADE
+exercise_attempt    id, owner_id, course_id, piece_id, item_index (0..7), answer (≤ 2 000), self_result (CORRECT|PARTIAL|INCORRECT), ai_result, ai_comment (≤ 600),
+                    ai_requested_at (cuenta las correcciones de IA del día), created_at · índice (owner_id, created_at)
+exam_attempt        id, owner_id, course_id, piece_id (examen), status (STARTED|SUBMITTED), answers (jsonb), correct/total (0 ≤ correct ≤ total), started_at, submitted_at · índice por propietario
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -170,6 +198,13 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `GET /api/courses/{id}/pieces/{pieceId}` | propietario | lección (`markdown`), ejercicios o examen; el contenido solo llega si la pieza está `DONE`; ajena = 404 |
 | `POST /api/courses/{id}/resume` | propietario | 202; 409 si no está en pausa · 429 `RESUME_TOO_SOON` (60 s) |
 | `GET /api/courses/{id}/export` | propietario | JSON versionado con el curso; citas como «Fuente n», sin nombres de documento, ids ni datos del usuario |
+| `GET /api/results` | autenticado | cursos propios con piezas hechas, falladas y pendientes, llamadas y coste; un menor no recibe importes |
+| `GET /api/study/progress` · `GET /api/courses/{id}/study` | propietario | porcentaje de cada curso · progreso por lección, tema y curso (F06); ajeno = 404 |
+| `PUT /api/courses/{id}/pieces/{pid}/done` | propietario | `{done}`; 204; 409 si la lección no está hecha · 400 si no es una lección |
+| `POST …/pieces/{pid}/exercises/{i}/attempts` | propietario | `{answer}` (1–2 000) → 201 `{attemptId, solution, explanation}`; 409 pieza no hecha · 429 `STUDY_RATE_LIMITED` |
+| `PUT …/exercises/{i}/attempts/{a}/result` · `POST …/ai-grade` | propietario | autocorrección (204) · «Corregir con IA» (200 `{verdict, comment}`); 409 `AI_GRADING_ALREADY` · 422 `ANSWER_NOT_ALLOWED` (menores) · 429 `AI_GRADING_LIMIT`, `GRADING_BUSY` · 502 `GRADING_FAILED` |
+| `POST …/pieces/{pid}/exam/attempts` · `…/{a}/submit` · `GET …/{a}` | propietario | empezar (sin respuestas) · entregar `{answers}` (200 nota y correcciones, idempotente) · ver un intento entregado |
+| `GET …/pieces/{pid}/attempts` | propietario | historial `{kind, attempts}`, el más reciente primero |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -185,7 +220,8 @@ selftaught/
 │     src/main/java/es/vicai/studylab/material/{extract,chunk}   # F03: subida, extracción, troceado, cola y búsqueda
 │     src/main/java/es/vicai/studylab/{course,safety}            # F04: asistente y cursos; filtro de menores reutilizable (ContentGuard)
 │     src/main/java/es/vicai/studylab/generation                 # F05: cola, generador, validadores de salida, SourcePack, hilos de fondo
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación)
+│     src/main/java/es/vicai/studylab/study                       # F06: progreso, intentos de ejercicio y examen, corrección con IA
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -507,3 +543,42 @@ selftaught/
   propietarios de cursos interrumpidos se liberan (una sola instancia: nada se está generando de verdad). Un fallo inesperado pausa el curso en vez de repetirse en bucle.
 - Alternativas descartadas: generar ejercicios sin lección (incoherentes), intentar el cerrojo siempre y aceptar las denegaciones, dejar caducar los cerrojos tras un reinicio (hasta 20 minutos de espera).
 - Revisitar si: hay más de una instancia del backend (el arranque no podría liberar cerrojos ajenos).
+
+### ADR-49: El progreso se calcula al consultarlo, no se guarda
+- Motivo: lo único que el alumno decide es «marcar como hecha» (una fila por lección) y entregar exámenes (una fila por intento). Con eso, el avance del curso, el de cada tema y el «superado» salen de una consulta;
+  no hay contadores que se desincronicen cuando una pieza se genera tarde, se desmarca una lección o se reanuda un curso. El denominador son todas las piezas del temario, así que un curso a medias no aparenta más avance.
+- Alternativas descartadas: guardar porcentajes por curso y tema (hay que recalcularlos en cada cambio y tras cada generación), marcar la lección al abrirla (cuenta sin leer).
+- Revisitar si: hay miles de cursos por usuario (entonces, una tabla de resumen).
+
+### ADR-50: El servidor corrige el examen y la opción correcta no sale hasta entregar
+- Motivo: si la pieza de examen de F05 entrega `correct` y la explicación, «autoevaluación» es solo un adorno. Desde F06 la pieza solo lleva texto y opciones; el servidor guarda las respuestas, las corrige sin IA
+  y devuelve el resultado con la opción correcta y la explicación **después** de entregar. Los ejercicios siguen la misma regla: la solución llega al enviar la respuesta. La exportación del curso sigue llevando todo
+  (es el contenido del propio alumno).
+- Alternativas descartadas: corregir en el cliente (visible en las herramientas del navegador), dejarlo como está y esconderlo en la interfaz.
+- Revisitar si: se quiere un modo de examen sin exportación hasta entregar.
+
+### ADR-51: El examen es un intento de dos pasos e idempotente
+- Motivo: «Empezar» crea un intento `STARTED` (y reutiliza uno abierto) y «Entregar» lo cierra; repetir la entrega devuelve el mismo resultado en lugar de duplicarlo, y las preguntas que se ven son las del intento.
+  Los intentos abiertos antiguos se purgan y solo cuentan los entregados. Cada pieza conserva los últimos 200 intentos por usuario.
+- Alternativas descartadas: una sola petición que crea el intento al entregar (doble clic duplica y no hay forma de saber qué preguntas vio), intentos sin límite (crece sin fin).
+- Revisitar si: se necesita un tiempo máximo por examen.
+
+### ADR-52: Autocorrección siempre, «Corregir con IA» opcional y con la tarea que ya existe
+- Motivo: los ejercicios de F05 son de respuesta abierta; la autocorrección (ver la solución y decir cómo te fue) no cuesta nada ni depende del modelo, y la IA se ofrece como segunda opinión, siempre con aviso de que
+  puede equivocarse y sin impedir que el alumno decida. Se reutiliza `ASSESSMENT` (quien genera ejercicios ya tiene ese modelo) con una plantilla propia (`grade-exercise`) y un límite de salida bajado por petición:
+  no añade variables obligatorias. Límites: una corrección por intento, 20 al día por usuario (contadas en la BD) y una a la vez por usuario (en memoria: una sola instancia). La respuesta del alumno, la solución y el
+  enunciado van como **datos**; el veredicto se valida con un esquema estricto (un reintento) y el comentario de un menor pasa por `ContentGuard`.
+- Alternativas descartadas: corregir siempre con IA (coste en cada intento y dependencia del proveedor), una tarea nueva `GRADING` (una variable obligatoria más para quien ya tiene el stack).
+- Revisitar si: hay varias instancias del backend (el límite de «una a la vez» debe pasar a la BD) o se añade un motor de cálculo para matemáticas.
+
+### ADR-53: Las respuestas del alumno no se registran y los límites se cuentan en la BD
+- Motivo: lo que escribe un alumno (sobre todo un menor) es dato personal: ni logs ni auditoría llevan respuestas, solo ids y resultados. Los envíos por hora (120) y las correcciones de IA al día (20) se cuentan por usuario
+  sobre las propias tablas, sin depender de la IP (D1). Cierra A2 para F06.
+- Alternativas descartadas: limitar por IP (no vale detrás del proxy), no limitar (un bucle de «Corregir con IA» gasta hasta el tope).
+- Revisitar si: el tutor necesita ver el texto exacto de las respuestas de su menor (F08: lo leerá de estas mismas tablas, no de los logs).
+
+### ADR-54: Los envíos por hora se cuentan sobre los intentos conservados
+- Motivo: el límite por usuario (120 envíos por hora entre ejercicios y exámenes) se calcula contando filas de `exercise_attempt` y de `exam_attempt` de la última hora; no hay ningún contador aparte que se
+  desincronice. La retención (200 intentos por pieza) borra lo antiguo, así que el límite por hora no puede superar al de intentos por pieza o la poda dejaría el límite sin efecto. Los valores por defecto lo cumplen.
+- Alternativas descartadas: un contador por usuario y hora (otra tabla que mantener y purgar), no podar (la BD crece sin fin).
+- Revisitar si: se quiere cambiar alguno de los dos valores (F6-6: validarlo al arrancar) o si el tutor necesita conservar todos los intentos de un menor (F08).
