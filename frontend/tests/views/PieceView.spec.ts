@@ -17,14 +17,14 @@ const lesson = {
 const exercises = {
   id: 'p2', kind: 'EXERCISES', status: 'DONE', title: 'To be', generatedByAi: true,
   exercises: [
-    { difficulty: 'LOW', statement: 'Completa: I ___ happy', solution: 'am', explanation: 'Con I se usa am' },
-    { difficulty: 'HIGH', statement: 'Traduce: ellos están', solution: 'they are', explanation: 'Plural' },
+    { difficulty: 'LOW', statement: 'Completa: I ___ happy' },
+    { difficulty: 'HIGH', statement: 'Traduce: ellos están' },
   ],
 }
 
 const exam = {
   id: 'p5', kind: 'EXAM', status: 'DONE', title: 'Presentarse', generatedByAi: true,
-  questions: [{ text: '¿Cuál es correcta?', options: ['I is', 'I am', 'I are'], correct: 1, explanation: 'Con I va am' }],
+  questions: [{ text: '¿Cuál es correcta?', options: ['I is', 'I am', 'I are'] }],
 }
 
 // AC-11 y AC-13: lectura de una pieza, con el Markdown pintado sin HTML y el aviso de «generado por IA»
@@ -75,24 +75,22 @@ describe('PieceView', () => {
     expect(elements.some((el) => [...el.attributes].some((a) => /^on/i.test(a.name)))).toBe(false) // el HTML crudo es texto, no un elemento con manejadores
   })
 
-  it('shows exercises with their solution hidden until it is asked for', async () => {
+  // F06 (ADR-50): la pieza ya no trae la solución ni la opción correcta; llegan al responder y al entregar (tests en StudyExercises.spec y StudyExam.spec)
+  it('shows exercises to practise, with no solution until an answer is sent', async () => {
     vi.mocked(api.getPiece).mockResolvedValue(exercises as never)
     const m = await mountApp(PieceView, { user: adult, route: '/cursos/c1/piezas/p2' })
 
     expect(byId(m.wrapper, 'exercise-0').text()).toContain('Completa: I ___ happy')
-    const details = byId(m.wrapper, 'exercise-0').find('details')
-    expect(details.exists()).toBe(true)
-    expect(details.attributes('open')).toBeUndefined()
     expect(byId(m.wrapper, 'exercise-1').text()).toContain('Traduce')
+    expect(byId(m.wrapper, 'solution-0').exists()).toBe(false)
   })
 
-  it('shows an exam with its options and the answers hidden until they are asked for', async () => {
+  it('shows an exam as something to start, with no questions and no answers yet', async () => {
     vi.mocked(api.getPiece).mockResolvedValue(exam as never)
     const m = await mountApp(PieceView, { user: adult, route: '/cursos/c1/piezas/p5' })
 
-    expect(byId(m.wrapper, 'question-0').text()).toContain('¿Cuál es correcta?')
-    expect(byId(m.wrapper, 'question-0').findAll('li').map((li) => li.text())).toEqual(['I is', 'I am', 'I are'])
-    expect(byId(m.wrapper, 'question-0').find('details').attributes('open')).toBeUndefined()
+    expect(byId(m.wrapper, 'start-exam').exists()).toBe(true)
+    expect(byId(m.wrapper, 'question-0').exists()).toBe(false)
   })
 
   it('says a piece that is not done yet is still being prepared', async () => {

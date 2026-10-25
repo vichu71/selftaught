@@ -134,14 +134,14 @@ class GenerationAccessTest extends GenerationTestBase {
     }
 
     @Test
-    void ac11_exercisesAndExamAreReadAsStructuredContent() throws Exception {
+    void ac11_exercisesAndExamAreReadAsStructuredContentWithoutTheAnswers() throws Exception {
         String ana = logged("ana@example.com");
         UUID course = generated("ana@example.com", 2, true);
 
         pieceOf(ana, course, firstPiece(course, "EXERCISES")).andExpect(jsonPath("$.exercises", hasSize(3)))
-                .andExpect(jsonPath("$.exercises[0].statement").value("Primer ejercicio")).andExpect(jsonPath("$.exercises[0].solution").value("Solución uno"));
+                .andExpect(jsonPath("$.exercises[0].statement").value("Primer ejercicio")).andExpect(jsonPath("$.exercises[0].solution").doesNotExist()); // F06 (ADR-50): la solución llega al responder
         pieceOf(ana, course, firstPiece(course, "EXAM")).andExpect(jsonPath("$.questions", hasSize(5)))
-                .andExpect(jsonPath("$.questions[0].options", hasSize(4))).andExpect(jsonPath("$.questions[0].correct").isNumber());
+                .andExpect(jsonPath("$.questions[0].options", hasSize(4))).andExpect(jsonPath("$.questions[0].correct").doesNotExist()); // F06 (ADR-50): la opción correcta llega al entregar
     }
 
     @Test
