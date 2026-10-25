@@ -61,6 +61,13 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Un modelo nuevo exige su precio en `ai-pricing.properties` (con la fecha en que se verificó) y su tarea en la configuración.
 - Una tarea nueva de IA debe tener su propio tope de salida y su plantilla en `prompts/`.
 - Los tests de adaptadores solo prueban el formato **según la documentación**; la confirmación definitiva es el run del benchmark.
+- Una llamada que el proveedor **cobra** se contabiliza siempre aunque falle o venga vacía (`AiException.costUsd()`); un adaptador nunca
+  descarta el uso de una respuesta 2xx. Un modelo con razonamiento puede agotar el límite pensando y devolver texto vacío con `LENGTH`.
+- Una generación larga **renueva** el cerrojo (`Lease.renew()`) entre llamadas de IA y aborta si devuelve `false`.
+- Una `AiException` que sale por un endpoint ya tiene estado HTTP y mensaje seguro en `GlobalExceptionHandler`: no la envuelvas ni
+  mapees a mano. En producción la URL base de un proveedor de pago debe ser `https://`.
+- Aún **no hay tope de gasto por usuario** (A1 del backlog): no abras endpoints de generación para menores sin resolverlo antes.
+- Verificar un adaptador nuevo también por HTTP real (servidor simulado en la red de Docker) y no solo con `MockRestServiceServer`.
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

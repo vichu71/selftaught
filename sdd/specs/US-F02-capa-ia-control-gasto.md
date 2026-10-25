@@ -31,13 +31,13 @@
 | AC-8 | Tope mensual (USD, mes natural de Madrid). Modo `WARN` (predeterminado): se avisa y se sigue. Modo `BLOCK` (opcional): se rechazan las llamadas al alcanzarlo o si su peor caso lo superaría. Un proveedor real exige un tope explícito. |
 | AC-9 | Aviso al 80 % y al 100 %: una sola vez por mes y umbral, como evento de auditoría y fila en `ai_budget_alert`. |
 | AC-10 | Límite de tokens de salida por llamada: la petición puede bajarlo, nunca subirlo; la configuración no puede superar un máximo duro. |
-| AC-11 | Una sola generación concurrente por usuario con cerrojo en BD y caducidad; se libera siempre; un lease antiguo no libera el cerrojo de otro. |
+| AC-11 | Una sola generación concurrente por usuario con cerrojo en BD y caducidad; se libera siempre; un lease antiguo no libera el cerrojo de otro; una generación larga lo **renueva** (`Lease.renew()`) para que no caduque con ella viva. |
 | AC-12 | Reintentos acotados: máximo 2, solo ante timeout, 429 transitorio y 5xx. Nunca ante clave, petición, modelo inexistente, respuesta inválida o **cuota agotada del proveedor**. |
 | AC-13 | Los errores que ve la feature son genéricos: nunca el mensaje del proveedor (puede repetir el prompt) ni la clave. |
 | AC-14 | Embeddings con Ollama: un vector por texto, de la dimensión configurada, coste 0; error claro si falta Ollama o el modelo. |
 | AC-15 | `GET /api/ai/usage`: cada usuario ve lo suyo, el adulto además lo de sus menores y el estado del tope global; el menor solo su número de llamadas. |
 | AC-16 | Instrucciones y datos se separan por construcción (`PromptAssembler`): los datos van en un mensaje aparte, delimitados y escapados. |
-| AC-17 | Benchmark reproducible con tope propio, informe Markdown, coste por curso tipo y hoja de valoración manual. Imposible de ejecutar en el arranque normal. |
+| AC-17 | Benchmark reproducible con tope propio, informe Markdown, coste por curso tipo y hoja de valoración manual. Imposible de ejecutar en el arranque normal. Un modelo que falla se anota en el informe y el run sigue con los demás. |
 | AC-18 | Auditoría: `AI_BUDGET_WARNING`, `AI_BUDGET_BLOCKED` y `AI_GENERATION_DENIED`, sin secretos ni contenido. |
 
 ## Contrato
@@ -72,6 +72,17 @@ menor  → {month, you:{calls}}
 
 **Datos (migración V2):** `ai_usage` (solo se añade, sin contenido), `ai_budget_alert` (PK mes + umbral), `ai_generation_lock` (PK usuario).
 
+## Cambios respecto a lo especificado (FASE 8, 25-10-2026)
+
+- **Respuesta facturada pero vacía.** Los adaptadores devuelven el resultado con su uso aunque no haya texto; el gateway lo contabiliza (ADR-28).
+  `AiException` lleva `costUsd()` cuando el proveedor ya cobró una llamada que falla. Antes se registraba con coste 0.
+- **`GENERATION_BUSY`** se añade a los tipos de `AiException` y todos los tipos tienen estado HTTP (`AI_<TIPO>`) en `GlobalExceptionHandler`.
+- **`https://` obligatorio** en producción para la URL base de un proveedor de pago.
+- **`Lease.renew()`** y **modelo fallido sin abortar el benchmark** (ver AC-11 y AC-17). Se añadieron tests de Ollama real (opt-in, `OLLAMA_LIVE_URL`).
+- **No se implementó** el *punto de enganche* para filtrar contenido de menores que figuraba en "Fuera de alcance": se diseñará con F04, que es
+  quien define el filtro. Hasta entonces no hay hook en la capa.
+- Los timeouts son **por proveedor** (el mayor de las tareas que lo usan), no por tarea.
+
 ## Casos borde cubiertos (ver tests)
 
 Sin conteo de tokens (se estima y se marca) · respuesta truncada o vacía · clave inválida y cuota agotada del proveedor (sin reintento) ·
@@ -82,7 +93,7 @@ dimensión de vector inesperada · benchmark que alcanza su propio tope.
 ## Fuera de alcance (v1)
 
 Facturación, cuotas por plan, panel gráfico de costes, streaming, function calling, API batch y caché de prompts del proveedor
-(se valoran en F05), filtrado de contenido para menores (F04/F07; la capa deja el punto de enganche), guardar contenido, aviso por
+(se valoran en F05), filtrado de contenido para menores (F04/F07; el punto de enganche se diseñará con F04), guardar contenido, aviso por
 correo del 80 %, multimoneda, chat con Ollama, y la columna de vectores en BD (F03).
 
 ## Definición de hecho

@@ -1,8 +1,8 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles) implementada y probada**; **F02
-> (capa de IA y control de gasto) en curso** (FASE 5: documentación; el código llega en la FASE 6).
-> Informe de pruebas y seguridad de F01: `sdd/reports/F01-testing-report.md`. Pendientes: `sdd/BACKLOG.md`.
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)** y **F02 (capa de IA y control de gasto)
+> implementadas y probadas**. Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md` y `F02-testing-report.md`;
+> resumen de cada ciclo en `sdd/reports/F0x-ciclo-completado.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general
 
@@ -13,7 +13,7 @@
                  │                                     │
                  │                                     ├──► db (PostgreSQL + pgvector)
                  │                                     ├──► SMTP (Mailpit en dev / servidor real en prod)
-                 │                                     └──► ollama (solo healthcheck en F01)
+                 │                                     └──► ollama (embeddings: `nomic-embed-text`, 768 dimensiones)
  Un único origen: la cookie de sesión es SameSite=Strict y no hace falta CORS.
 ```
 
@@ -32,7 +32,9 @@ el filtro de sesión → `AccessGuard` (permisos) → controlador. Todo evento r
                      AiProvider (puerto)
        ├─ FakeProvider (dev y tests)   ├─ AnthropicProvider   ├─ OpenAiProvider   ├─ GeminiProvider
        └─ OllamaProvider (embeddings, contenedor `ollama`)
- GenerationLock ── una generación de curso a la vez por usuario, fila en BD con caducidad de 20 min          (AC-11)
+ GenerationLock ── una generación de curso a la vez por usuario, fila en BD con caducidad de 20 min,
+                   renovable mientras la generación sigue viva (`Lease.renew()`)                                (AC-11)
+ GlobalExceptionHandler ── una AiException que sale por un endpoint tiene su estado HTTP y un mensaje genérico (ADR-28)
  BenchmarkRunner ── solo con el perfil `benchmark` (servicio de Compose de un solo uso, tope propio)         (AC-17)
 ```
 
@@ -210,6 +212,9 @@ selftaught/
 ### ADR-20: Cerrojo de generación en BD con caducidad de 20 minutos
 - Motivo: una caída del backend no deja a nadie bloqueado; el lease lleva un propietario, así que una generación antigua no libera el
   cerrojo de una nueva. Solo aplica a generaciones de curso: el chat del tutor no lo usa.
+- **Cambio al implementar:** un curso grande puede tardar más de 20 minutos y, si el cerrojo caducara con la generación viva, un segundo clic
+  abriría una generación paralela. El lease tiene `renew()` (amplía la caducidad) y devuelve `false` si ya no es suyo, en cuyo caso la
+  generación debe abortar. F05 lo llama entre una llamada de IA y la siguiente.
 - Alternativas descartadas: semáforo en memoria (no sobrevive a reinicios ni a varias instancias), advisory locks (se pierden sin avisar).
 - Revisitar si: hace falta limitar también el chat del tutor.
 
@@ -227,12 +232,16 @@ selftaught/
 - Motivo: reintentan timeout, 429 con `retry-after` y 5xx (incluido el 529 de Anthropic). **Nunca** ante clave inválida, petición
   inválida, modelo inexistente, respuesta inválida ni **cuota agotada** (en Anthropic, un tope de gasto llega como 400 o como 429 sin
   `retry-after`; en OpenAI, como 429 `insufficient_quota`): son errores permanentes y reintentarlos solo gasta tiempo.
+- Timeouts: el cliente HTTP de cada proveedor usa el mayor timeout de las tareas que lo emplean, no el de cada tarea (limitación conocida).
 - Revisitar si: aparece un patrón de errores transitorios que no se cubra.
 
 ### ADR-24: Benchmark como servicio de un solo uso con tope propio
 - Motivo: gasta dinero real, así que solo existe con el perfil `benchmark` (nunca en el arranque normal), no publica puertos y se
   detiene al alcanzar su tope (por defecto unos 5 USD). El arnés se prueba con el proveedor falso; el run real lo hacemos con las
   claves del usuario. Curso tipo = 1 ficha + 8 lecciones + 9 evaluaciones.
+- **Cambio al implementar:** un modelo que falla (clave, nombre mal escrito, cuota) no tumba el run: se anota en una sección "Fallos" del informe,
+  se omite el resto de ese modelo y el run sigue con los demás. Sin esto se habría perdido el informe entero por un solo error. Las llamadas de
+  un modelo de razonamiento que agotan el límite pensando se registran con su coste (ver ADR-28).
 
 ### ADR-25: URL de Ollama configurable, por defecto el contenedor
 - Motivo (decisión del usuario): `OLLAMA_BASE_URL=http://ollama:11434`, así la misma imagen de Docker sirve en producción. Para usar
@@ -246,5 +255,18 @@ selftaught/
 ### ADR-27: Credenciales de los proveedores y parámetros no enviados
 - Motivo: las claves van siempre en cabeceras, nunca en la URL (Gemini las admite por parámetro, pero eso las dejaría en logs y
   excepciones). No se envía `temperature`: algunos modelos nuevos la rechazan, y se usa el valor por defecto del proveedor.
+- **Cambio al implementar:** en producción la URL base de un proveedor de pago debe empezar por `https://`; si no, el backend no arranca
+  (una clave nunca viaja en claro). Fuera de producción se admite `http://` para servidores de prueba locales.
 - Pendiente de confirmar con el run real: la cabecera `x-goog-api-key` de Gemini y los campos de OpenAI (su documentación no estuvo
-  accesible al verificarlos).
+  accesible al verificarlos). Confirmado con servidor real: el formato de Ollama (`/api/embed`, 768 dimensiones y 404 con `{"error": …}`).
+
+### ADR-28: Respuestas facturadas pero vacías, y errores de IA hacia HTTP
+- Motivo (contabilidad): un modelo con razonamiento puede agotar `max_tokens` pensando y devolver solo bloques de pensamiento. El proveedor
+  **cobra** esos tokens, así que los adaptadores devuelven el resultado vacío **con su uso** y es el gateway quien decide: si terminó por
+  `LENGTH` se devuelve (texto vacío, coste registrado, fila `OK`); si no, se registra una fila `ERROR` con su coste y se lanza `INVALID_RESPONSE`
+  llevando ese coste en la excepción (`AiException.costUsd()`), que el benchmark suma a su gasto. Solo un cuerpo sin la estructura esperada
+  (`content`, `choices`, `candidates`) es una respuesta inválida del adaptador. Antes se registraba con coste 0 y el gasto quedaba subestimado.
+- Motivo (HTTP): `GlobalExceptionHandler` traduce cada `AiErrorKind` a un estado y un mensaje genérico (`BUDGET_BLOCKED` 429, `GENERATION_BUSY`
+  409, `INPUT_TOO_LARGE` 413, `USER_NOT_ALLOWED` 403, `PROVIDER_QUOTA` y `PROVIDER_UNAVAILABLE` 503, el resto 502), con código `AI_<TIPO>`.
+  Así ninguna feature improvisa su propio mapeo ni filtra texto del proveedor.
+- Revisitar si: se necesita distinguir más casos hacia el frontend.

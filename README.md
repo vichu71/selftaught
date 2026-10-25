@@ -3,8 +3,8 @@
 Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el curso. Proyecto familiar
 con base multiusuario; es un laboratorio, no formación reglada.
 
-> Estado: **F01 terminada** (base técnica, cuentas y roles) y **F02 en curso** (capa de IA y control de gasto): los comandos de
-> IA (`make benchmark`, `make pull-embedding-model`) estarán disponibles al terminar la FASE 6 de F02.
+> Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas. Pendiente del run real del benchmark
+> con tus claves y del tope de gasto por usuario (ver `sdd/BACKLOG.md`).
 
 ## Stack
 
@@ -65,10 +65,14 @@ modelos reales se configura, **por tarea**, en tu `.env` (nunca en el código):
 | `AI_BUDGET_MODE` | `WARN` (por defecto): avisa al 80 % y al 100 % y sigue. `BLOCK`: además rechaza llamadas al alcanzar el tope |
 | `OLLAMA_BASE_URL` | Por defecto `http://ollama:11434` (el contenedor) |
 
-- Los precios por modelo están en `backend/src/main/resources/ai-pricing.properties`; un modelo sin precio impide arrancar.
+- Los precios por modelo están en `backend/src/main/resources/ai-pricing.properties`; un modelo sin precio impide arrancar. Está vacío a
+  propósito: se rellena al elegir modelos, con el precio de la página oficial de cada proveedor y la fecha en que lo comprobaste.
+- En producción la URL base de un proveedor de pago debe ser `https://`, y el proveedor falso no está permitido.
 - Consulta tu gasto del mes con `GET /api/ai/usage` (con sesión). Nada guarda el contenido de prompts ni respuestas.
 - **Benchmark** para elegir modelos: `make benchmark` ejecuta los mismos prompts sobre 3 temas y los modelos que indiques, con su
-  propio tope de gasto, y deja un informe en `sdd/benchmarks/`. **Gasta dinero real**: solo se ejecuta si lo lanzas tú.
+  propio tope de gasto, y deja un informe en `sdd/benchmarks/`. **Gasta dinero real**: solo se ejecuta si lo lanzas tú. Si un modelo falla
+  (clave, nombre mal escrito, cuota), se anota en el informe y el run sigue con los demás. Indica los modelos en `APP_AI_BENCHMARK_MODELS`
+  (`proveedor/modelo,proveedor/modelo`) y su precio en `ai-pricing.properties` antes de lanzarlo.
 
 ## Tests
 
