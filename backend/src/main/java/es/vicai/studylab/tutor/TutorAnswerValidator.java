@@ -34,23 +34,36 @@ public class TutorAnswerValidator {
         }
     }
 
+    /** Por qué no sirve una respuesta (solo la categoría, nunca el texto), para el registro; {@code null} si sirve. */
+    public String reasonFor(String raw, int fragmentCount) {
+        try {
+            doValidate(raw, fragmentCount);
+            return null;
+        } catch (IllegalArgumentException e) {
+            return e.getMessage();
+        } catch (RuntimeException e) {
+            return "ERROR";
+        }
+    }
+
     private Answer doValidate(String raw, int fragmentCount) {
-        if (raw == null) throw new IllegalArgumentException();
+        if (raw == null) throw new IllegalArgumentException("EMPTY");
         String text = raw.strip();
-        if (text.isEmpty()) throw new IllegalArgumentException();
+        if (text.isEmpty()) throw new IllegalArgumentException("EMPTY");
         for (int i = 0; i < text.length(); i++) {
             char c = text.charAt(i);
-            if (Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t') throw new IllegalArgumentException();
+            if (Character.isISOControl(c) && c != '\n' && c != '\r' && c != '\t') throw new IllegalArgumentException("CONTROL");
         }
 
         // Lo que hay dentro de código se muestra como texto: no cuenta como HTML ni como cita
         String prose = INLINE_CODE.matcher(FENCED_CODE.matcher(text).replaceAll(" ")).replaceAll(" ");
-        if (HTML_TAG.matcher(prose).find() || DANGEROUS_LINK.matcher(prose).find()) throw new IllegalArgumentException();
+        if (HTML_TAG.matcher(prose).find()) throw new IllegalArgumentException("HTML");
+        if (DANGEROUS_LINK.matcher(prose).find()) throw new IllegalArgumentException("LINK");
 
         TreeSet<Integer> cited = new TreeSet<>();
         Matcher m = CITATION.matcher(LINK.matcher(prose).replaceAll(" "));
         while (m.find()) cited.add(Integer.parseInt(m.group(1)));
-        if (fragmentCount == 0 ? !cited.isEmpty() : !cited.isEmpty() && (cited.first() < 1 || cited.last() > fragmentCount)) throw new IllegalArgumentException();
+        if (fragmentCount == 0 ? !cited.isEmpty() : !cited.isEmpty() && (cited.first() < 1 || cited.last() > fragmentCount)) throw new IllegalArgumentException("CITATION");
 
         String bounded = text.length() > MAX_CHARS ? text.substring(0, MAX_CHARS) : text;
         return new Answer(bounded, List.copyOf(cited));

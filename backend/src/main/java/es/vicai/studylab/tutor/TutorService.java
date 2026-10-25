@@ -31,6 +31,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 @Service
 public class TutorService {
 
+    private static final org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(TutorService.class);
+
     public static final int MAX_QUESTION = 1000;
     static final String FILTERED_ANSWER = "No puedo ayudarte con eso. Consulta con tu adulto.";
 
@@ -140,13 +142,18 @@ public class TutorService {
         for (int tries = 0; tries < 2; tries++) {
             try {
                 AiResponse response = gateway.complete(prepared.request());
-                if (response.finishReason() != FinishReason.LENGTH) {
-                    var valid = validator.validate(response.text(), prepared.pack().size());
-                    if (valid.isPresent()) return valid.get();
+                if (response.finishReason() == FinishReason.LENGTH) {
+                    log.info("Respuesta del tutor descartada (intento {}): cortada por el límite de salida", tries + 1);
+                    continue;
                 }
+                var valid = validator.validate(response.text(), prepared.pack().size());
+                if (valid.isPresent()) return valid.get();
+                // Solo la categoría del problema, nunca el texto
+                log.info("Respuesta del tutor descartada (intento {}): {}", tries + 1, validator.reasonFor(response.text(), prepared.pack().size()));
             } catch (AiException e) {
                 // Una respuesta vacía ya cobrada o una entrada demasiado grande cuentan como un intento fallido, no como una caída del proveedor
                 if (e.kind() != AiErrorKind.INVALID_RESPONSE && e.kind() != AiErrorKind.INPUT_TOO_LARGE) throw e;
+                log.info("Respuesta del tutor descartada (intento {}): {}", tries + 1, e.kind());
             }
         }
         throw TutorException.failed();
