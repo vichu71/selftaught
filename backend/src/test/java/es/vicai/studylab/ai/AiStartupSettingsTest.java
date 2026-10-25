@@ -130,6 +130,14 @@ class AiStartupSettingsTest {
     }
 
     @Test
+    void f03_theMaterialLimitsMustBePositiveOrTheAppDoesNotStartNamingTheVariable() {
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.material.max-file-mb=0"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("MATERIAL_MAX_FILE_MB"));
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.material.max-documents=-1"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("MATERIAL_MAX_DOCUMENTS"));
+    }
+
+    @Test
     void edge_anUnconfiguredTaskFailsNamingIt() {
         assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.tasks.tutor.provider="})))
                 .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.tasks.tutor"));
