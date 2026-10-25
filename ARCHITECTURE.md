@@ -1,9 +1,8 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)** y
-> **F03 (material propio, subida e indexado)** implementadas y probadas; **F04 (asistente de creación de curso)** documentada y en desarrollo
-> (los apartados de F04 describen lo diseñado, ADR-37 a 41).
-> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md` y `F03-testing-report.md`;
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)**,
+> **F03 (material propio, subida e indexado)** y **F04 (asistente de creación de curso)** implementadas y probadas.
+> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md`, `F03-testing-report.md` y `F04-testing-report.md`;
 > resumen de cada ciclo en `sdd/reports/F0x-ciclo-completado.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general

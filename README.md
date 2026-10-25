@@ -4,7 +4,7 @@ Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el 
 con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
-> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29) y **F03** (material propio, ADR-30 a 36). **F04** (asistente de creación de curso, ADR-37 a 41) en desarrollo. Pendientes: `sdd/BACKLOG.md`.
+> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36) y **F04** (asistente de creación de curso, ADR-37 a 41). Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 

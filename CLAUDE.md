@@ -101,6 +101,8 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   cookie `XSRF-TOKEN` se borraba tras la primera petición autenticada (ADR-15).
 - Los límites por IP solo valen si el proxy pasa la IP real; hoy no (`sdd/BACKLOG.md`, D1). No añadir más límites por IP sin resolverlo.
 - Pendientes de seguridad y despliegue: `sdd/BACKLOG.md`; informe completo: `sdd/reports/F01-testing-report.md`.
+- En los tests de entorno, `docker compose config --format json` da el entorno de un servicio como **lista** `CLAVE=valor` cuando se combinan dos ficheros (compose.dev.yaml) y como objeto con uno solo.
+- En Vitest, un botón `type="submit"` no envía un formulario de un montaje sin documento: usa `@click` en el botón (y `@submit.prevent` para la tecla Intro). Y `uploadedAndProcessed` procesa los documentos pendientes de TODOS los usuarios: sube el que debe quedar pendiente el último.
 - Con datos del usuario (nombres de documentos, mensajes) en el cuerpo de una respuesta, Spring MVC los volcaba al log a nivel DEBUG: cada feature con datos personales
   añade su test de logs (como `MaterialArchitectureTest`) y ese componente queda en INFO (ADR-36). Una excepción dentro de un `@Transactional` deshace también la
   auditoría que se escribió antes: audita fuera de la transacción si el caso es un rechazo.

@@ -68,3 +68,14 @@ tema por parte del tutor, filtrado de las respuestas del tutor IA (F07), guardar
 - Filtro de menores comprobado con una batería de temas bloqueados y de temas escolares legítimos que deben pasar.
 - `README`, `ARCHITECTURE.md` y `CLAUDE.md` actualizados. `security-checklist` y `llm-integration-review` pasadas e informadas.
 - Se cierran A2 (límite de frecuencia del asistente) y A3 (punto de enganche del filtro de menores, que queda reutilizable para F05 y F07).
+
+## Cambios respecto a lo especificado (FASE 8, 25-10-2026)
+
+- **AC-3:** la respuesta lleva por pregunta solo `id`, `text` y `options[{id, label, isDefault}]`: el campo de la ficha y los valores quedan en el servidor (`course_intake.questions`). La valoración del modelo no se expone.
+- **AC-4:** el esquema exige de 2 a 4 opciones **del modelo** con exactamente una por defecto (el servidor añade «Como tú veas»), campos distintos y conocidos, `topicsCount` entre 3 y 12 y `examPerTopic` `true`/`false`. Un JSON dentro de un bloque de código se acepta.
+- **AC-5:** si la consulta ya está consumida, `POST /api/courses` devuelve **200** con el mismo curso e ignora las respuestas; con la consulta caducada, **410** `INTAKE_EXPIRED`; con documentos borrados o no listos, **404**.
+- **AC-8:** si el JSON del modelo es inservible para un **menor**, el tema se acepta (ya pasó la lista local) y F05 debe volver a comprobarlo; la valoración del modelo es la segunda capa solo cuando existe.
+- **AC-10:** «pendientes» son los cursos `PENDING_GENERATION` y `GENERATING`; una consulta rechazada por límite no deja fila ni llama al modelo. El orden de comprobación es: documentos, pendientes, frecuencia y filtro.
+- **AC-12:** un fallo de la IA no guarda ninguna consulta (el tema no se pierde en el cliente).
+- **AC-16:** el resumen muestra cada pregunta con la respuesta elegida; «Atrás» conserva el tema, los documentos y las respuestas.
+- **Añadido:** la tarea `INTAKE` amplía el CHECK de `ai_usage` (V4) y el proveedor falso gana `respondWithSequence` para probar reintentos.
