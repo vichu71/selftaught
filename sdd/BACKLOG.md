@@ -21,7 +21,9 @@
 | F3-1 | 🟠 Filtrado de contenido para menores (A3) **antes** de enviar texto de su material a un modelo de pago | Condición de ADR-34; se diseña en F04 |
 | F3-2 | Reindexado cuando cambie el modelo de embeddings | Hoy los fragmentos antiguos quedan sin uso |
 | F3-3 | OCR para documentos escaneados, y más formatos (enlaces, `.doc`) | Fuera de alcance v1 |
-| F3-4 | Revisar los avisos de seguridad de PDFBox al actualizar la dependencia | Única librería nueva de F03 |
+| F3-4 | Actualizar PDFBox a la última 3.0.x (la 3.0.7 corrige CVE-2026-23907, que no afecta a este código) y revisar sus avisos al actualizar | Única librería nueva de F03 |
+| F3-6 | 🟠 Límite de frecuencia por usuario en la subida (A2): el ciclo subir-borrar mantiene ocupado al hilo de procesado | Antes de desplegar |
+| F3-7 | Un PDF patológico puede seguir consumiendo CPU y memoria tras agotar el tiempo máximo (PDFBox no siempre atiende la interrupción); sin `mem_limit` (D5) | Aislar la extracción en un proceso si se publica |
 | F3-5 | Índice vectorial (HNSW) si un usuario supera ≈ 100 000 fragmentos | ADR-33 |
 
 ## Mejoras (🟡)
