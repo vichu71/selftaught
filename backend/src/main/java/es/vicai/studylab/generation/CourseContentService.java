@@ -45,7 +45,7 @@ public class CourseContentService {
     /** El curso de F04 más lo que añade F05; {@code stopReason} solo aparece si el curso está parado. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CourseDetailView(UUID id, String title, String status, CourseSheet sheet, List<CourseRepository.DocumentRef> documents,
-                                   Instant createdAt, String stopReason, Progress progress, BigDecimal costUsd, boolean generatedByAi,
+                                   Instant createdAt, String stopReason, Progress progress, BigDecimal costUsd, boolean generatedByAi, Boolean waitingForOther,
                                    List<TopicView> outline) {}
 
     public record SourceView(int n, Integer page) {}
@@ -102,7 +102,8 @@ public class CourseContentService {
             outline.add(new TopicView(topic.id(), topic.title(), topic.summary(), chaptersByTopic.getOrDefault(topic.id(), List.of()), ref(exams.get(topic.id()))));
         }
         return new CourseDetailView(base.id(), base.title(), base.status(), base.sheet(), base.documents(), base.createdAt(),
-                content.stopReason(base.id(), owner).orElse(null), new Progress(done, pieces.size()), content.cost(base.id(), owner), true, outline);
+                content.stopReason(base.id(), owner).orElse(null), new Progress(done, pieces.size()), content.cost(base.id(), owner), true,
+                "PENDING_GENERATION".equals(base.status()) && content.otherGenerating(base.id(), owner) ? Boolean.TRUE : null, outline);
     }
 
     private static PieceRef ref(CourseContentRepository.PieceStatus piece) {

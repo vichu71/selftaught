@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { exportPath, type CourseStatus, type StopReason } from '@/api/client'
 import CourseOutline from '@/components/CourseOutline.vue'
@@ -26,7 +26,25 @@ const pauseText: Record<string, string> = {
 const genericPause = 'El curso está en pausa. Lo que ya está hecho se conserva; pulsa «Reanudar» para seguir.'
 
 const course = computed(() => store.course)
-const status = computed(() => (course.value ? labels[course.value.status] : ''))
+const status = computed(() => {
+  if (!course.value) return ''
+  if (course.value.status === 'PENDING_GENERATION' && course.value.waitingForOther) return 'En cola: esperando a que termine tu otro curso'
+  return labels[course.value.status]
+})
+
+// Reloj de «comprobado hace N s»: solo corre mientras el curso se prepara y se reinicia con cada actualización
+const now = ref(Date.now())
+let clock: ReturnType<typeof setInterval> | undefined
+const seconds = computed(() => (store.updatedAt === null ? 0 : Math.max(0, Math.floor((now.value - store.updatedAt) / 1000))))
+function stopClock() {
+  if (clock !== undefined) clearInterval(clock)
+  clock = undefined
+}
+watch(() => store.polling, (active) => {
+  stopClock()
+  if (active) clock = setInterval(() => (now.value = Date.now()), 1000)
+}, { immediate: true })
+watch(() => store.updatedAt, () => (now.value = Date.now()))
 const outline = computed(() => course.value?.outline ?? [])
 const progress = computed(() => course.value?.progress)
 const paused = computed(() => course.value?.status === 'PAUSED')
@@ -40,7 +58,10 @@ onMounted(() => void store.start(String(route.params.id)))
 watch(() => route.params.id, (id, old) => {
   if (id && id !== old && route.name === 'course') void store.start(String(id))
 })
-onBeforeUnmount(() => store.stop())
+onBeforeUnmount(() => {
+  stopClock()
+  store.stop()
+})
 </script>
 
 <template>
@@ -57,6 +78,10 @@ onBeforeUnmount(() => store.stop())
     <template v-if="course">
       <section class="card">
         <p class="status-line" data-testid="course-status">{{ status }}</p>
+        <p v-if="store.polling" class="activity" role="status" data-testid="activity">
+          <span class="spinner" aria-hidden="true"></span>
+          <span data-testid="updated">Comprobado hace {{ seconds }} s</span>
+        </p>
         <p v-if="progress && progress.total > 0" data-testid="progress">{{ progress.done }} de {{ progress.total }} piezas preparadas</p>
         <p class="muted">Este curso lo genera una inteligencia artificial: generado por IA.</p>
 

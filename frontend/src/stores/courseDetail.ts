@@ -16,6 +16,7 @@ export const useCourseDetailStore = defineStore('courseDetail', () => {
   const resuming = ref(false)
   const resumeRequested = ref(false)
   const resumeError = ref('')
+  const updatedAt = ref<number | null>(null)
 
   let courseId = ''
   let timer: ReturnType<typeof setTimeout> | undefined
@@ -41,6 +42,7 @@ export const useCourseDetailStore = defineStore('courseDetail', () => {
       const fresh = await api.getCourse(courseId)
       if (token !== generation) return
       course.value = fresh
+      updatedAt.value = Date.now()
       resumeRequested.value = false
       failed.value = false
     } catch (e) {
@@ -77,6 +79,7 @@ export const useCourseDetailStore = defineStore('courseDetail', () => {
       const updated = await api.resumeCourse(courseId)
       if (token !== generation) return
       course.value = updated
+      updatedAt.value = Date.now()
       resumeRequested.value = true
       schedule(token)
     } catch (e) {
@@ -89,5 +92,5 @@ export const useCourseDetailStore = defineStore('courseDetail', () => {
     }
   }
 
-  return { course, notFound, failed, resuming, resumeRequested, resumeError, polling, start, stop, resume }
+  return { course, notFound, failed, resuming, resumeRequested, resumeError, updatedAt, polling, start, stop, resume }
 })
