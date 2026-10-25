@@ -174,6 +174,88 @@ export interface TutorExchange {
   tutor: TutorMessage
 }
 
+// ---------- panel del adulto tutor (F08): todo de solo lectura ----------
+
+export interface GuardianCourseSummary {
+  id: string
+  title: string
+  status: CourseStatus
+  percent?: number
+  lessonsDone: number
+  lessonsTotal: number
+  examsPassed: number
+  examsTotal: number
+  createdAt: string
+}
+
+export interface GuardianUsage {
+  month: string
+  spendUsd: number
+  limitUsd: number
+  reached: boolean
+  byTask: { task: string; spendUsd: number; calls: number }[]
+}
+
+export interface GuardianOverview {
+  student: { id: string; displayName: string; active: boolean }
+  lastActivityAt?: string
+  alerts: { last30Days: number }
+  usage: GuardianUsage
+  courses: GuardianCourseSummary[]
+}
+
+export interface GuardianCourse {
+  id: string
+  title: string
+  status: CourseStatus
+  overview: StudyOverview
+}
+
+export interface GuardianExerciseAttempt {
+  answer: string
+  selfResult?: ExerciseResult
+  aiResult?: ExerciseResult
+  aiComment?: string
+  createdAt: string
+}
+
+export interface GuardianPieceAttempts {
+  pieceId: string
+  kind: 'EXERCISES' | 'EXAM'
+  title: string
+  exercises?: { item: number; statement: string; attempts: GuardianExerciseAttempt[] }[]
+  exams?: { submittedAt: string; correct: number; total: number; percent: number; passed: boolean; failed: string[] }[]
+}
+
+export interface GuardianAttempts {
+  truncated: boolean
+  pieces: GuardianPieceAttempts[]
+}
+
+export interface GuardianConversation {
+  courseId: string
+  courseTitle?: string
+  pieceId: string
+  lessonTitle?: string
+  messages: number
+  blocked: number
+  filtered: number
+  lastAt: string
+}
+
+export type GuardianAlertType = 'TUTOR_QUESTION_BLOCKED' | 'TUTOR_ANSWER_FILTERED' | 'COURSE_TOPIC_BLOCKED' | 'STUDY_ANSWER_BLOCKED' | 'COURSE_CONTENT_BLOCKED'
+
+export interface GuardianAlert {
+  type: GuardianAlertType
+  at: string
+  courseId?: string
+  courseTitle?: string
+  pieceId?: string
+  lessonTitle?: string
+  topic?: string
+  category?: string
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -211,6 +293,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await response.json().catch(() => undefined)) as T
 }
 
+const studentPath = (studentId: string) => `/api/tutor/students/${encodeURIComponent(studentId)}`
 const piecePath = (courseId: string, pieceId: string) => `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`
 
 export const api = {
@@ -267,6 +350,14 @@ export const api = {
   getExamAttempt: (courseId: string, pieceId: string, attemptId: string) =>
     request<ExamResult>('GET', `${piecePath(courseId, pieceId)}/exam/attempts/${encodeURIComponent(attemptId)}`),
   getAttempts: (courseId: string, pieceId: string) => request<Attempts>('GET', `${piecePath(courseId, pieceId)}/attempts`),
+  getGuardianOverview: (studentId: string) => request<GuardianOverview>('GET', `${studentPath(studentId)}/overview`),
+  getGuardianCourse: (studentId: string, courseId: string) => request<GuardianCourse>('GET', `${studentPath(studentId)}/courses/${encodeURIComponent(courseId)}`),
+  getGuardianAttempts: (studentId: string, courseId: string) =>
+    request<GuardianAttempts>('GET', `${studentPath(studentId)}/courses/${encodeURIComponent(courseId)}/attempts`),
+  getGuardianConversations: (studentId: string) => request<GuardianConversation[]>('GET', `${studentPath(studentId)}/conversations`),
+  getGuardianThread: (studentId: string, courseId: string, pieceId: string) =>
+    request<{ messages: TutorMessage[] }>('GET', `${studentPath(studentId)}/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}/tutor`),
+  getGuardianAlerts: (studentId: string) => request<GuardianAlert[]>('GET', `${studentPath(studentId)}/alerts`),
   getTutorThread: (courseId: string, pieceId: string) => request<TutorThread>('GET', `${piecePath(courseId, pieceId)}/tutor`),
   askTutor: (courseId: string, pieceId: string, question: string) => request<TutorExchange>('POST', `${piecePath(courseId, pieceId)}/tutor`, { question }),
   clearTutor: (courseId: string, pieceId: string) => request<void>('DELETE', `${piecePath(courseId, pieceId)}/tutor`),

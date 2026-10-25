@@ -1,6 +1,9 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import GuardianCourseView from '@/views/GuardianCourseView.vue'
+import GuardianStudentView from '@/views/GuardianStudentView.vue'
+import GuardianThreadView from '@/views/GuardianThreadView.vue'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
 import MaterialView from '@/views/MaterialView.vue'
@@ -28,6 +31,9 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
       { path: '/resultados', name: 'results', component: ResultsView },
       { path: '/cursos/:id/piezas/:pieceId', name: 'piece', component: PieceView },
       { path: '/cursos/:id/piezas/:pieceId/intentos', name: 'attempts', component: AttemptsView },
+      { path: '/alumnos/:id', name: 'guardian-student', component: GuardianStudentView },
+      { path: '/alumnos/:id/cursos/:courseId', name: 'guardian-course', component: GuardianCourseView },
+      { path: '/alumnos/:id/cursos/:courseId/lecciones/:pieceId', name: 'guardian-thread', component: GuardianThreadView },
       { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
       { path: '/register', name: 'register', component: RegisterView, meta: { public: true } },
       { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { public: true } },

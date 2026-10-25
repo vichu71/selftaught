@@ -2,7 +2,6 @@ package es.vicai.studylab.tutor;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import es.vicai.studylab.ai.AiErrorKind;
 import es.vicai.studylab.ai.AiException;
@@ -59,9 +58,11 @@ public class TutorService {
     private final AuditService audit;
     private final TransactionTemplate tx;
     private final ObjectMapper json;
+    private final TutorViews views;
 
     public TutorService(TutorRepository repo, TutorProperties props, TutorContext context, TutorAnswerValidator validator, AiGateway gateway, ContentGuard guard,
-                        AuditService audit, TransactionTemplate tx, ObjectMapper json) {
+                        AuditService audit, TransactionTemplate tx, ObjectMapper json, TutorViews views) {
+        this.views = views;
         this.repo = repo;
         this.props = props;
         this.context = context;
@@ -203,8 +204,7 @@ public class TutorService {
     }
 
     private MessageView view(TutorRepository.MessageRow row) {
-        List<SourceRef> sources = row.sources() == null ? null : read(row.sources());
-        return new MessageView(row.id(), row.role(), row.content(), row.status(), sources == null || sources.isEmpty() ? null : sources, row.createdAt());
+        return views.view(row);
     }
 
     private String write(List<SourceRef> sources) {
@@ -212,14 +212,6 @@ public class TutorService {
             return json.writeValueAsString(sources);
         } catch (JsonProcessingException e) {
             throw new IllegalStateException("No se pudieron guardar las fuentes");
-        }
-    }
-
-    private List<SourceRef> read(String raw) {
-        try {
-            return json.readValue(raw, new TypeReference<List<SourceRef>>() {});
-        } catch (JsonProcessingException e) {
-            return null;
         }
     }
 }

@@ -21,7 +21,7 @@ async function logout() {
     </header>
 
     <p v-if="auth.user?.kind === 'MINOR'" class="notice" data-testid="guardian-notice">
-      Tu adulto tutor puede ver tus cursos, tu progreso y tus conversaciones con el tutor de IA.
+      Tu adulto tutor puede ver tus cursos, tu progreso, tus respuestas e intentos de ejercicios y exámenes y tus conversaciones con el tutor de IA.
     </p>
 
     <CoursesPanel />
