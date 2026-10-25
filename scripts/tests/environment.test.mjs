@@ -304,3 +304,28 @@ test('F04 el asistente no monta volúmenes ni publica el backend', () => {
   }
   assert.ok(!published(base).some((p) => p.name === 'backend'), 'el backend no se publica fuera de la red de Compose en prod');
 });
+
+// ---------- F05: generación del curso ----------
+
+test('F05 la única dependencia nueva del frontend es el lector de Markdown, con la versión fijada', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router']);
+  assert.match(pkg.dependencies.marked, /^\d+\.\d+\.\d+$/, 'marked debe llevar una versión exacta, sin ^ ni ~');
+  assert.ok(existsSync(`${REPO}/frontend/package-lock.json`), 'falta el fichero de versiones bloqueadas');
+  assert.match(read('frontend/package-lock.json'), /"node_modules\/marked"/, 'marked debe estar en el fichero de versiones bloqueadas');
+});
+
+test('F05 las plantillas de la generación están en el código, piden JSON o Markdown acotado y no llevan marcadores de datos del usuario', () => {
+  for (const id of ['generation-outline', 'generation-lesson', 'generation-exercises', 'generation-exam']) {
+    const file = `backend/src/main/resources/prompts/${id}.txt`;
+    assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+    assert.doesNotMatch(read(file), /\{\{|\$\{/, `${id} no lleva marcadores para el texto del usuario`);
+  }
+});
+
+test('F05 la generación no añade puertos, volúmenes ni variables obligatorias nuevas al entorno', () => {
+  const before = JSON.stringify(published(base).map((p) => `${p.name}:${p.target}`).sort());
+  assert.ok(!before.includes('backend'), 'el backend no se publica en prod');
+  const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
+  assert.ok(!required.some((k) => /GENERATION/.test(k)), 'la generación no exige variables obligatorias nuevas');
+});
