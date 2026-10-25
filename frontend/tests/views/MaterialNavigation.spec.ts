@@ -4,7 +4,7 @@ import { createPinia, setActivePinia } from 'pinia'
 
 vi.mock('@/api/client', async () => {
   const actual = await vi.importActual<typeof import('@/api/client')>('@/api/client')
-  return { ...actual, api: { listStudents: vi.fn(), logout: vi.fn(), me: vi.fn(), listMaterial: vi.fn() } }
+  return { ...actual, api: { listStudents: vi.fn(), logout: vi.fn(), me: vi.fn(), listMaterial: vi.fn(), listCourses: vi.fn() } }
 })
 import { api } from '@/api/client'
 import { createAppRouter } from '@/router'
@@ -16,6 +16,7 @@ describe('Material navigation', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(api.listStudents).mockResolvedValue([])
+    vi.mocked(api.listCourses).mockResolvedValue([])
     vi.mocked(api.listMaterial).mockResolvedValue({ own: [], minors: [] } as never)
   })
 

@@ -3,7 +3,7 @@ import { flushPromises } from '@vue/test-utils'
 
 vi.mock('@/api/client', async () => {
   const actual = await vi.importActual<typeof import('@/api/client')>('@/api/client')
-  return { ...actual, api: { listStudents: vi.fn(), logout: vi.fn(), me: vi.fn() } }
+  return { ...actual, api: { listStudents: vi.fn(), logout: vi.fn(), me: vi.fn(), listCourses: vi.fn() } }
 })
 import { api } from '@/api/client'
 import HomeView from '@/views/HomeView.vue'
@@ -14,6 +14,7 @@ describe('HomeView', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(api.listStudents).mockResolvedValue([])
+    vi.mocked(api.listCourses).mockResolvedValue([])
   })
 
   it('greets the adult by name and shows the students panel', async () => {
