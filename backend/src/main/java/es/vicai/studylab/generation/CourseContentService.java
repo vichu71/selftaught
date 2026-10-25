@@ -155,6 +155,28 @@ public class CourseContentService {
         }
     }
 
+
+    // ---------- resultados ----------
+
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record CourseResult(UUID id, String title, String status, String stopReason, int done, int failed, int pending, int total, long calls,
+                               BigDecimal costUsd, Instant createdAt) {}
+
+    /** Un menor ve sus cursos y sus piezas pero ningún importe (misma regla que el gasto de IA). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Results(List<CourseResult> courses, BigDecimal totalCostUsd) {}
+
+    public Results results(AuthUser user) {
+        boolean showMoney = user.kind() != es.vicai.studylab.user.UserKind.MINOR;
+        BigDecimal total = BigDecimal.ZERO;
+        List<CourseResult> courses = new ArrayList<>();
+        for (CourseContentRepository.ResultRow row : content.results(user.id())) {
+            total = total.add(row.costUsd());
+            courses.add(new CourseResult(row.id(), row.title(), row.status(), row.stopReason(), row.done(), row.failed(), row.pending(),
+                    row.done() + row.failed() + row.pending(), row.calls(), showMoney ? row.costUsd() : null, row.createdAt()));
+        }
+        return new Results(List.copyOf(courses), showMoney ? total : null);
+    }
     // ---------- reanudar ----------
 
     public CourseDetailView resume(AuthUser user, String rawId, String ip) {

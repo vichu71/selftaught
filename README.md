@@ -121,6 +121,7 @@ Al aceptar el resumen, la IA prepara el curso en segundo plano: primero el **tem
   solo por lo que falta: lo ya generado no se vuelve a pedir ni a pagar. Si una pieza no sale bien dos veces, el curso termina en pausa y «Reanudar» reintenta solo esas.
 - **Menores:** el temario valora de nuevo si el tema es apto para escolares, el material y lo generado pasan por el filtro local y, si algo no es apropiado, se ve «Contenido inapropiado. Consulta con tu adulto.».
 - **Exportar:** `GET /api/courses/{id}/export` devuelve el curso en JSON (sin nombres de documento ni datos personales).
+- **Resultados:** la pantalla «Resultados» (enlace en el inicio) muestra por curso las piezas hechas, con error y pendientes, las llamadas y el coste, y tu gasto del mes frente a tu tope. Un menor ve sus cursos y piezas, sin importes.
 - Todo el contenido lleva el aviso «Generado por IA». Las lecciones se muestran con formato, pero nunca como HTML: enlaces, imágenes y marcado raro salen como texto.
 - Coste orientativo: de 0,1 a 0,5 USD por curso con modelos baratos, 10 a 25 minutos de generación. La calidad con un modelo real solo la puedes medir tú con tus claves.
 
