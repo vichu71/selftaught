@@ -9,6 +9,17 @@ services:
         condition: service_healthy
     environment:
       SPRING_PROFILES_ACTIVE: dev
+      # F02: sin claves ni gasto por defecto; para probar un modelo real, defínelo en .env
+      APP_AI_TASKS_OUTLINE_PROVIDER: ${APP_AI_TASKS_OUTLINE_PROVIDER:-fake}
+      APP_AI_TASKS_OUTLINE_MODEL: ${APP_AI_TASKS_OUTLINE_MODEL:-fake-1}
+      APP_AI_TASKS_LESSON_PROVIDER: ${APP_AI_TASKS_LESSON_PROVIDER:-fake}
+      APP_AI_TASKS_LESSON_MODEL: ${APP_AI_TASKS_LESSON_MODEL:-fake-1}
+      APP_AI_TASKS_ASSESSMENT_PROVIDER: ${APP_AI_TASKS_ASSESSMENT_PROVIDER:-fake}
+      APP_AI_TASKS_ASSESSMENT_MODEL: ${APP_AI_TASKS_ASSESSMENT_MODEL:-fake-1}
+      APP_AI_TASKS_TUTOR_PROVIDER: ${APP_AI_TASKS_TUTOR_PROVIDER:-fake}
+      APP_AI_TASKS_TUTOR_MODEL: ${APP_AI_TASKS_TUTOR_MODEL:-fake-1}
+      APP_AI_TASKS_EMBEDDING_PROVIDER: ${APP_AI_TASKS_EMBEDDING_PROVIDER:-fake}
+      APP_AI_TASKS_EMBEDDING_MODEL: ${APP_AI_TASKS_EMBEDDING_MODEL:-fake-embed}
       # Mailpit no valida credenciales: valores públicos de desarrollo, no son secretos
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: "1025"

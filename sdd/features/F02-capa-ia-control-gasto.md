@@ -23,3 +23,27 @@ activo, el arranque o la operación falla (nunca valor por defecto). Los prompts
 personales del usuario más allá de lo necesario.
 
 Fuera de alcance: facturación, cuotas por plan, panel gráfico de costes (basta consulta o endpoint).
+
+---
+
+## Actualización tras la implementación (FASE 8, 25-10-2026)
+
+Estado: **hecha y probada** (276 tests de backend, 94 % de cobertura). Especificación refinada: `sdd/specs/US-F02-capa-ia-control-gasto.md`;
+informe: `sdd/reports/F02-testing-report.md`; pendientes: `sdd/BACKLOG.md`.
+
+**Cambios de alcance decididos con el usuario durante el ciclo**
+- El tope mensual **avisa al 80 % y al 100 % pero no corta** (la descripción original decía "corta las llamadas cuando se alcanza"): sus cuentas de
+  proveedor ya tienen tope. El corte queda como opción (`AI_BUDGET_MODE=BLOCK`, apagada). Se actualizó `PROJECT.md` §3 y §5.
+- Proveedores: Anthropic, OpenAI y Gemini para chat, y Ollama **del contenedor** para embeddings (la misma imagen sirve en producción).
+- Capa propia con adaptadores HTTP en lugar de Spring AI. Los prompts y las respuestas **no se guardan**.
+
+**Casos borde que no estaban en la ficha y aparecieron al implementar**
+- Un modelo con razonamiento que agota el límite pensando devuelve una respuesta vacía **que el proveedor sí cobra**: se contabiliza.
+- Un tope de gasto del proveedor llega como 400, o como 429 **sin** `retry-after` (Anthropic) o `insufficient_quota` (OpenAI): no se reintenta.
+- El cerrojo de generación caducaba con la generación viva: se añadió la renovación.
+- Un proveedor de pago configurado con `http://` enviaría la clave en claro: se exige `https://` en producción.
+- Un modelo del benchmark que falla no debe tumbar todo el run.
+
+**Fuera de alcance real (documentado, no hecho)**
+Tope de gasto **por usuario** (🟠, A1 del backlog), límite de frecuencia por usuario, el punto de enganche para filtrar contenido de menores,
+timeout por tarea, y el run real del benchmark (requiere las claves del usuario). Detalle en `sdd/BACKLOG.md`.

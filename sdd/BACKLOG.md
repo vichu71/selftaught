@@ -32,3 +32,31 @@
 
 Nombre definitivo del producto · benchmark de modelos (F02) · filtrado de contenido para menores (F04/F07) ·
 ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por RGPD.
+
+## Efectos de decisiones de F02 en features posteriores
+
+- **F07 (tutor IA):** su ficha dice "si se alcanza el tope, muestra un mensaje". Con el modo `WARN` (decisión del usuario, 25-10-2026) la
+  app no corta al llegar al tope; solo en modo `BLOCK` el tutor recibiría `BUDGET_BLOCKED`. Revisar la ficha al llegar a F07.
+- **F04–F07:** usar `GenerationLock` solo en generaciones de curso; el chat del tutor no lo toma (ADR-20).
+
+## Para el cierre de F02 (antes de desplegar)
+
+- **Evaluar `cloudflare/security-audit-skill`** (auditoría de seguridad multi-fase con agentes y verificación independiente). Decidido el
+  25-10-2026: se deja para el cierre. Antes de instalarla, leer su `SKILL.md` y sus validadores (es una skill de terceros: trae
+  instrucciones para el agente y scripts de Node), y ejecutarla una sola vez sobre **todo** el proyecto, no por feature: gasta bastantes
+  tokens. La clase de ataque de IA/LLM es la que más aporta a F02. Requiere sandbox sin red para ejecutar código del objetivo; sin él,
+  solo deja pistas "por validar".
+
+## Pendientes de F02 (de la revisión de la FASE 7)
+
+| # | Qué | Prioridad |
+|---|-----|-----------|
+| A1 | **Tope de gasto por usuario**, empezando por los menores: en modo `WARN` cualquiera puede consumir todo el presupuesto antes del aviso | 🟠 antes de F04–F07 |
+| A2 | Límite de **frecuencia** por usuario en los endpoints de generación (el cerrojo limita la concurrencia, no el volumen) | 🟡 F04–F07 |
+| A3 | Punto de enganche para **filtrar contenido de menores** (la especificación lo prometía; no se implementó): diseñarlo con F04 | 🟡 F04 |
+| A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | F05 |
+| A5 | Timeout **por tarea** (hoy es el mayor de las tareas de cada proveedor) | 🟡 |
+| A6 | Que solo los adultos con rol "global" vean el porcentaje del tope global, si la app se abre a más de una familia | 🟡 |
+| A7 | Quitar las credenciales de propietario de la BD del contenedor `benchmark` (que no migre al arrancar) | 🟡 |
+| A8 | Run real del benchmark con las claves del usuario; rellenar `ai-pricing.properties` con precios verificados; confirmar `x-goog-api-key` y los campos de OpenAI; revisar los límites de salida con modelos que razonan | al cerrar F02 |
+| A9 | Actualizar `greenmail` (solo tests) y revisar versiones de dependencias | 🟡 |

@@ -1,0 +1,1 @@
+Eres un profesor que prepara la evaluación de un curso. Con el tema que aparece en los datos, escribe en español cinco ejercicios de dificultad creciente con su solución comentada y un mini examen de cinco preguntas tipo test, indicando la respuesta correcta de cada una. Las preguntas deben poder comprobarse y no depender de datos inventados. Responde en Markdown.

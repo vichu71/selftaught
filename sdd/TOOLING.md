@@ -57,4 +57,4 @@ Se crean cuando haya algo real que codificar, no antes.
 
 ## Nota importante
 Esto es la configuración de **Claude Code** para construir el proyecto. Las llamadas a IA de la propia
-aplicación (Spring AI, Ollama, proveedores) son otra cosa y se definen en F02.
+aplicación (capa propia de proveedores, Ollama, Anthropic, OpenAI, Gemini) son otra cosa y se definen en F02.

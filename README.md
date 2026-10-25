@@ -3,15 +3,16 @@
 Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el curso. Proyecto familiar
 con base multiusuario; es un laboratorio, no formación reglada.
 
-> Estado: **F01 en curso** (base técnica, cuentas y roles). Los comandos de abajo están disponibles
-> cuando termine la FASE 6 de F01; hasta entonces solo existen los tests.
+> Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas. Pendiente del run real del benchmark
+> con tus claves y del tope de gasto por usuario (ver `sdd/BACKLOG.md`).
 
 ## Stack
 
 - Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx
 - Backend: Spring Boot 3 (Java 21), Spring Security, Spring JDBC (JdbcClient), Flyway
 - Base de datos: PostgreSQL + pgvector
-- Embeddings: Ollama (contenedor; el modelo se instala en F03)
+- IA: capa propia con adaptadores para Anthropic, OpenAI y Gemini; proveedor falso en desarrollo y en tests
+- Embeddings: Ollama (contenedor `ollama`; `make pull-embedding-model` descarga `nomic-embed-text`)
 - Correo: SMTP por variables de entorno (Mailpit en desarrollo)
 - Todo en Docker Compose. En tu máquina solo hacen falta **Docker** y **Git**.
 
@@ -45,9 +46,33 @@ Otros comandos:
 | `make down` | Para el entorno (conserva los datos) |
 | `SEED_PASSWORD='tu-clave-demo-1' make seed` | Carga en desarrollo un adulto (`demo@example.com`) y dos menores (Hugo y Lola); la contraseña la eliges tú (≥ 10 caracteres). Es idempotente |
 | `make reset-dev-db` | Borra y recrea la BD de **desarrollo** (pide confirmación) |
+| `make pull-embedding-model` | Descarga en el contenedor de Ollama el modelo de embeddings (una vez) |
+| `make benchmark` | Benchmark de modelos (con claves reales; gasta dinero). Ver "IA y control de gasto" |
 
 El `Makefile` es un envoltorio fino de `docker compose`: si no tienes `make` (p. ej. en Windows),
 ejecuta el comando `docker compose` equivalente que aparece en cada objetivo.
+
+## IA y control de gasto
+
+Por defecto, en desarrollo **todas las tareas usan el proveedor falso**: no hace falta ninguna clave y no se gasta nada. Para usar
+modelos reales se configura, **por tarea**, en tu `.env` (nunca en el código):
+
+| Variable | Para qué |
+|---|---|
+| `APP_AI_TASKS_<TAREA>_PROVIDER` / `_MODEL` | Proveedor (`anthropic`, `openai`, `gemini`, `ollama`, `fake`) y modelo de cada tarea: `OUTLINE`, `LESSON`, `ASSESSMENT`, `TUTOR`, `EMBEDDING` |
+| `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `GEMINI_API_KEY` | Solo se exige la de los proveedores que alguna tarea use; si falta, el backend no arranca |
+| `AI_MONTHLY_LIMIT_USD` | Tope mensual en USD (obligatorio con un proveedor real) |
+| `AI_BUDGET_MODE` | `WARN` (por defecto): avisa al 80 % y al 100 % y sigue. `BLOCK`: además rechaza llamadas al alcanzar el tope |
+| `OLLAMA_BASE_URL` | Por defecto `http://ollama:11434` (el contenedor) |
+
+- Los precios por modelo están en `backend/src/main/resources/ai-pricing.properties`; un modelo sin precio impide arrancar. Está vacío a
+  propósito: se rellena al elegir modelos, con el precio de la página oficial de cada proveedor y la fecha en que lo comprobaste.
+- En producción la URL base de un proveedor de pago debe ser `https://`, y el proveedor falso no está permitido.
+- Consulta tu gasto del mes con `GET /api/ai/usage` (con sesión). Nada guarda el contenido de prompts ni respuestas.
+- **Benchmark** para elegir modelos: `make benchmark` ejecuta los mismos prompts sobre 3 temas y los modelos que indiques, con su
+  propio tope de gasto, y deja un informe en `sdd/benchmarks/`. **Gasta dinero real**: solo se ejecuta si lo lanzas tú. Si un modelo falla
+  (clave, nombre mal escrito, cuota), se anota en el informe y el run sigue con los demás. Indica los modelos en `APP_AI_BENCHMARK_MODELS`
+  (`proveedor/modelo,proveedor/modelo`) y su precio en `ai-pricing.properties` antes de lanzarlo.
 
 ## Tests
 

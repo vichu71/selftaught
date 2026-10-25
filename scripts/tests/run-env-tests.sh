@@ -13,6 +13,7 @@ trap 'rm -rf "$out"' EXIT
 docker compose -f compose.yaml --profile prod config --no-interpolate --format json > "$out/base.json"
 docker compose -f compose.yaml -f compose.dev.yaml --profile dev config --no-interpolate --format json > "$out/dev.json"
 docker compose -f compose.yaml --profile test config --no-interpolate --format json > "$out/test.json"
+docker compose -f compose.yaml --profile benchmark config --no-interpolate --format json > "$out/benchmark.json"
 
 docker run --rm \
   -v "$PWD:/repo:ro" -v "$out:/out:ro" \
