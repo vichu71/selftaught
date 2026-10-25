@@ -108,6 +108,7 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   imágenes y enlaces que no sean `http(s)` salen como texto. `marked` va con versión exacta y solo se importa en ese componente. Cambios en el visor se prueban con entradas hostiles.
 - Los tests no tocan el proveedor real: `FakeProvider.respondUsing(...)` responde según la pieza pedida, y `app.generation.worker.enabled=false` apaga el hilo de fondo (`CourseGenerator.processPending()` es síncrono).
 - Los ejercicios y exámenes guardan la solución (F06 los corregirá): `ExamParser` exige una única opción correcta. Un curso nunca supera `app.generation.max-pieces` (150).
+- Lecciones de F05: en un test de seguridad del visor se comprueban los **atributos de los elementos** (`on…`), no el HTML como cadena (el HTML crudo se muestra como texto y puede nombrarlos). `ai_generation_lock.owner` es un `uuid`: un test que lo cambie usa `gen_random_uuid()`. El reclamo de la cola no toca a quien ya tiene un cerrojo vigente (ADR-48).
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

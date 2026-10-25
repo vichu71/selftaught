@@ -500,3 +500,10 @@ selftaught/
   generado para un menor pasa por la capa local de `ContentGuard` antes de guardarse (un reintento con instrucción reforzada; si persiste, pieza `FAILED` y auditoría `COURSE_CONTENT_BLOCKED` sin el contenido).
 - Riesgo asumido: la lista local es corta y solo en español; la valoración del modelo y el tutor son las otras capas.
 - Revisitar si: el tutor debe poder aprobar o rechazar contenido concreto (F08).
+
+### ADR-48: Los ejercicios esperan a su lección y el reclamo respeta el cerrojo vigente
+- Motivo: los ejercicios se escriben a partir del texto de la lección; sin ella no se pide nada y la pieza queda `PENDING` hasta que «Reanudar» reintente la lección (ahorra llamadas que saldrían incoherentes).
+  El reclamo de la cola ignora a los usuarios con un cerrojo vigente o un curso ya generándose, de modo que ni se llena la auditoría de denegaciones ni se disputa el cerrojo; al arrancar, los cerrojos de los
+  propietarios de cursos interrumpidos se liberan (una sola instancia: nada se está generando de verdad). Un fallo inesperado pausa el curso en vez de repetirse en bucle.
+- Alternativas descartadas: generar ejercicios sin lección (incoherentes), intentar el cerrojo siempre y aceptar las denegaciones, dejar caducar los cerrojos tras un reinicio (hasta 20 minutos de espera).
+- Revisitar si: hay más de una instancia del backend (el arranque no podría liberar cerrojos ajenos).
