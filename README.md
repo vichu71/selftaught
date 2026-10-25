@@ -4,7 +4,8 @@ Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el 
 con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
-> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36) y **F04** (asistente de creación de curso, ADR-37 a 41). Pendientes: `sdd/BACKLOG.md`.
+> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36) y **F04** (asistente de creación de curso, ADR-37 a 41).
+> **F05** (generación del curso, ADR-42 a 47) en curso: documentada, aún sin código. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -109,6 +110,25 @@ sencillas que decide la IA (cada una con su opción por defecto y «Como tú vea
   El filtro tiene dos capas (lista de términos local y valoración del modelo) y no se aplica a los adultos. La lista está en `backend/src/main/resources/safety/blocked-terms.txt`.
 - El asistente solo envía al modelo el **tema**: nunca el texto de tus documentos.
 - La edad del menor no se guarda: el nivel de partida se pregunta dentro del asistente.
+
+## Generación del curso (F05)
+
+Al aceptar el resumen, la IA prepara el curso en segundo plano: primero el **temario** (temas y capítulos, visible enseguida) y después, pieza a pieza, la **lección** de cada capítulo, sus
+**ejercicios** y el **examen** del tema si lo pediste. «Tus cursos» muestra el progreso («12 de 43») y cada pieza se puede leer en cuanto está lista. Una generación a la vez por usuario.
+
+- **Con tu material:** las lecciones se apoyan en fragmentos de los documentos que elegiste y citan «Fuente n» con la página; lo que el modelo añade por su cuenta va marcado como «Complemento».
+- **Pausa y «Reanudar»:** si llegas a tu tope de gasto mensual o el proveedor falla, el curso se **pausa** con el motivo y no gasta más. Pulsa **Reanudar** (una vez por minuto como máximo) y sigue
+  solo por lo que falta: lo ya generado no se vuelve a pedir ni a pagar. Si una pieza no sale bien dos veces, el curso termina en pausa y «Reanudar» reintenta solo esas.
+- **Menores:** el temario valora de nuevo si el tema es apto para escolares, el material y lo generado pasan por el filtro local y, si algo no es apropiado, se ve «Contenido inapropiado. Consulta con tu adulto.».
+- **Exportar:** `GET /api/courses/{id}/export` devuelve el curso en JSON (sin nombres de documento ni datos personales).
+- Todo el contenido lleva el aviso «Generado por IA». Las lecciones se muestran con formato, pero nunca como HTML: enlaces, imágenes y marcado raro salen como texto.
+- Coste orientativo: de 0,1 a 0,5 USD por curso con modelos baratos, 10 a 25 minutos de generación. La calidad con un modelo real solo la puedes medir tú con tus claves.
+
+| Variable | Para qué |
+|---|---|
+| `APP_AI_TASKS_OUTLINE_*` · `_LESSON_*` · `_ASSESSMENT_*` | Modelo de cada paso: temario, lecciones, ejercicios y exámenes (ya existían desde F02) |
+
+Valores de ingeniería sin variable de entorno (`app.generation.*`): 2 hilos, sondeo cada 3 s, máximo 150 piezas por curso, enfriamiento de «Reanudar» de 60 s.
 
 ## Tests
 

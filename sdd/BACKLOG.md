@@ -18,7 +18,7 @@
 
 | # | Qué | Nota |
 |---|-----|------|
-| F3-1 | 🟠 Filtrado de contenido para menores **antes** de enviar texto de su material a un modelo de pago | Condición de ADR-34; la capa local ya existe (`ContentGuard`, F04): falta aplicarla al texto del material en F05/F07 |
+| F3-1 | 🟠 Filtrado de contenido para menores **antes** de enviar texto de su material a un modelo de pago | Condición de ADR-34; la capa local ya existe (`ContentGuard`, F04). **F05 lo aplica a los fragmentos (ADR-46), pendiente de verificar en su FASE 7**; falta F07 (tutor) |
 | F3-2 | Reindexado cuando cambie el modelo de embeddings | Hoy los fragmentos antiguos quedan sin uso |
 | F3-3 | OCR para documentos escaneados, y más formatos (enlaces, `.doc`) | Fuera de alcance v1 |
 | F3-4 | Actualizar PDFBox a la última 3.0.x (la 3.0.7 corrige CVE-2026-23907, que no afecta a este código) y revisar sus avisos al actualizar | Única librería nueva de F03 |
@@ -34,7 +34,8 @@
 | F4-2 | Desbloqueo de un tema concreto por el tutor, y revisión periódica de `blocked-terms.txt` | Hoy un tema escolar legítimo bloqueado solo remite al adulto (ADR-39) |
 | F4-3 | El filtro local solo cubre español; un menor puede pedir lo mismo en otro idioma (lo frena la valoración del modelo) | ADR-39 |
 | F4-4 | Pantalla del tutor con los intentos bloqueados de sus menores | Llega con F08; el dato ya se guarda |
-| F4-5 | 🟠 Medir con un modelo real barato cuántas veces el JSON del asistente llega mal formado y ajustar la plantilla. Si un menor recibe JSON inservible, el tema se acepta sin la valoración del modelo: F05 debe volver a comprobarlo antes de generar | Lo prueba el usuario con su modelo (APP_AI_TASKS_INTAKE_*) |
+| F4-5 | 🟠 Medir con un modelo real barato cuántas veces el JSON del asistente llega mal formado y ajustar la plantilla. Si un menor recibe JSON inservible, el tema se acepta sin la valoración del modelo: F05 debe volver a comprobarlo antes de generar | La parte de F05 queda cubierta por la valoración `appropriate` del temario (ADR-47). Medir el JSON con un modelo real lo hace el usuario (APP_AI_TASKS_INTAKE_*) |
+| F4-6 | 🟡 Anotado en F05: el tutor aún no puede subir el tope de un menor (F4-2) y un curso de un menor con modelos caros puede quedarse en pausa por `BUDGET` | ADR-44 |
 
 ## Mejoras (🟡)
 
@@ -74,9 +75,9 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | # | Qué | Prioridad |
 |---|-----|-----------|
 | A1 | ✅ **Hecho (25-10-2026, ADR-29):** tope de gasto por usuario (menor 2 USD, adulto 10 USD al mes), corta siempre. Pendiente menor: que el tutor pueda ajustar el tope de cada menor desde la app | ✅ |
-| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41); falta en la subida de material (F3-6) y en los endpoints de F05–F07 | 🟡 F05–F07 |
+| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41) y para «Reanudar» de F05 (60 s por curso, ADR-44); falta en la subida de material (F3-6) y en los endpoints de F06–F07 | 🟡 F06–F07 |
 | A3 | ✅ **Hecho en F04 (ADR-39):** `safety.ContentGuard` es el punto de enganche reutilizable. Falta usarlo en F05 (lecciones) y F07 (tutor) antes de enviar texto de un menor a un modelo de pago | ✅ |
-| A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | F05 |
+| A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | ✅ diseñado en F05 (ADR-42 y 43); se marca hecho al cerrar su FASE 7 |
 | A5 | Timeout **por tarea** (hoy es el mayor de las tareas de cada proveedor) | 🟡 |
 | A6 | Que solo los adultos con rol "global" vean el porcentaje del tope global, si la app se abre a más de una familia | 🟡 |
 | A7 | Quitar las credenciales de propietario de la BD del contenedor `benchmark` (que no migre al arrancar) | 🟡 |

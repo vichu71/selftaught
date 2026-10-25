@@ -95,6 +95,20 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - F04 solo envía el **tema** al modelo; nunca texto de documentos (lo comprueba `CourseArchitectureTest`). Los temas y los intentos bloqueados no van a logs ni a la auditoría con su texto.
 - Límites por usuario contados en la BD (no por IP): `COURSE_INTAKES_PER_HOUR` y `COURSE_MAX_PENDING`. Una consulta rechazada por límite no deja fila ni llama al modelo.
 
+## Reglas de F05 (generación del curso)
+- Contrato y criterios de aceptación: `sdd/specs/US-F05-generacion-curso.md`; diseño y ADR-42 a 47: `sdd/specs/ART-F05-propuesta-generacion.md` y `ARCHITECTURE.md`.
+- La generación vive en `generation/` y es el **único** paquete que usa `MaterialSearch` (`course/` sigue sin poder leer material). Quien use `MaterialSearch` para un menor aplica también `ContentGuard`
+  (lo comprueba `GenerationArchitectureTest`). La cola son las filas de `course_piece`: **una pieza `DONE` no se regenera nunca**; el generador solo mira `PENDING` y `FAILED`.
+- Cada petición a la IA lleva el dato `pieza` (`temario|leccion|ejercicios|examen`) y `audiencia`; el material va como `fuentes` numeradas **sin nombres de documento**. La salida pasa siempre por su validador
+  (`OutlineParser`, `LessonValidator`, `ExercisesParser`, `ExamParser`: devuelven vacío, nunca lanzan). Una pieza reintenta una vez; si falla, `FAILED` y el curso sigue (acaba en `PAUSED/CONTENT`).
+- Una generación larga renueva el cerrojo antes de **cada** llamada (`lease.renew()`); si devuelve `false`, el curso vuelve a la cola y no se escribe nada. Tope de gasto o proveedor caído = `PAUSED` con motivo,
+  sin llamadas ni reintentos automáticos; «Reanudar» tiene enfriamiento de 60 s por curso.
+- Para un menor: valoración `appropriate` del temario (cierra F4-5), `ContentGuard` sobre fragmentos antes de enviarlos y sobre lo generado antes de guardarlo; ni logs ni auditoría llevan el contenido.
+- Frontend: el Markdown se pinta solo con `MarkdownContent` (tokens de `marked.lexer` → elementos Vue de una lista cerrada). **Nada de `v-html`**, nada de `marked.parse` ni `Renderer`; HTML crudo,
+  imágenes y enlaces que no sean `http(s)` salen como texto. `marked` va con versión exacta y solo se importa en ese componente. Cambios en el visor se prueban con entradas hostiles.
+- Los tests no tocan el proveedor real: `FakeProvider.respondUsing(...)` responde según la pieza pedida, y `app.generation.worker.enabled=false` apaga el hilo de fondo (`CourseGenerator.processPending()` es síncrono).
+- Los ejercicios y exámenes guardan la solución (F06 los corregirá): `ExamParser` exige una única opción correcta. Un curso nunca supera `app.generation.max-pieces` (150).
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la
