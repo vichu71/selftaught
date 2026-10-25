@@ -58,5 +58,5 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | A5 | Timeout **por tarea** (hoy es el mayor de las tareas de cada proveedor) | 🟡 |
 | A6 | Que solo los adultos con rol "global" vean el porcentaje del tope global, si la app se abre a más de una familia | 🟡 |
 | A7 | Quitar las credenciales de propietario de la BD del contenedor `benchmark` (que no migre al arrancar) | 🟡 |
-| A8 | Run real del benchmark con las claves del usuario; rellenar `ai-pricing.properties` con precios verificados; confirmar `x-goog-api-key` y los campos de OpenAI; revisar los límites de salida con modelos que razonan | al cerrar F02 |
+| A8 | **Parcial (25-10-2026):** run real hecho (27 llamadas, 0,208 USD): adaptadores de Anthropic, OpenAI y Gemini (incl. `x-goog-api-key`) confirmados; límite de `ASSESSMENT` subido a 10 000 (Haiku se truncó a 6 000); valoración en `sdd/benchmarks/valoracion.md`. **Falta:** contrastar el gasto con los paneles, confirmar el precio de OpenAI, valoración manual del usuario, pedir "sin LaTeX" en las plantillas y salida estructurada en F05 | al cerrar F02 |
 | A9 | Actualizar `greenmail` (solo tests) y revisar versiones de dependencias | 🟡 |
