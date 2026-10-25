@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
+import CoursesPanel from '@/components/CoursesPanel.vue'
 import StudentsPanel from '@/components/StudentsPanel.vue'
 import { useAuthStore } from '@/stores/auth'
 
@@ -23,9 +24,10 @@ async function logout() {
       Tu adulto tutor puede ver tus cursos, tu progreso y tus conversaciones con el tutor de IA.
     </p>
 
+    <CoursesPanel />
+
     <section class="card">
       <h2>Tu espacio de estudio</h2>
-      <p class="muted">Aquí aparecerán tus cursos.</p>
       <p><RouterLink to="/material" data-testid="material-link">Mi material</RouterLink> · sube tus apuntes (PDF, Word o texto).</p>
     </section>
 

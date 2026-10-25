@@ -165,3 +165,20 @@ button.danger { border-color: var(--danger); color: var(--danger); }
 @media (min-width: 40rem) {
   .document { flex-direction: row; align-items: center; justify-content: space-between; }
 }
+
+/* Asistente de creación de curso (F04) */
+.nav { display: flex; justify-content: space-between; gap: .75rem; margin-top: 1rem; }
+.nav button.primary { width: auto; margin-top: 0; min-width: 8rem; }
+.choice { display: flex; gap: .75rem; margin: .75rem 0; }
+.choice button { flex: 1; }
+.choice button[aria-pressed="true"] { border-color: var(--primary); background: var(--primary); color: var(--primary-text); font-weight: 600; }
+.question { border: 0; padding: 0; margin: 0 0 1.25rem; }
+.question legend { font-weight: 600; margin-bottom: .5rem; padding: 0; }
+.check { display: flex; align-items: center; gap: .6rem; font-weight: 400; margin: .25rem 0; min-height: 2.75rem; }
+.check input { width: 1.25rem; min-height: 1.25rem; height: 1.25rem; flex: none; }
+.documents-choice { margin: 1rem 0; }
+.status-line { font-size: 1.1rem; font-weight: 600; margin: 0 0 .5rem; }
+a.button-link {
+  display: inline-block; margin-top: .75rem; padding: .6rem 1rem; border-radius: .5rem;
+  background: var(--primary); color: var(--primary-text); font-weight: 600; text-decoration: none;
+}

@@ -274,9 +274,11 @@ test('F04 la tarea INTAKE y los límites del asistente llegan al backend, y en d
   assert.match(String(environment.APP_AI_TASKS_INTAKE_MODEL), /^\$\{APP_AI_TASKS_INTAKE_MODEL:-\}$/);
   assert.match(String(environment.COURSE_INTAKES_PER_HOUR), /^\$\{COURSE_INTAKES_PER_HOUR:-30\}$/);
   assert.match(String(environment.COURSE_MAX_PENDING), /^\$\{COURSE_MAX_PENDING:-5\}$/);
+  // Al combinar dos ficheros, Compose puede dar el entorno como lista "CLAVE=valor" en lugar de como objeto
   const devEnvironment = dev.services.backend.environment;
-  assert.match(String(devEnvironment.APP_AI_TASKS_INTAKE_PROVIDER), /^\$\{APP_AI_TASKS_INTAKE_PROVIDER:-fake\}$/);
-  assert.match(String(devEnvironment.APP_AI_TASKS_INTAKE_MODEL), /^\$\{APP_AI_TASKS_INTAKE_MODEL:-fake-1\}$/);
+  const devValue = (key) => (Array.isArray(devEnvironment) ? devEnvironment.find((e) => e.startsWith(`${key}=`))?.slice(key.length + 1) : devEnvironment[key]);
+  assert.match(String(devValue('APP_AI_TASKS_INTAKE_PROVIDER')), /^\$\{APP_AI_TASKS_INTAKE_PROVIDER:-fake\}$/);
+  assert.match(String(devValue('APP_AI_TASKS_INTAKE_MODEL')), /^\$\{APP_AI_TASKS_INTAKE_MODEL:-fake-1\}$/);
 });
 
 test('F04 la plantilla de variables documenta los límites del asistente y la tarea INTAKE', () => {

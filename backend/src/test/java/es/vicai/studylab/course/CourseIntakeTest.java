@@ -215,8 +215,9 @@ class CourseIntakeTest extends CourseTestBase {
         String ana = logged("ana@example.com");
         String luis = logged("luis@example.com");
         String ready = uploadedAndProcessed(ana, "listo.txt", text("contenido listo " .repeat(20)));
-        String pending = uploaded(ana, "pendiente.txt", text("contenido pendiente ".repeat(20)));
         String foreign = uploadedAndProcessed(luis, "ajeno.txt", text("contenido ajeno ".repeat(20)));
+        // el documento pendiente se sube el último: el procesado de «foreign» procesaría también los pendientes de todos
+        String pending = uploaded(ana, "pendiente.txt", text("contenido pendiente ".repeat(20)));
         model(NO_QUESTIONS);
 
         intake(ana, "Inglés", List.of(ready)).andExpect(status().isCreated());

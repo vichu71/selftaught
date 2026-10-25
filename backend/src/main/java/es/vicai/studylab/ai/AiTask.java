@@ -11,5 +11,7 @@ public enum AiTask {
     /** Chat del tutor IA. */
     TUTOR,
     /** Vectores para la búsqueda en el material propio. */
-    EMBEDDING
+    EMBEDDING,
+    /** Asistente de creación de curso: valora el tema y decide de 0 a 3 preguntas (F04). */
+    INTAKE
 }

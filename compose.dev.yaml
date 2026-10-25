@@ -20,6 +20,8 @@ services:
       APP_AI_TASKS_TUTOR_MODEL: ${APP_AI_TASKS_TUTOR_MODEL:-fake-1}
       APP_AI_TASKS_EMBEDDING_PROVIDER: ${APP_AI_TASKS_EMBEDDING_PROVIDER:-fake}
       APP_AI_TASKS_EMBEDDING_MODEL: ${APP_AI_TASKS_EMBEDDING_MODEL:-fake-embed}
+      APP_AI_TASKS_INTAKE_PROVIDER: ${APP_AI_TASKS_INTAKE_PROVIDER:-fake}
+      APP_AI_TASKS_INTAKE_MODEL: ${APP_AI_TASKS_INTAKE_MODEL:-fake-1}
       # Mailpit no valida credenciales: valores públicos de desarrollo, no son secretos
       SPRING_MAIL_HOST: mailpit
       SPRING_MAIL_PORT: "1025"
