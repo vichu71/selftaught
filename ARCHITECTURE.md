@@ -661,6 +661,7 @@ selftaught/
 ### ADR-59: El panel es un paquete de solo lectura que reutiliza los servicios por id de alumno
 - Motivo: el adulto ve lo mismo que el alumno, calculado igual (avance y resultados), sin duplicar reglas: `StudyService` gana variantes que reciben el id del alumno. Cada endpoint empieza por `AccessGuard.requireStudentOf` y el curso o la pieza se buscan con el alumno como
   propietario (los de otro alumno → 404). `guardian/` no escribe nada salvo la auditoría: un test de arquitectura prohíbe métodos que no sean `GET`, SQL de escritura, llamadas al modelo y HTML.
+- Se vio al implementar: el formato de los mensajes del hilo lo comparten el alumno y el panel (`TutorViews`) para no tener dos; `StudyService` ganó `overviewFor` y `courseSummaries`; y el gasto de un alumno por debajo de un céntimo se muestra como «menos de 0,01 USD».
 - Alternativas descartadas: dejar que el adulto use los endpoints del alumno con otro propietario (rompe «todo dato se filtra por su propietario»), copiar las consultas de F06 (dos fuentes de verdad), una vista materializada (sin necesidad a escala familiar).
 - Revisitar si: un alumno pasa a tener más de un adulto (v2) o aparece un rol de administración.
 

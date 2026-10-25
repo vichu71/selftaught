@@ -33,7 +33,7 @@
 | F4-1 | Retención de `course_intake`: guardan el texto del tema (también los bloqueados, para el tutor). Fijar cuándo se purgan las consultas caducadas | ADR-37 |
 | F4-2 | Desbloqueo de un tema concreto por el tutor, y revisión periódica de `blocked-terms.txt` | Hoy un tema escolar legítimo bloqueado solo remite al adulto (ADR-39) |
 | F4-3 | El filtro local solo cubre español; un menor puede pedir lo mismo en otro idioma (lo frena la valoración del modelo) | ADR-39 |
-| F4-4 | ✅ **Se cierra en F08 (ADR-60):** los temas rechazados salen en los avisos del panel del adulto | Pendiente de implementar (FASE 6) |
+| F4-4 | ✅ **Se cierra en F08 (ADR-60):** los temas rechazados salen en los avisos del panel del adulto | Hecho y verificado en F08 (informe: `sdd/reports/F08-testing-report.md`) |
 | F4-5 | 🟠 Medir con un modelo real barato cuántas veces el JSON del asistente llega mal formado y ajustar la plantilla. Si un menor recibe JSON inservible, el tema se acepta sin la valoración del modelo: F05 debe volver a comprobarlo antes de generar | ✅ La parte de F05 queda cubierta por la valoración `appropriate` del temario (ADR-47, verificado). Medir el JSON con un modelo real lo hace el usuario (APP_AI_TASKS_INTAKE_*) |
 | F4-6 | 🟡 Anotado en F05: el tutor aún no puede subir el tope de un menor (F4-2) y un curso de un menor con modelos caros puede quedarse en pausa por `BUDGET` | ADR-44 |
 
@@ -55,7 +55,7 @@
 | F6-1 | 🟠 Medir con tu modelo real cuántas veces «Corregir con IA» acierta o se equivoca, y cuánto cuesta | Solo lo puede hacer el usuario; se verifica con un modelo simulado |
 | F6-2 | 🟡 «Una corrección de IA a la vez por usuario» está en memoria: con varias instancias del backend debe pasar a la BD (el tutor de F07 ya lo hace así: ADR-55) | ADR-52 |
 | F6-3 | 🟡 La exportación del curso lleva soluciones y respuestas correctas: si se usa antes de examinarse, rompe la autoevaluación | ADR-50 |
-| F6-4 | ✅ **Se cierra en F08 (ADR-59):** el adulto ve los intentos de su menor (respuestas, notas y preguntas falladas) | Pendiente de implementar (FASE 6) |
+| F6-4 | ✅ **Se cierra en F08 (ADR-59):** el adulto ve los intentos de su menor (respuestas, notas y preguntas falladas) | Hecho y verificado en F08 (informe: `sdd/reports/F08-testing-report.md`) |
 | F6-6 | 🟡 Validar al arrancar que `app.study.max-submissions-per-hour` no supere a `max-attempts-per-piece` (la poda de intentos dejaría sin efecto el límite por hora) | Hoy solo está documentado en `StudyProperties` |
 | F6-5 | Más tipos de pregunta (verdadero/falso, huecos, respuesta abierta en examen) y motor de cálculo para matemáticas y ciencias | v2; F05 solo genera test |
 
@@ -66,7 +66,7 @@
 | F7-1 | 🟠 Medir con tu modelo real la calidad pedagógica del tutor: que guíe sin resolver ejercicios, que redirija lo que no es del curso, el tono según la edad y cuánto cuesta una conversación | Solo lo puede hacer el usuario con sus claves; las instrucciones fijas son hoy la única garantía |
 | F7-2 | 🟡 El filtro de menores solo cubre español (F4-3) y es una lista corta: no hay una valoración del modelo sobre cada pregunta ni respuesta | Segunda capa a decidir en F08 junto con F5-5 |
 | F7-3 | 🟡 Un alumno que pegue un enunciado de examen y pida la solución: el tutor no tiene soluciones ni exámenes, pero podría razonarla; las instrucciones piden pistas | Medirlo con F7-1 |
-| F7-4 | ✅ **Se cierra en F08 (ADR-59 y 60):** el adulto lee las conversaciones, los bloqueos y los filtrados de su menor | Pendiente de implementar (FASE 6) |
+| F7-4 | ✅ **Se cierra en F08 (ADR-59 y 60):** el adulto lee las conversaciones, los bloqueos y los filtrados de su menor | Hecho y verificado en F08 (informe: `sdd/reports/F08-testing-report.md`) |
 | F7-5 | 🟡 Streaming de la respuesta, voz, imágenes y memoria entre cursos | Fuera de v1 (ADR-58) |
 | F7-6 | 🟡 Un adulto que vacía una conversación borra también las preguntas que cuentan para el límite por hora y por día: puede preguntar más de 30 por hora vaciando entre medias | Solo adultos (el menor no puede vaciar) y el tope mensual del usuario sigue cortando; arreglo posible: contar las llamadas `TUTOR` de `ai_usage` o una tabla de eventos |
 
