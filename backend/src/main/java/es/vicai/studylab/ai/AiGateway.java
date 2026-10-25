@@ -112,6 +112,14 @@ public class AiGateway {
         int out = result.tokensEstimated() ? estimateTokens(result.text().length()) : result.outputTokens();
         BigDecimal cost = cost(price, in, out);
 
+        if (result.text().isBlank() && result.finish() != FinishReason.LENGTH) {
+            // Respuesta vacía sin haber agotado el límite: no sirve a la feature, pero los tokens ya están cobrados y se contabilizan
+            usage.insert(row(ctx, attempt.number(), in, out, result.tokensEstimated(), cost, "ERROR", ProviderErrorKind.INVALID_RESPONSE.name(),
+                    result.finish().name(), attempt.durationMs()));
+            if (!bench) budget.afterCall(ctx.userId());
+            else budget.afterCall(null);
+            throw AiException.billed(AiErrorKind.INVALID_RESPONSE, cost);
+        }
         usage.insert(row(ctx, attempt.number(), in, out, result.tokensEstimated(), cost, "OK", null, result.finish().name(), attempt.durationMs()));
         log.debug("IA {} {}/{} OK (intento {}, {} ms)", ctx.task(), provider, model, attempt.number(), attempt.durationMs());
         if (!bench) budget.afterCall(ctx.userId());

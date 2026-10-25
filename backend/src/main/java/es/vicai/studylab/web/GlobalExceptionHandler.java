@@ -1,5 +1,6 @@
 package es.vicai.studylab.web;
 
+import es.vicai.studylab.ai.AiException;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,6 +20,23 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
+
+    /**
+     * Errores de la capa de IA que una feature deja salir por un endpoint: cada tipo tiene su estado y un mensaje genérico
+     * (nunca el del proveedor, que puede repetir el prompt).
+     */
+    @ExceptionHandler(AiException.class)
+    ResponseEntity<Map<String, String>> handleAi(AiException e) {
+        HttpStatus status = switch (e.kind()) {
+            case BUDGET_BLOCKED -> HttpStatus.TOO_MANY_REQUESTS;
+            case GENERATION_BUSY -> HttpStatus.CONFLICT;
+            case INPUT_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
+            case USER_NOT_ALLOWED -> HttpStatus.FORBIDDEN;
+            case PROVIDER_QUOTA, PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
+            case PROVIDER_AUTH, PROVIDER_REJECTED, INVALID_RESPONSE, CONFIG -> HttpStatus.BAD_GATEWAY;
+        };
+        return ResponseEntity.status(status).body(Map.of("code", "AI_" + e.kind().name(), "message", e.getMessage()));
+    }
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<Map<String, String>> handleApi(ApiException e) {

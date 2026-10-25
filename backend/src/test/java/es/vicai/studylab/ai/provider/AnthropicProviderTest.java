@@ -97,10 +97,22 @@ class AnthropicProviderTest {
     }
 
     @Test
-    void aResponseWithoutAnyTextIsInvalid() {
+    void aResponseWithOnlyThinkingIsReturnedEmptyKeepingTheUsageBecauseItIsBilled() {
         server.expect(requestTo("https://api.anthropic.com/v1/messages")).andRespond(withSuccess(
-                "{\"content\":[{\"type\":\"thinking\",\"thinking\":\"solo pienso\"}],\"stop_reason\":\"max_tokens\",\"usage\":{\"input_tokens\":1,\"output_tokens\":1}}",
+                "{\"content\":[{\"type\":\"thinking\",\"thinking\":\"solo pienso\"}],\"stop_reason\":\"max_tokens\",\"usage\":{\"input_tokens\":30,\"output_tokens\":4000}}",
                 MediaType.APPLICATION_JSON));
+
+        ChatResult result = provider.chat(CALL);
+
+        assertThat(result.text()).isEmpty();
+        assertThat(result.finish()).isEqualTo(FinishReason.LENGTH);
+        assertThat(result.inputTokens()).isEqualTo(30);
+        assertThat(result.outputTokens()).isEqualTo(4000); // el proveedor ya cobró el razonamiento
+    }
+
+    @Test
+    void aBodyWithoutAContentArrayIsInvalid() {
+        server.expect(requestTo("https://api.anthropic.com/v1/messages")).andRespond(withSuccess("{\"foo\":1}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> provider.chat(CALL)).isInstanceOfSatisfying(ProviderException.class,
                 e -> assertThat(e.kind()).isEqualTo(ProviderErrorKind.INVALID_RESPONSE));

@@ -1,5 +1,7 @@
 package es.vicai.studylab.ai;
 
+import java.math.BigDecimal;
+
 /**
  * Error de la capa de IA. El mensaje es siempre genérico y en castellano; nunca lleva el mensaje del proveedor
  * (puede repetir el prompt) y se construye sin causa por el mismo motivo.
@@ -7,10 +9,26 @@ package es.vicai.studylab.ai;
 public class AiException extends RuntimeException {
 
     private final AiErrorKind kind;
+    private final BigDecimal costUsd;
 
     public AiException(AiErrorKind kind, String message) {
+        this(kind, message, BigDecimal.ZERO);
+    }
+
+    private AiException(AiErrorKind kind, String message, BigDecimal costUsd) {
         super(message, null, false, false); // sin causa ni traza: no hay nada del proveedor que filtrar
         this.kind = kind;
+        this.costUsd = costUsd;
+    }
+
+    /** Coste ya facturado por el proveedor aunque la llamada haya fallado (p. ej. una respuesta vacía). Casi siempre 0. */
+    public BigDecimal costUsd() {
+        return costUsd;
+    }
+
+    /** Falla, pero el proveedor ya cobró esa llamada: quien la hace puede sumarla a su propio gasto. */
+    static AiException billed(AiErrorKind kind, BigDecimal costUsd) {
+        return new AiException(kind, of(kind).getMessage(), costUsd);
     }
 
     public AiErrorKind kind() {

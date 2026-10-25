@@ -98,9 +98,20 @@ class GeminiProviderTest {
     }
 
     @Test
-    void aBlockedPromptWithNoCandidatesIsInvalid() {
+    void aBlockedPromptIsReturnedEmptyWithItsInputUsage() {
         server.expect(requestTo(URL)).andRespond(withSuccess(
                 "{\"promptFeedback\":{\"blockReason\":\"SAFETY\"},\"usageMetadata\":{\"promptTokenCount\":5}}", MediaType.APPLICATION_JSON));
+
+        ChatResult result = provider.chat(CALL);
+
+        assertThat(result.text()).isEmpty();
+        assertThat(result.finish()).isEqualTo(FinishReason.OTHER);
+        assertThat(result.inputTokens()).isEqualTo(5);
+    }
+
+    @Test
+    void aBodyWithNeitherCandidatesNorFeedbackIsInvalid() {
+        server.expect(requestTo(URL)).andRespond(withSuccess("{\"modelVersion\":\"x\"}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> provider.chat(CALL)).isInstanceOfSatisfying(ProviderException.class,
                 e -> assertThat(e.kind()).isEqualTo(ProviderErrorKind.INVALID_RESPONSE));

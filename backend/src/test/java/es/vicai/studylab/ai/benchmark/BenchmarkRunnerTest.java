@@ -25,6 +25,7 @@ import org.springframework.test.context.TestPropertySource;
 class BenchmarkRunnerTest extends AiTestBase {
 
     @Autowired BenchmarkRunner runner;
+    @Autowired es.vicai.studylab.ai.AiProperties props;
 
     private static final ModelRef FAKE_1 = new ModelRef("fake", "fake-1");
     private static final ModelRef FAKE_2 = new ModelRef("fake", "fake-2");
@@ -76,6 +77,54 @@ class BenchmarkRunnerTest extends AiTestBase {
         assertThat(result.calls()).isEqualTo(3); // tras 3 llamadas (0,0006) se alcanza el tope y se para
         assertThat(result.spentUsd()).isLessThan(new BigDecimal("0.0011"));
         assertThat(Files.readString(result.report())).containsIgnoringCase("interrumpido");
+    }
+
+    @Test
+    void ac17_aFailingModelIsReportedAndSkippedWithoutLosingTheRestOfTheRun(@TempDir Path out) throws IOException {
+        fake.failNext(es.vicai.studylab.ai.provider.ProviderErrorKind.BAD_REQUEST, 1); // la primera llamada (fake-1) falla y no se reintenta
+
+        BenchmarkResult result = runner.run(plan("5.00"), out);
+
+        assertThat(result.failures()).containsOnlyKeys(FAKE_1);
+        assertThat(result.failures().get(FAKE_1)).isEqualTo("PROVIDER_REJECTED");
+        assertThat(result.calls()).isEqualTo(9); // fake-2 completa sus 9 llamadas; el resto de fake-1 se omite
+        assertThat(result.costPerCourse()).containsOnlyKeys(FAKE_2);
+        String report = Files.readString(result.report());
+        assertThat(report).contains("## Fallos").contains("fake/fake-1").contains("PROVIDER_REJECTED");
+    }
+
+    private es.vicai.studylab.ai.AiProperties withBenchmark(String models, Path out) {
+        return new es.vicai.studylab.ai.AiProperties(props.tasks(), props.providers(), props.pricing(), props.budget(), props.hardMaxOutputTokens(),
+                props.maxInputChars(), props.retry(), props.generationLockTtl(), props.embedding(),
+                new es.vicai.studylab.ai.AiProperties.Benchmark(true, models, new BigDecimal("5.00"), out.toString()));
+    }
+
+    @Test
+    void ac17_theLauncherReadsTheModelsAndTheOutputFolderFromConfiguration(@TempDir Path out) {
+        new BenchmarkLauncher(runner, withBenchmark(" fake/fake-1 , fake/fake-2 ", out)).run();
+
+        assertThat(out.resolve("report.md")).exists();
+        assertThat(out.resolve("raw")).isDirectory();
+    }
+
+    @Test
+    void ac17_theLauncherRefusesToRunWithoutModels(@TempDir Path out) {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new BenchmarkLauncher(runner, withBenchmark("  ", out)).run())
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("APP_AI_BENCHMARK_MODELS");
+    }
+
+    @Test
+    void ac17_aModelMustBeWrittenAsProviderSlashModel() {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> ModelRef.parse("sin-barra")).isInstanceOf(IllegalArgumentException.class);
+        assertThat(ModelRef.parse("Anthropic/algun-modelo")).isEqualTo(new ModelRef("anthropic", "algun-modelo"));
+    }
+
+    @Test
+    void ac17_theRunRefusesToStartWhenAModelHasNoKeyOrNoPrice(@TempDir Path out) {
+        org.assertj.core.api.Assertions.assertThatThrownBy(() ->
+                        runner.run(BenchmarkPlan.of(List.of(new ModelRef("anthropic", "sin-precio")), new BigDecimal("5.00")), out))
+                .isInstanceOf(IllegalStateException.class).hasMessageContaining("ANTHROPIC_API_KEY").hasMessageContaining("anthropic/sin-precio");
+        assertThat(fake.calls()).isEmpty(); // falla antes de llamar (y antes de gastar) a nadie
     }
 
     @Test

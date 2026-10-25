@@ -127,6 +127,34 @@ class GenerationLockTest extends AiTestBase {
     }
 
     @Test
+    void ac11_aLongGenerationCanRenewItsLockSoItNeverExpiresWhileAlive() {
+        UUID user = newUser();
+        GenerationLock.Lease lease = locks.acquire(user);
+        owner.update("UPDATE ai_generation_lock SET expires_at = now() + interval '1 second' WHERE user_id = ?", user);
+
+        assertThat(lease.renew()).isTrue();
+
+        Double minutes = owner.queryForObject("SELECT extract(epoch FROM (expires_at - now())) / 60 FROM ai_generation_lock WHERE user_id = ?",
+                Double.class, user);
+        assertThat(minutes).isBetween(19.5, 20.1); // otra vez el TTL completo
+        assertThatThrownBy(() -> locks.acquire(user)).isInstanceOf(GenerationBusyException.class);
+        lease.close();
+    }
+
+    @Test
+    void ac11_aLeaseThatLostItsLockCannotRenewItAndMustAbort() {
+        UUID user = newUser();
+        GenerationLock.Lease old = locks.acquire(user);
+        owner.update("UPDATE ai_generation_lock SET expires_at = now() - interval '1 second' WHERE user_id = ?", user);
+        GenerationLock.Lease current = locks.acquire(user); // otra generación tomó el cerrojo caducado
+
+        assertThat(old.renew()).isFalse();
+        assertThat(current.renew()).isTrue();
+        current.close();
+        assertThat(current.renew()).isFalse(); // ya liberado
+    }
+
+    @Test
     void ac18_aRejectedGenerationIsAudited() {
         UUID user = newUser();
         locks.acquire(user);

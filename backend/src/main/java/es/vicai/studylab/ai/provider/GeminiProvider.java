@@ -45,9 +45,10 @@ public class GeminiProvider extends HttpProvider {
 
         JsonNode root = parse(raw);
         JsonNode candidate = root.path("candidates").path(0);
+        if (candidate.isMissingNode() && !root.has("promptFeedback")) throw invalid();
         StringBuilder text = new StringBuilder();
         for (JsonNode part : candidate.path("content").path("parts")) text.append(part.path("text").asText(""));
-        if (text.isEmpty()) throw invalid(); // por ejemplo, una petición bloqueada por seguridad: sin candidatos
+        // Petición bloqueada por seguridad o sin texto: se devuelve vacía con su uso (la entrada puede estar cobrada)
 
         JsonNode usage = root.path("usageMetadata");
         boolean hasUsage = usage.has("promptTokenCount") && usage.has("candidatesTokenCount");

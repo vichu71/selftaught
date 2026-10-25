@@ -120,6 +120,36 @@ class AiGatewayTest extends AiTestBase {
         assertThat(usage().get(0).get("finish_reason")).isEqualTo("LENGTH");
     }
 
+    @Test
+    void edge_anEmptyAnswerCutByTheLimitIsReturnedAndItsBilledTokensAreRecorded() {
+        fake.respondWithFinish("", FinishReason.LENGTH); // vacía por agotar el límite de salida (p. ej. un modelo que piensa mucho)
+
+        AiResponse response = gateway.complete(request(newUser()));
+
+        assertThat(response.text()).isEmpty();
+        assertThat(response.finishReason()).isEqualTo(FinishReason.LENGTH);
+        assertThat(response.costUsd()).isEqualByComparingTo(new BigDecimal("0.000200")); // 100·1/M + 50·2/M
+        assertThat(usage().get(0).get("status")).isEqualTo("OK");
+        assertThat(usage().get(0).get("finish_reason")).isEqualTo("LENGTH");
+    }
+
+    @Test
+    void edge_anEmptyAnswerThatDidNotHitTheLimitIsAnErrorButItsCostIsStillCounted() {
+        fake.respondWithFinish("", FinishReason.OTHER); // 100 tokens de entrada y 50 de salida: 0,0002 USD
+
+        assertThatThrownBy(() -> gateway.complete(request(newUser())))
+                .isInstanceOfSatisfying(AiException.class, e -> {
+                    assertThat(e.kind()).isEqualTo(AiErrorKind.INVALID_RESPONSE);
+                    assertThat(e.costUsd()).isEqualByComparingTo(new BigDecimal("0.000200"));
+                });
+
+        Map<String, Object> row = usage().get(0);
+        assertThat(row.get("status")).isEqualTo("ERROR");
+        assertThat(row.get("error_kind")).isEqualTo("INVALID_RESPONSE");
+        assertThat((BigDecimal) row.get("cost_usd")).isEqualByComparingTo(new BigDecimal("0.000200")); // el proveedor lo cobró
+        assertThat(fake.calls()).hasSize(1); // y no se reintenta
+    }
+
     // ---------- AC-12 · AC-13: reintentos acotados y errores genéricos ----------
 
     @ParameterizedTest

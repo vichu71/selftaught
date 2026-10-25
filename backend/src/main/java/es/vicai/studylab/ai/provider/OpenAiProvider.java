@@ -41,8 +41,8 @@ public class OpenAiProvider extends HttpProvider {
 
         JsonNode root = parse(raw);
         JsonNode choice = root.path("choices").path(0);
-        String text = choice.path("message").path("content").asText("");
-        if (text.isBlank()) throw invalid();
+        if (choice.isMissingNode()) throw invalid();
+        String text = choice.path("message").path("content").asText(""); // vacío con length: ya cobrado, lo trata el gateway
 
         JsonNode usage = root.path("usage");
         boolean hasUsage = usage.has("prompt_tokens") && usage.has("completion_tokens");

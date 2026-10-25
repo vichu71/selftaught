@@ -63,6 +63,17 @@ public final class AiSettingsValidator {
             }
         }
 
+        // En producción la clave de un proveedor de pago nunca puede viajar en claro: la URL base debe ser https
+        if (production) {
+            for (String provider : realProvidersInUse) {
+                AiProperties.ProviderConfig config = props.providers().get(provider);
+                boolean paid = !provider.equals("ollama");
+                if (paid && config != null && config.baseUrl() != null && !config.baseUrl().startsWith("https://")) {
+                    problems.add("app.ai.providers." + provider + ".base-url debe empezar por https:// en producción");
+                }
+            }
+        }
+
         // Un proveedor de pago exige un tope explícito: nunca se gasta sin límite conocido
         boolean pays = realProvidersInUse.stream().anyMatch(p -> !p.equals("ollama"));
         if (pays && props.budget().monthlyLimitUsd() == null) {

@@ -18,6 +18,13 @@ public class GenerationLock {
 
     /** Cerrojo tomado. Cerrarlo lo libera (idempotente). */
     public interface Lease extends AutoCloseable {
+        /**
+         * Amplía la caducidad (otra vez el TTL completo). Una generación larga debe llamarlo entre una llamada de IA y la siguiente:
+         * si el cerrojo caducara a mitad, un segundo clic abriría una generación paralela. Devuelve false si el cerrojo ya no es suyo
+         * (caducó y lo tomó otra generación): entonces debe abortar.
+         */
+        boolean renew();
+
         @Override
         void close();
     }
@@ -63,6 +70,16 @@ public class GenerationLock {
         Release(UUID userId, UUID owner) {
             this.userId = userId;
             this.owner = owner;
+        }
+
+        @Override
+        public synchronized boolean renew() {
+            if (released) return false;
+            return jdbc.sql("""
+                    UPDATE ai_generation_lock SET expires_at = now() + make_interval(secs => :ttl)
+                    WHERE user_id = :user AND owner = :owner""")
+                    .param("user", userId).param("owner", owner).param("ttl", (double) props.generationLockTtl().toSeconds())
+                    .update() > 0;
         }
 
         @Override

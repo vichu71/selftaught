@@ -92,10 +92,21 @@ class OpenAiProviderTest {
     }
 
     @Test
-    void anEmptyAnswerIsInvalid() {
+    void anEmptyAnswerCutByTheLimitIsReturnedKeepingTheUsageBecauseItIsBilled() {
         server.expect(requestTo(URL)).andRespond(withSuccess(
-                "{\"choices\":[{\"message\":{\"content\":null},\"finish_reason\":\"length\"}],\"usage\":{\"prompt_tokens\":1,\"completion_tokens\":1}}",
+                "{\"choices\":[{\"message\":{\"content\":null},\"finish_reason\":\"length\"}],\"usage\":{\"prompt_tokens\":20,\"completion_tokens\":4000}}",
                 MediaType.APPLICATION_JSON));
+
+        ChatResult result = provider.chat(CALL);
+
+        assertThat(result.text()).isEmpty();
+        assertThat(result.finish()).isEqualTo(FinishReason.LENGTH);
+        assertThat(result.outputTokens()).isEqualTo(4000);
+    }
+
+    @Test
+    void aBodyWithoutChoicesIsInvalid() {
+        server.expect(requestTo(URL)).andRespond(withSuccess("{\"usage\":{\"prompt_tokens\":1}}", MediaType.APPLICATION_JSON));
 
         assertThatThrownBy(() -> provider.chat(CALL)).isInstanceOfSatisfying(ProviderException.class,
                 e -> assertThat(e.kind()).isEqualTo(ProviderErrorKind.INVALID_RESPONSE));

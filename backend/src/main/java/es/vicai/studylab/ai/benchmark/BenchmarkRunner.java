@@ -1,5 +1,6 @@
 package es.vicai.studylab.ai.benchmark;
 
+import es.vicai.studylab.ai.AiException;
 import es.vicai.studylab.ai.AiGateway;
 import es.vicai.studylab.ai.AiProperties;
 import es.vicai.studylab.ai.AiRequest;
@@ -66,6 +67,7 @@ public class BenchmarkRunner {
         }
 
         List<Measure> measures = new ArrayList<>();
+        Map<ModelRef, String> failures = new LinkedHashMap<>();
         BigDecimal spent = BigDecimal.ZERO;
         boolean completed = true;
 
@@ -78,19 +80,29 @@ public class BenchmarkRunner {
                         completed = false;
                         break run;
                     }
-                    AiResponse response = gateway.completeWith(model, AiRequest.benchmark(task, TEMPLATES.get(task)).data("tema", topic));
-                    spent = spent.add(response.costUsd());
-                    measures.add(new Measure(model, topic, task, response));
-                    writeRaw(raw, model, topic, task, response);
-                    log.info("Benchmark {} · {} · {}: {} USD", model, task, topic, response.costUsd().toPlainString());
+                    try {
+                        AiResponse response = gateway.completeWith(model, AiRequest.benchmark(task, TEMPLATES.get(task)).data("tema", topic));
+                        spent = spent.add(response.costUsd());
+                        measures.add(new Measure(model, topic, task, response));
+                        writeRaw(raw, model, topic, task, response);
+                        log.info("Benchmark {} · {} · {}: {} USD", model, task, topic, response.costUsd().toPlainString());
+                    } catch (AiException e) {
+                        // Un modelo que falla (clave, nombre mal escrito, cuota…) no tumba el run entero: se anota y se pasa al siguiente.
+                        // Los intentos fallidos no cuestan nada, pero los facturados sin texto sí se contabilizan en el gateway.
+                        failures.put(model, e.kind().name());
+                        log.warn("Benchmark {} falla en {} ({}): se omite el resto de ese modelo", model, task, e.kind());
+                        spent = spent.add(e.costUsd());
+                        break; // sale de las tareas del tema actual
+                    }
                 }
+                if (failures.containsKey(model)) break; // sale de los temas de este modelo
             }
         }
 
         Map<ModelRef, BigDecimal> perCourse = costPerCourse(plan.models(), measures);
         Path report = outDir.resolve("report.md");
-        write(report, report(plan, topics, measures, spent, completed, perCourse));
-        return new BenchmarkResult(report, completed, topics, measures.size(), spent, perCourse);
+        write(report, report(plan, topics, measures, spent, completed, perCourse, failures));
+        return new BenchmarkResult(report, completed, topics, measures.size(), spent, perCourse, failures);
     }
 
     // ---------- plan ----------
@@ -168,13 +180,19 @@ public class BenchmarkRunner {
     }
 
     private static String report(BenchmarkPlan plan, List<String> topics, List<Measure> measures, BigDecimal spent, boolean completed,
-                                 Map<ModelRef, BigDecimal> perCourse) {
+                                 Map<ModelRef, BigDecimal> perCourse, Map<ModelRef, String> failures) {
         StringBuilder sb = new StringBuilder();
         sb.append("# Benchmark F02 — ").append(LocalDate.now()).append("\n\n");
         sb.append("Tope del run: ").append(plan.budgetUsd().toPlainString()).append(" USD · Gastado: ").append(spent.toPlainString())
                 .append(" USD · Llamadas: ").append(measures.size()).append("\n\n");
         if (!completed) {
             sb.append("> **Run interrumpido:** se alcanzó el tope del run antes de terminar. Los resultados son parciales.\n\n");
+        }
+        if (!failures.isEmpty()) {
+            sb.append("## Fallos\n\n| Modelo | Error |\n|---|---|\n");
+            failures.forEach((model, kind) -> sb.append("| ").append(model).append(" | ").append(kind)
+                    .append(" (se omitió el resto de este modelo) |\n"));
+            sb.append('\n');
         }
         sb.append("Curso tipo = 1 ficha + 8 lecciones + 9 evaluaciones (8 de ejercicios y 1 examen). Las salidas completas están en `raw/`.\n\n");
 

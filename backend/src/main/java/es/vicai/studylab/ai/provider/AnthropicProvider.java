@@ -38,12 +38,14 @@ public class AnthropicProvider extends HttpProvider {
         if (!raw.ok()) throw classify(raw);
 
         JsonNode root = parse(raw);
+        if (!root.path("content").isArray()) throw invalid();
         StringBuilder text = new StringBuilder();
         for (JsonNode block : root.path("content")) {
             // Los bloques "thinking" no son respuesta: solo se concatena el texto
             if ("text".equals(block.path("type").asText())) text.append(block.path("text").asText());
         }
-        if (text.isEmpty()) throw invalid();
+        // Sin texto (p. ej. un modelo que gastó todo el límite pensando) NO es un error del adaptador: el proveedor ya ha cobrado
+        // esos tokens, así que se devuelve vacío con su uso y es el gateway quien lo trata y lo contabiliza
 
         JsonNode usage = root.path("usage");
         boolean hasUsage = usage.has("input_tokens") && usage.has("output_tokens");

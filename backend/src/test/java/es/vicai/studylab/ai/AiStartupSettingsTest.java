@@ -155,6 +155,15 @@ class AiStartupSettingsTest {
     }
 
     @Test
+    void ac5_inProductionAPaidProviderMustUseHttps() {
+        String[] clearText = args(VALID, REAL_OUTLINE, new String[] {"--app.ai.providers.anthropic.base-url=http://api.anthropic.example"});
+
+        assertThatThrownBy(() -> start("test,prod", clearText))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.providers.anthropic.base-url").contains("https://")
+                        .doesNotContain("k-test-NO-ES-UN-SECRETO"));
+    }
+
+    @Test
     void ac3_theFakeProviderIsNotAllowedInProduction() {
         assertThatThrownBy(() -> start("test,prod", VALID))
                 .satisfies(e -> assertThat(fullMessage(e)).contains("fake").contains("prod"));
