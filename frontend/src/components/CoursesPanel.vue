@@ -1,7 +1,9 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { api, type Course, type CourseStatus } from '@/api/client'
+import { useStudyStore } from '@/stores/study'
 
+const study = useStudyStore()
 const courses = ref<Course[]>([])
 const listError = ref(false)
 
@@ -16,6 +18,7 @@ const labels: Record<CourseStatus, string> = {
 onMounted(async () => {
   try {
     courses.value = (await api.listCourses()) ?? []
+    void study.loadProgress()
   } catch {
     listError.value = true
   }
@@ -32,6 +35,7 @@ onMounted(async () => {
       <li v-for="c in courses" :key="c.id" class="document" :data-testid="`course-${c.id}`">
         <RouterLink :to="`/cursos/${c.id}`" :data-testid="`course-link-${c.id}`">{{ c.title }}</RouterLink>
         <span class="status">{{ labels[c.status] }}</span>
+        <span v-if="study.percentByCourse[c.id] !== undefined" class="muted" :data-testid="`course-percent-${c.id}`">{{ study.percentByCourse[c.id] }} %</span>
       </li>
     </ul>
 

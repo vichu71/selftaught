@@ -127,7 +127,7 @@ class ProgressTest extends StudyTestBase {
         markDone(ana, started, piece(started, "LESSON", 1), true);
 
         getAs(ana, "/api/study/progress").andExpect(status().isOk()).andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[?(@.courseId == '" + started + "')].percent[0]").value(50))
+                .andExpect(jsonPath("$[?(@.courseId == '" + started + "')].percent").value(org.hamcrest.Matchers.contains(50)))
                 .andExpect(jsonPath("$[?(@.courseId == '" + waiting + "')].percent").isEmpty());
     }
 

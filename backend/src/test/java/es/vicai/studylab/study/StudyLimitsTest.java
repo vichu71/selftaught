@@ -34,7 +34,8 @@ class StudyLimitsTest extends StudyTestBase {
         String luis = logged("luis@example.com");
         UUID anaCourse = generated("ana@example.com", 2, true);
         UUID luisCourse = generated("luis@example.com", 2, true);
-        for (int i = 0; i < 5; i++) answer(ana, anaCourse, piece(anaCourse, "EXERCISES", 0), 0, "x").andExpect(status().isCreated());
+        // Dos piezas distintas: de cada pieza solo se conservan los últimos 3 intentos, y los envíos de la hora se cuentan sobre lo conservado (por eso el máximo por hora no puede superar al de intentos por pieza)
+        for (int i = 0; i < 5; i++) answer(ana, anaCourse, piece(anaCourse, "EXERCISES", i % 2), 0, "x").andExpect(status().isCreated());
         int rows = rows("exercise_attempt");
 
         answer(ana, anaCourse, piece(anaCourse, "EXERCISES", 0), 0, "x").andExpect(status().isTooManyRequests());

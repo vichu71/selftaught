@@ -8,6 +8,7 @@ import NewCourseView from '@/views/NewCourseView.vue'
 import CourseStatusView from '@/views/CourseStatusView.vue'
 import PieceView from '@/views/PieceView.vue'
 import ResultsView from '@/views/ResultsView.vue'
+import AttemptsView from '@/views/AttemptsView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import VerifyEmailView from '@/views/VerifyEmailView.vue'
@@ -26,6 +27,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
       { path: '/cursos/:id', name: 'course', component: CourseStatusView },
       { path: '/resultados', name: 'results', component: ResultsView },
       { path: '/cursos/:id/piezas/:pieceId', name: 'piece', component: PieceView },
+      { path: '/cursos/:id/piezas/:pieceId/intentos', name: 'attempts', component: AttemptsView },
       { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
       { path: '/register', name: 'register', component: RegisterView, meta: { public: true } },
       { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { public: true } },

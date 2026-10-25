@@ -4,10 +4,12 @@ import { useRoute } from 'vue-router'
 import { exportPath, type CourseStatus, type StopReason } from '@/api/client'
 import CourseOutline from '@/components/CourseOutline.vue'
 import { useCourseDetailStore } from '@/stores/courseDetail'
+import { useStudyStore } from '@/stores/study'
 import { BLOCKED_TEXT } from '@/stores/course'
 
 const route = useRoute()
 const store = useCourseDetailStore()
+const study = useStudyStore()
 
 const labels: Record<CourseStatus, string> = {
   PENDING_GENERATION: 'En cola: lo estamos preparando',
@@ -54,7 +56,15 @@ const blocked = computed(() => course.value?.status === 'FAILED' && course.value
 const failedOther = computed(() => course.value?.status === 'FAILED' && !blocked.value)
 const hasDone = computed(() => (progress.value?.done ?? 0) > 0)
 
-onMounted(() => void store.start(String(route.params.id)))
+onMounted(async () => {
+  study.reset()
+  await store.start(String(route.params.id))
+  void study.loadOverview(String(route.params.id))
+})
+// Cuando el curso avanza (llegan piezas nuevas) se vuelve a pedir el estado de estudio
+watch(() => course.value?.progress?.done, (now, before) => {
+  if (before !== undefined && now !== before) void study.loadOverview(String(route.params.id))
+})
 watch(() => route.params.id, (id, old) => {
   if (id && id !== old && route.name === 'course') void store.start(String(id))
 })
@@ -78,6 +88,7 @@ onBeforeUnmount(() => {
     <template v-if="course">
       <section class="card">
         <p class="status-line" data-testid="course-status">{{ status }}</p>
+        <p v-if="study.overview?.percent !== undefined" data-testid="study-progress">Tu avance: {{ study.overview.percent }} %</p>
         <p v-if="store.polling" class="activity" role="status" data-testid="activity">
           <span class="spinner" aria-hidden="true"></span>
           <span data-testid="updated">Comprobado hace {{ seconds }} s</span>
@@ -101,7 +112,7 @@ onBeforeUnmount(() => {
 
       <section v-if="outline.length > 0" class="card">
         <h2>Temario</h2>
-        <CourseOutline :course-id="course.id" :outline="outline" />
+        <CourseOutline :course-id="course.id" :outline="outline" :study="study.overview" />
       </section>
 
       <section class="card" data-testid="course-sheet">

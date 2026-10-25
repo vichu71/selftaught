@@ -20,7 +20,7 @@ public class CourseContentRepository {
 
     /** Una pieza con su contenido; {@code title} es el del capítulo (lección y ejercicios) o el del tema (examen). */
     public record PieceContent(UUID id, String kind, String status, UUID topicId, UUID chapterId, String title, String markdown, String contentJson,
-                               String sourcesJson) {}
+                               String sourcesJson, int seq) {}
 
     private final JdbcClient jdbc;
 
@@ -61,7 +61,7 @@ public class CourseContentRepository {
     public Optional<PieceContent> piece(UUID courseId, UUID pieceId, UUID ownerId) {
         return jdbc.sql("""
                 SELECT p.id, p.kind, p.status, p.topic_id, p.chapter_id, COALESCE(ch.title, t.title) AS title, p.content_md,
-                       p.content_json::text AS content_json, p.sources::text AS sources
+                       p.content_json::text AS content_json, p.sources::text AS sources, p.seq
                 FROM course_piece p
                 JOIN course_topic t ON t.id = p.topic_id AND t.owner_id = p.owner_id
                 LEFT JOIN course_chapter ch ON ch.id = p.chapter_id AND ch.owner_id = p.owner_id
@@ -70,11 +70,25 @@ public class CourseContentRepository {
                 .query(CourseContentRepository::content).optional();
     }
 
+    /** El estado «hecha» de una lección, para el alumno que la lee (F06). */
+    public boolean lessonDone(UUID pieceId, UUID ownerId) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM lesson_progress WHERE piece_id = :piece AND owner_id = :owner)")
+                .param("piece", pieceId).param("owner", ownerId).query(Boolean.class).single();
+    }
+
+    /** La lección ya generada más cercana antes o después de {@code seq}, en el orden del curso (las que aún no están hechas se saltan). */
+    public Optional<UUID> neighbourLesson(UUID courseId, UUID ownerId, int seq, boolean previous) {
+        String sql = previous
+                ? "SELECT id FROM course_piece WHERE course_id = :course AND owner_id = :owner AND kind = 'LESSON' AND status = 'DONE' AND seq < :seq ORDER BY seq DESC LIMIT 1"
+                : "SELECT id FROM course_piece WHERE course_id = :course AND owner_id = :owner AND kind = 'LESSON' AND status = 'DONE' AND seq > :seq ORDER BY seq LIMIT 1";
+        return jdbc.sql(sql).param("course", courseId).param("owner", ownerId).param("seq", seq).query(UUID.class).optional();
+    }
+
     /** Todas las piezas ya hechas, en orden: lo único que se exporta. */
     public List<PieceContent> donePieces(UUID courseId, UUID ownerId) {
         return jdbc.sql("""
                 SELECT p.id, p.kind, p.status, p.topic_id, p.chapter_id, COALESCE(ch.title, t.title) AS title, p.content_md,
-                       p.content_json::text AS content_json, p.sources::text AS sources
+                       p.content_json::text AS content_json, p.sources::text AS sources, p.seq
                 FROM course_piece p
                 JOIN course_topic t ON t.id = p.topic_id AND t.owner_id = p.owner_id
                 LEFT JOIN course_chapter ch ON ch.id = p.chapter_id AND ch.owner_id = p.owner_id
@@ -86,7 +100,7 @@ public class CourseContentRepository {
     private static PieceContent content(java.sql.ResultSet rs, int row) throws java.sql.SQLException {
         return new PieceContent(rs.getObject("id", UUID.class), rs.getString("kind"), rs.getString("status"), rs.getObject("topic_id", UUID.class),
                 rs.getObject("chapter_id", UUID.class), rs.getString("title"), rs.getString("content_md"), rs.getString("content_json"),
-                rs.getString("sources"));
+                rs.getString("sources"), rs.getInt("seq"));
     }
 
     /** Un curso con sus piezas por estado y el coste y las llamadas registradas. */

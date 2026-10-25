@@ -142,11 +142,10 @@ describe('Exercises practice', () => {
     await sent(m)
 
     await byId(m.wrapper, 'ai-grade-0').trigger('click')
-    await byId(m.wrapper, 'ai-grade-0').trigger('click')
     await flushPromises()
 
     expect(api.aiGrade).toHaveBeenCalledTimes(1)
-    expect(byId(m.wrapper, 'ai-grade-0').exists()).toBe(false)
+    expect(byId(m.wrapper, 'ai-grade-0').exists()).toBe(false) // ya no se ofrece: una corrección por intento
   })
 
   it.each([
