@@ -98,7 +98,7 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 ## Reglas de F05 (generación del curso)
 - Contrato y criterios de aceptación: `sdd/specs/US-F05-generacion-curso.md`; diseño y ADR-42 a 47: `sdd/specs/ART-F05-propuesta-generacion.md` y `ARCHITECTURE.md`.
 - La generación vive en `generation/` y es el **único** paquete que usa `MaterialSearch` (`course/` sigue sin poder leer material). Quien use `MaterialSearch` para un menor aplica también `ContentGuard`
-  (lo comprueba `GenerationArchitectureTest`). La cola son las filas de `course_piece`: **una pieza `DONE` no se regenera nunca**; el generador solo mira `PENDING` y `FAILED`.
+  (lo comprueba `GenerationArchitectureTest`). La cola son las filas de `course_piece`: **una pieza `DONE` no se regenera nunca por sí sola (F09: solo si el propietario lo pide)**; el generador solo mira `PENDING` y `FAILED`.
 - Cada petición a la IA lleva el dato `pieza` (`temario|leccion|ejercicios|examen`) y `audiencia`; el material va como `fuentes` numeradas **sin nombres de documento**. La salida pasa siempre por su validador
   (`OutlineParser`, `LessonValidator`, `ExercisesParser`, `ExamParser`: devuelven vacío, nunca lanzan). Una pieza reintenta una vez; si falla, `FAILED` y el curso sigue (acaba en `PAUSED/CONTENT`).
 - Una generación larga renueva el cerrojo antes de **cada** llamada (`lease.renew()`); si devuelve `false`, el curso vuelve a la cola y no se escribe nada. Tope de gasto o proveedor caído = `PAUSED` con motivo,
@@ -138,6 +138,16 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - El adulto ve respuestas, intentos y conversaciones de su menor (decisión de F08), pero **nunca** el texto de lecciones, ejercicios ni exámenes generados, ni las soluciones. Los avisos de tutor apuntan al hilo sin repetir la pregunta; el de tema rechazado sí lleva el tema.
 - Intentos, conversaciones, hilo y avisos se **auditan** como `GUARDIAN_VIEW` con ids (nunca contenido), fuera de transacción. Ni logs ni auditoría llevan lo que escribió el alumno. Lo devuelto va recortado: 20 intentos por ejercicio, 200 en total y 100 avisos.
 - Un alumno desactivado se puede consultar (`isTutorOf` no mira el estado). El aviso al menor de que su adulto lo ve vive en `HomeView` y en el chat del tutor: si cambia, que siga nombrando respuestas, intentos y conversaciones.
+
+## Reglas de F09 (edición de temario y compartir por código)
+- Contrato y criterios de aceptación: `sdd/specs/US-F09-edicion-compartir.md`; diseño y ADR-63 a 66: `sdd/specs/ART-F09-propuesta-edicion-compartir.md` y `ARCHITECTURE.md`.
+- `courseedit/` y `share/` **no hablan nunca con el modelo** (nada de `AiGateway`, `MaterialSearch` ni `GenerationLock`): editar crea o limpia piezas `PENDING` y devuelve el curso a la cola de F05, que genera solo lo nuevo con su cerrojo y su control de gasto. Toda edición bloquea la fila del curso (`FOR UPDATE`),
+  se rechaza con `COURSE_BUSY` si está en cola o generándose y sube `course.version`. **Una pieza hecha solo se regenera ante una petición explícita del propietario** (amplía la regla de F05); lo que dependía de ella se borra y sus dependientes quedan `outdated`.
+- Un **menor**: todo lo que escribe al editar (títulos, resúmenes, objetivos, lecciones) y toda la copia que canjea pasan por `ContentGuard.localCheck` **antes** de guardarse, enviarse a la IA o crearse; si salta, mensaje acordado, auditoría `COURSE_EDIT_BLOCKED` o `COURSE_COPY_BLOCKED` con ids y aviso en el panel del adulto (F08).
+- El **código** de compartir: 80 bits de `SecureRandom`, solo se guarda su SHA-256 (`share_code.code_hash`), se enseña una vez, nunca va a logs ni a la auditoría. El canje busca por hash (con caducidad y revocación en la misma consulta, es la única lectura de un curso ajeno sin `owner_id`) y **todo fallo responde el mismo 404**.
+  Límites por usuario en la BD (`course_action`): 20 ediciones con IA, 10 fallos y 10 copias por hora; nada por IP (D1).
+- La **copia** (`CourseCopier`) crea un curso `READY` con ids nuevos y `origin_id`/`origin_version`, sin documentos, fuentes (se quitan las marcas `[n]`), progreso, intentos, conversaciones, consultas ni uso de IA; el detalle solo enseña `copy.originVersion`, nunca el id del original. Un test cuenta filas y busca ids.
+- Todo lo que cambia datos exige sesión y CSRF; un curso, tema, capítulo, pieza o código ajenos responden 404 igual que uno inexistente; el adulto tutor no edita los cursos de su menor.
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

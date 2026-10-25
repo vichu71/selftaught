@@ -158,6 +158,22 @@ fallos cuentan para el límite. El tutor usa la tarea `TUTOR` (sin `GenerationLo
 El paquete `guardian` no escribe nada (salvo la auditoría), no habla con el modelo y no genera HTML: un test de arquitectura lo exige. Recorta lo que devuelve: 20 intentos por ejercicio y 200 en total, 100 avisos. El menor ve en su pantalla principal
 que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones. Ni los logs ni la auditoría llevan lo que el alumno escribió.
 
+## Edición de temario y compartir por código (F09)
+
+```
+ Propietario ──► PUT/POST/DELETE /api/courses/{c}/topics|chapters|pieces/…                                                                     AC-1..7
+   1. transacción con el curso bloqueado (FOR UPDATE): en cola o generándose → 409 COURSE_BUSY; menor: ContentGuard sobre lo que escribe (422, auditoría COURSE_EDIT_BLOCKED)
+   2. renombrar · reordenar · quitar (cascada: piezas, progreso, intentos y hilo) · editar el texto de una lección (borra sus fuentes) · sube course.version
+   3. añadir tema o capítulo / regenerar una pieza hecha: límite de 20 por hora y usuario (course_action) y tope de piezas (150) ─► piezas PENDING y el curso vuelve a la cola de F05
+      (ADR-63); el generador de siempre crea SOLO lo nuevo con su cerrojo y su control de gasto. Los dependientes (ejercicios, examen del tema) quedan outdated, no se regeneran solos (ADR-66)
+ POST /api/courses/{c}/share ─► código de 80 bits, solo su SHA-256 en share_code; se muestra una vez (ADR-64)           GET …/share · DELETE …/share/{id} (revocar)
+ POST /api/courses/redeem {code} ─► normaliza y busca por hash (caducidad y revocación en la misma consulta) ─► 404 igual para cualquier fallo, 429 por usuario (course_action)
+      ─► CourseCopier: curso nuevo READY del que canjea, ids nuevos, origin_id/origin_version, SIN material, fuentes ni datos del original; MENOR: ContentGuard sobre TODO el texto o no se crea nada (ADR-65)
+```
+
+El curso lleva `version` (sube con cada edición guardada) y, si es una copia, `origin_id` y `origin_version`; el detalle del curso solo enseña `copy.originVersion`, nunca el id del original. Lo nuevo lo genera siempre la cola: ni la edición ni
+el canje llaman al modelo (un test de arquitectura lo exige). Ni el código ni los textos editados van a logs ni a la auditoría.
+
 ## Modelo de datos
 
 ```
@@ -215,6 +231,13 @@ tutor_message       id, owner_id, course_id, piece_id (una lección), role (USER
 
 -- F08 (migración V8): sin tablas nuevas; solo un índice para leer los avisos de la auditoría por actor
 audit_event         + índice audit_event_actor_idx (actor_user_id, action, occurred_at)
+
+-- F09 (migración V9)
+course              + version (int, 1), origin_id (→ course, ON DELETE SET NULL), origin_version
+course_piece        + outdated (boolean): «la lección cambió»; se limpia al regenerar
+share_code          id, course_id + owner_id (FK compuesta → course, CASCADE), code_hash (SHA-256, único; el código NO se guarda), created_at, expires_at, revoked_at, uses
+course_action       id, user_id, kind (AI_EDIT | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
+course_topic / course_chapter + permiso DELETE para el rol de la aplicación
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -251,6 +274,10 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `GET …/pieces/{pid}/attempts` | propietario | historial `{kind, attempts}`, el más reciente primero |
 | `GET/POST/DELETE /api/courses/{id}/pieces/{pid}/tutor` | propietario | hilo de la lección · pregunta `{question}` (201 `{user, tutor}`; 400 · 404 · 409 lección sin generar · 429 `TUTOR_RATE_LIMITED`, `TUTOR_BUSY`, `AI_*` · 502 `TUTOR_FAILED`) · vaciar (adulto: 204; menor: 403 `THREAD_PROTECTED`) |
 | `GET /api/tutor/students/{id}/overview` · `/courses/{c}` · `/courses/{c}/attempts` · `/conversations` · `/courses/{c}/pieces/{p}/tutor` · `/alerts` | adulto vinculado | panel de solo lectura de un alumno (F08): resumen y consumo · avance de un curso · intentos · conversaciones · hilo · avisos; 401 · 403 (menor) · 404 (sin vínculo, alumno, curso o pieza ajenos). Intentos, conversaciones, hilo y avisos se auditan (`GUARDIAN_VIEW`, solo ids) |
+| `PUT/DELETE/POST /api/courses/{id}/topics[/{t}]` · `…/topics/order` · `…/topics/{t}/chapters[/order]` · `PUT/DELETE …/chapters/{ch}` | propietario | editar el temario (F09): renombrar, reordenar, quitar y añadir (201); devuelven el detalle del curso; 400 · 404 · 409 `COURSE_BUSY` · 422 `COURSE_TOO_BIG`, `EDIT_NOT_ALLOWED` (menor) · 429 `EDIT_RATE_LIMITED` |
+| `PUT …/pieces/{pid}/content` · `POST …/pieces/{pid}/regenerate` | propietario | texto de una lección (1–20 000 caracteres) · regenerar una pieza hecha con IA (202); mismos errores |
+| `POST/GET /api/courses/{id}/share` · `DELETE …/share/{sid}` | propietario | crear un código (201 `{id, code, expiresAt}`, el código solo esa vez; 409 `COURSE_NOT_READY`, `SHARE_LIMIT`) · ver su estado · revocar (204, idempotente) |
+| `POST /api/courses/redeem` | cualquier usuario con sesión | `{code}` → 201 `{id, title}` (la copia); 404 igual para cualquier código que no valga · 422 `COPY_NOT_ALLOWED` (menor y el filtro salta) · 429 `CODE_RATE_LIMITED` |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -269,7 +296,8 @@ selftaught/
 │     src/main/java/es/vicai/studylab/study                       # F06: progreso, intentos de ejercicio y examen, corrección con IA
 │     src/main/java/es/vicai/studylab/tutor                       # F07: hilo por lección, contexto, límites, filtro de menores y llamada al modelo
 │     src/main/java/es/vicai/studylab/guardian                    # F08: panel del adulto tutor (solo lectura): resumen, intentos, conversaciones, avisos y consumo
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel)
+│     src/main/java/es/vicai/studylab/{courseedit,share}          # F09: editar temario y lecciones, regenerar; códigos de compartir, canje y copia
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -681,3 +709,29 @@ selftaught/
 - Motivo: `ai_usage` ya guarda coste por usuario y tarea y el tope personal lo da `BudgetService.userLimit` (ADR-29). Se muestra USD y número de llamadas por tarea, no tokens ni modelos. Es el gasto del mes en curso, igual que `/api/ai/usage`.
 - Alternativas descartadas: tokens y modelos por llamada (detalle sin utilidad para un adulto), un histórico de meses (posterior).
 - Revisitar si: se quiere cambiar el tope de un alumno desde el panel (hoy es configuración).
+
+### ADR-63: Editar es operar sobre las filas de F05 con el curso bloqueado; lo nuevo lo genera la cola, y regenerar solo por petición del propietario
+- Motivo: el temario y las piezas ya son filas con estado (ADR-42). Cada edición es una transacción que bloquea la fila del curso (`FOR UPDATE`), comprueba que no esté en cola ni generándose, cambia las filas y sube `version`. Añadir un tema o un capítulo crea sus piezas `PENDING` y devuelve el curso a la cola:
+  el generador solo mira `PENDING` y `FAILED`, así que genera **solo lo nuevo** con su cerrojo, su tope de piezas y su control de gasto, sin segundo camino hacia el modelo. Regenerar una pieza `DONE` pasa por `PENDING` solo ante una petición explícita del propietario, con confirmación en la interfaz (amplía ADR-42: «una pieza hecha no se regenera nunca» pasa a «nunca por sí sola»);
+  lo que dependía de ella (intentos, progreso, hilo) se borra y sus dependientes se marcan `outdated`. Añadir y regenerar cuentan para un límite por hora y usuario en la BD (`course_action`).
+- Alternativas descartadas: un generador de edición aparte (duplica cerrojo, gasto y validadores), regenerar los ejercicios al editar la lección (coste imprevisible), permitir edición durante la generación (carreras con el generador).
+- Revisitar si: se quiere editar ejercicios y preguntas a mano, o editar mientras se genera.
+
+### ADR-64: Los códigos son 80 bits aleatorios guardados como hash, mostrados una vez; el canje no distingue por qué falla y se limita por usuario
+- Motivo: un código es un secreto de acceso a un contenido. Se genera con `SecureRandom` (16 caracteres de un alfabeto de 32 sin ambiguos), se guarda solo su SHA-256 (una fuga de la BD no regala cursos) y se enseña una vez; el propietario ve su estado y puede revocarlo.
+  El canje normaliza el texto, busca por hash y devuelve el mismo 404 para mal escrito, caducado, revocado, inexistente o de un curso que ya no está terminado (sin enumeración). Los fallos y las copias por hora se cuentan por usuario en la BD, no por IP (D1). Es la única consulta del proyecto que lee un curso ajeno sin `owner_id`:
+  va por hash, comprueba caducidad y revocación en la misma sentencia y solo entrega al canje, nunca al llamante.
+- Alternativas descartadas: guardar el código en claro (se podría ver de nuevo, pero una fuga lo expondría todo), enlaces con el UUID del curso (adivinables si se filtran), límite por IP (no fiable hasta D1).
+- Revisitar si: se quiere volver a ver un código (se crearía otro) o añadir más límites cuando D1 esté resuelto.
+
+### ADR-65: La copia es un fork de lo hecho, sin fuentes ni datos del original, y con el filtro de menores sobre todo el texto
+- Motivo: quien canjea recibe el temario y el contenido de las piezas hechas, con ids nuevos y como propietario, con `origin_id` y `origin_version` (para avisar de versiones nuevas en el futuro) y su propia `version` 1. No se copian los documentos, las fuentes (se quitan también las marcas `[n]`),
+  el progreso, los intentos, las conversaciones, las consultas del asistente ni el uso de IA: lo que no tiene columna que lo enlace no puede colarse, y un test cuenta filas y busca ids del original. Solo se comparten cursos `READY`, así que la copia nace completa. Si quien canjea es un menor, todo el texto pasa por `ContentGuard`
+  antes de crearla y, si salta, no se crea nada y su adulto tutor lo ve en el panel (ADR-39, 57 y 60).
+- Alternativas descartadas: compartir por referencia (el original cambiaría bajo la copia), copiar también las fuentes (filtra ids de documentos de otro usuario), copiar progreso (datos del usuario).
+- Revisitar si: se avisa de versiones nuevas del original o se permite copiar cursos a medias.
+
+### ADR-66: Lo desactualizado se marca, no se regenera, y la versión sube con cada edición
+- Motivo: editar una lección deja intactos sus ejercicios y el examen del tema, pero los marca `outdated` y el propietario decide si regenerarlos (con su coste). Añadir o quitar un capítulo marca el examen del tema. Regenerar limpia la marca. `version` sube una unidad por edición guardada y la copia guarda la del original en ese momento.
+- Alternativas descartadas: una versión por pieza (excesivo), no marcar nada (el alumno estudiaría ejercicios que ya no encajan sin saberlo).
+- Revisitar si: se pueden editar ejercicios a mano.
