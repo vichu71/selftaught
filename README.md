@@ -3,8 +3,8 @@
 Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el curso. Proyecto familiar
 con base multiusuario; es un laboratorio, no formación reglada.
 
-> Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas. Pendiente del run real del benchmark
-> con tus claves (ver `sdd/BACKLOG.md`). El tope de gasto por usuario ya está hecho (ADR-29).
+> Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
+> (`sdd/benchmarks/`) y el tope de gasto por usuario (ADR-29). **F03** (material propio) en desarrollo. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -74,6 +74,25 @@ modelos reales se configura, **por tarea**, en tu `.env` (nunca en el código):
   propio tope de gasto, y deja un informe en `sdd/benchmarks/`. **Gasta dinero real**: solo se ejecuta si lo lanzas tú. Si un modelo falla
   (clave, nombre mal escrito, cuota), se anota en el informe y el run sigue con los demás. Indica los modelos en `APP_AI_BENCHMARK_MODELS`
   (`proveedor/modelo,proveedor/modelo`) y su precio en `ai-pricing.properties` antes de lanzarlo.
+
+## Material propio (F03)
+
+Desde «Mi material» subes tus apuntes (**PDF, Word .docx o texto .txt/.md**) para que los cursos y el tutor se basen en ellos. El material es
+**privado**: solo lo ves tú y, si eres menor, tu tutor (en solo lectura). El texto se extrae, se trocea y se indexa con el modelo de embeddings
+local (`nomic-embed-text`, sin coste): descárgalo antes con `make pull-embedding-model`. Cada documento pasa por *subido → procesando →
+listo* (o *error*, con su motivo) y puedes borrarlo en cualquier momento, con sus fragmentos y vectores.
+
+| Variable | Para qué |
+|---|---|
+| `MATERIAL_MAX_FILE_MB` | Tamaño máximo de un fichero (10 por defecto). nginx admite hasta 11 MB solo en `/api/material` |
+| `MATERIAL_MAX_DOCUMENTS` | Documentos por usuario (20 por defecto); los borrados no cuentan |
+
+- El tipo se decide por el **contenido** del fichero, no por su extensión. No se admiten `.doc` antiguos, macros, escaneados (no hay OCR) ni
+  ficheros cifrados. El texto debe estar en UTF-8.
+- El fichero original **no se guarda en disco**: vive en la BD solo mientras se procesa. Subir dos veces el mismo contenido se rechaza.
+- La búsqueda dentro del material es un servicio interno (`MaterialSearch`) que usarán las features de generación y el tutor; todavía no
+  tiene pantalla. Siempre filtra por propietario.
+- Si cambias de modelo de embeddings hay que reindexar: los fragmentos antiguos dejan de usarse (sin reindexado automático en v1).
 
 ## Tests
 

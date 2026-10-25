@@ -14,6 +14,16 @@
 | D5 | Límites de memoria de los contenedores (`mem_limit`) | Argon2 usa ~19 MiB por login concurrente | `compose.yaml` |
 | D6 | Comprobar desde otro equipo que `:8080`, `:8081`, `:5432` y `:8025` no se ven por la LAN | No se puede comprobar desde el código | firewall del host |
 
+## Anotado en F03 (material propio)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F3-1 | 🟠 Filtrado de contenido para menores (A3) **antes** de enviar texto de su material a un modelo de pago | Condición de ADR-34; se diseña en F04 |
+| F3-2 | Reindexado cuando cambie el modelo de embeddings | Hoy los fragmentos antiguos quedan sin uso |
+| F3-3 | OCR para documentos escaneados, y más formatos (enlaces, `.doc`) | Fuera de alcance v1 |
+| F3-4 | Revisar los avisos de seguridad de PDFBox al actualizar la dependencia | Única librería nueva de F03 |
+| F3-5 | Índice vectorial (HNSW) si un usuario supera ≈ 100 000 fragmentos | ADR-33 |
+
 ## Mejoras (🟡)
 
 | # | Qué | Nota |
