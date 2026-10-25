@@ -3,6 +3,7 @@ import { useAuthStore } from '@/stores/auth'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
 import HomeView from '@/views/HomeView.vue'
 import LoginView from '@/views/LoginView.vue'
+import MaterialView from '@/views/MaterialView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ResetPasswordView from '@/views/ResetPasswordView.vue'
 import VerifyEmailView from '@/views/VerifyEmailView.vue'
@@ -16,6 +17,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
     history,
     routes: [
       { path: '/', name: 'home', component: HomeView },
+      { path: '/material', name: 'material', component: MaterialView },
       { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
       { path: '/register', name: 'register', component: RegisterView, meta: { public: true } },
       { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { public: true } },

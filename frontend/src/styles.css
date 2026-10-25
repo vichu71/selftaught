@@ -137,3 +137,31 @@ a { color: var(--primary); }
 @media (min-width: 40rem) {
   .student { flex-direction: row; align-items: center; justify-content: space-between; }
 }
+
+/* Material propio (F03): lista de documentos y estado */
+.documents { list-style: none; margin: 0; padding: 0; }
+
+.document {
+  display: flex;
+  flex-direction: column;
+  gap: .5rem;
+  padding: .75rem 0;
+  border-top: 1px solid var(--border);
+}
+
+.document:first-child { border-top: 0; }
+.document-main { display: flex; flex-wrap: wrap; align-items: center; gap: .25rem .75rem; min-width: 0; }
+.document-name { overflow-wrap: anywhere; }
+.document-main .field-error { flex-basis: 100%; margin: 0; }
+.document .actions { display: flex; flex-wrap: wrap; align-items: center; gap: .5rem; }
+
+.status { font-size: .85rem; font-weight: 600; padding: .1rem .6rem; border-radius: 1rem; border: 1px solid var(--border); }
+.status-ready { color: var(--ok); border-color: var(--ok); }
+.status-error { color: var(--danger); border-color: var(--danger); }
+.status-uploaded, .status-processing { color: var(--muted); }
+
+button.danger { border-color: var(--danger); color: var(--danger); }
+
+@media (min-width: 40rem) {
+  .document { flex-direction: row; align-items: center; justify-content: space-between; }
+}

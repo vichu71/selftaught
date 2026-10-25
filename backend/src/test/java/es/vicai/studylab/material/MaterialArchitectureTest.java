@@ -94,13 +94,14 @@ class MaterialArchitectureTest extends MaterialTestBase {
         appender.start();
         root.addAppender(appender);
         Level previous = root.getLevel();
-        root.setLevel(Level.ALL);
+        root.setLevel(Level.DEBUG); // como el test de F02: el máximo detalle que puede activar un operador sin tocar el código
         try {
             String ana = logged("ana@example.com");
             uploadedAndProcessed(ana, "nombre-unico-xyz.txt", text("contenido-unico-xyz de un documento normal"));
             uploadedAndProcessed(ana, "roto-unico-xyz.pdf", text("%PDF-1.7 contenido-roto-xyz"));
             fake.failNextWithMessage(ProviderErrorKind.UNAVAILABLE, 99, "mensaje-del-proveedor-xyz");
             uploadedAndProcessed(ana, "caido-unico-xyz.txt", text("contenido-caido-xyz otro documento"));
+            fake.failNext(ProviderErrorKind.UNAVAILABLE, 0); // el servicio vuelve para la búsqueda
             search.search(idOf("ana@example.com"), "consulta-unica-xyz", 3, null);
         } finally {
             root.detachAppender(appender);
