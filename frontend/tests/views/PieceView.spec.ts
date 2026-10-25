@@ -71,7 +71,8 @@ describe('PieceView', () => {
     expect(m.wrapper.find('script').exists()).toBe(false)
     expect(m.wrapper.find('img').exists()).toBe(false)
     expect(m.wrapper.find('a[href^="javascript"]').exists()).toBe(false)
-    expect(m.wrapper.html()).not.toMatch(/\son[a-z]+=/i)
+    const elements = [m.wrapper.element, ...m.wrapper.element.querySelectorAll('*')]
+    expect(elements.some((el) => [...el.attributes].some((a) => /^on/i.test(a.name)))).toBe(false) // el HTML crudo es texto, no un elemento con manejadores
   })
 
   it('shows exercises with their solution hidden until it is asked for', async () => {

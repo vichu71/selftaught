@@ -5,6 +5,9 @@ import MarkdownContent from '@/components/MarkdownContent.vue'
 // AC-13 (ADR-45): el Markdown lo escribe un modelo y puede intentar cualquier cosa; se pinta sin HTML y con una lista cerrada de elementos
 const render = (source: string) => mount(MarkdownContent, { props: { source } })
 
+// Lo que importa es que ningún ELEMENTO lleve un manejador de eventos; el HTML crudo se muestra como texto y puede nombrarlos (p. ej. «onclick=»)
+const hasHandlerAttribute = (root: Element) => [root, ...root.querySelectorAll('*')].some((el) => [...el.attributes].some((a) => /^on/i.test(a.name)))
+
 describe('MarkdownContent: lo que sí se pinta', () => {
   it('renders headings, paragraphs and emphasis', () => {
     const w = render('# Título\n\nUn párrafo con **negrita** y *cursiva*.\n\n## Subtítulo')
@@ -79,7 +82,7 @@ describe('MarkdownContent: entradas hostiles', () => {
 
     expect(w.find('div[onclick]').exists()).toBe(false)
     expect(w.find('b').exists()).toBe(false)
-    expect(w.html()).not.toMatch(/\son[a-z]+=/i)
+    expect(hasHandlerAttribute(w.element)).toBe(false)
   })
 
   it('does not turn a javascript link into a link', () => {
@@ -112,7 +115,7 @@ describe('MarkdownContent: entradas hostiles', () => {
   it('never produces an element with an event handler attribute whatever the input', () => {
     const w = render('[a](https://ok.example "title\\" onmouseover=\\"x()")\n\n**<span onclick=x()>y</span>**')
 
-    expect(w.html()).not.toMatch(/\son[a-z]+=/i)
+    expect(hasHandlerAttribute(w.element)).toBe(false)
   })
 
   it('survives absurdly nested lists and quotes without crashing', () => {

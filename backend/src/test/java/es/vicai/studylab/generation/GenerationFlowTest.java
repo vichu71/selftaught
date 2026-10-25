@@ -285,7 +285,7 @@ class GenerationFlowTest extends GenerationTestBase {
         UUID course = insertCourse(ana, 3, true);
         AtomicInteger calls = new AtomicInteger();
         modelDoes(call -> {
-            if (calls.incrementAndGet() == 4) owner.update("UPDATE ai_generation_lock SET owner = 'otra-generacion' WHERE user_id = ?", ana); // otro la toma
+            if (calls.incrementAndGet() == 4) owner.update("UPDATE ai_generation_lock SET owner = gen_random_uuid() WHERE user_id = ?", ana); // otro la toma
             return happy(3).apply(call);
         });
 

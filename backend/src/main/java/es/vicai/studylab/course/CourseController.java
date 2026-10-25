@@ -7,7 +7,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -45,8 +44,5 @@ public class CourseController {
         return service.list(user);
     }
 
-    @GetMapping("/{id}")
-    CourseService.CourseView get(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
-        return service.get(user, id);
-    }
+    // GET /api/courses/{id} (detalle con temario y progreso) lo sirve generation.CourseContentController desde F05
 }

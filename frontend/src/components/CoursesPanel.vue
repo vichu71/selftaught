@@ -8,13 +8,14 @@ const listError = ref(false)
 const labels: Record<CourseStatus, string> = {
   PENDING_GENERATION: 'En cola',
   GENERATING: 'Preparándose',
+  PAUSED: 'En pausa',
   READY: 'Listo',
   FAILED: 'No se pudo preparar',
 }
 
 onMounted(async () => {
   try {
-    courses.value = await api.listCourses()
+    courses.value = (await api.listCourses()) ?? []
   } catch {
     listError.value = true
   }

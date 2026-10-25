@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Function;
 import org.springframework.stereotype.Component;
 
 /**
@@ -28,6 +29,7 @@ public class FakeProvider implements AiProvider {
     private volatile Integer dimensions;
     private volatile List<String> sequence;
     private final AtomicInteger sequenceIndex = new AtomicInteger();
+    private volatile Function<ChatCall, String> responder;
 
     public FakeProvider(AiProperties props) {
         this.props = props;
@@ -48,19 +50,28 @@ public class FakeProvider implements AiProvider {
         delay = Duration.ZERO;
         dimensions = null;
         sequence = null;
+        responder = null;
         sequenceIndex.set(0);
         response = new ChatResult("respuesta-falsa", 100, 50, false, FinishReason.STOP);
     }
 
     public void respondWith(String text, int inputTokens, int outputTokens) {
         sequence = null;
+        responder = null;
         response = new ChatResult(text, inputTokens, outputTokens, false, FinishReason.STOP);
     }
 
     /** Una respuesta distinta por llamada, en orden; cuando se acaban, se repite la última. Para probar reintentos (F04). */
     public void respondWithSequence(String... texts) {
         sequenceIndex.set(0);
+        responder = null;
         sequence = List.of(texts);
+    }
+
+    /** La respuesta depende de la petición (F05: según la pieza que se pide). Sustituye a las demás hasta el siguiente {@code reset()}. */
+    public void respondUsing(Function<ChatCall, String> responder) {
+        sequence = null;
+        this.responder = responder;
     }
 
     public void respondWithoutUsage(String text) {
@@ -105,6 +116,8 @@ public class FakeProvider implements AiProvider {
         calls.add(call);
         pause();
         failIfRequested();
+        Function<ChatCall, String> dynamic = responder;
+        if (dynamic != null) return new ChatResult(dynamic.apply(call), 100, 50, false, FinishReason.STOP);
         List<String> texts = sequence;
         if (texts != null && !texts.isEmpty()) {
             String next = texts.get(Math.min(sequenceIndex.getAndIncrement(), texts.size() - 1));

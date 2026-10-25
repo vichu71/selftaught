@@ -73,7 +73,7 @@ export interface CourseSheet {
   documentIds: string[]
 }
 
-export type CourseStatus = 'PENDING_GENERATION' | 'GENERATING' | 'READY' | 'FAILED'
+export type CourseStatus = 'PENDING_GENERATION' | 'GENERATING' | 'PAUSED' | 'READY' | 'FAILED'
 
 export interface Course {
   id: string
@@ -82,6 +82,67 @@ export interface Course {
   sheet: CourseSheet
   documents: { id: string; name: string }[]
   createdAt: string
+}
+
+export type PieceStatus = 'PENDING' | 'DONE' | 'FAILED'
+export type PieceKind = 'LESSON' | 'EXERCISES' | 'EXAM'
+export type StopReason = 'BUDGET' | 'PROVIDER' | 'CONTENT' | 'TOPIC_NOT_ALLOWED' | 'LIMIT'
+
+export interface PieceRef {
+  id: string
+  status: PieceStatus
+}
+
+export interface OutlineChapter {
+  id: string
+  title: string
+  objective: string
+  lesson?: PieceRef | null
+  exercises?: PieceRef | null
+}
+
+export interface OutlineTopic {
+  id: string
+  title: string
+  summary: string
+  chapters: OutlineChapter[]
+  exam?: PieceRef | null
+}
+
+/** El curso con su temario y progreso (F05). Un curso que aún espera en la cola llega sin temario. */
+export interface CourseDetail extends Course {
+  stopReason?: StopReason | null
+  progress?: { done: number; total: number }
+  costUsd?: number
+  generatedByAi?: boolean
+  outline?: OutlineTopic[]
+}
+
+export interface Exercise {
+  difficulty: 'LOW' | 'MEDIUM' | 'HIGH'
+  statement: string
+  solution: string
+  explanation: string
+}
+
+export interface ExamQuestion {
+  text: string
+  options: string[]
+  correct: number
+  explanation: string
+}
+
+/** Una pieza del curso. El contenido solo llega si está hecha (`DONE`). */
+export interface Piece {
+  id: string
+  kind: PieceKind
+  status: PieceStatus
+  title: string
+  generatedByAi: boolean
+  markdown?: string
+  exercises?: Exercise[]
+  questions?: ExamQuestion[]
+  sources: { n: number; page?: number | null }[]
 }
 
 export interface MaterialList {
@@ -160,5 +221,14 @@ export const api = {
   createCourse: (intakeId: string, answers: { questionId: string; optionId: string }[]) =>
     request<Course>('POST', '/api/courses', { intakeId, answers }),
   listCourses: () => request<Course[]>('GET', '/api/courses'),
-  getCourse: (id: string) => request<Course>('GET', `/api/courses/${encodeURIComponent(id)}`),
+  getCourse: (id: string) => request<CourseDetail>('GET', `/api/courses/${encodeURIComponent(id)}`),
+  getPiece: (courseId: string, pieceId: string) =>
+    request<Piece>('GET', `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`),
+  resumeCourse: (id: string) => request<CourseDetail>('POST', `/api/courses/${encodeURIComponent(id)}/resume`),
+  exportUrl: (id: string) => exportPath(id),
+}
+
+/** Dirección de la exportación del curso (se abre como descarga; no es una llamada de la API). */
+export function exportPath(id: string): string {
+  return `/api/courses/${encodeURIComponent(id)}/export`
 }
