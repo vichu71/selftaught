@@ -25,6 +25,31 @@ export interface NewStudent {
   password: string
 }
 
+export type MaterialStatus = 'UPLOADED' | 'PROCESSING' | 'READY' | 'ERROR'
+
+export interface MaterialDocument {
+  id: string
+  name: string
+  mediaType: 'PDF' | 'DOCX' | 'TEXT'
+  sizeBytes: number
+  status: MaterialStatus
+  errorKind?: string
+  chunkCount: number
+  pageCount?: number
+  createdAt: string
+  ownedByMe: boolean
+}
+
+export interface MinorMaterial {
+  student: { id: string; displayName: string }
+  documents: MaterialDocument[]
+}
+
+export interface MaterialList {
+  own: MaterialDocument[]
+  minors: MinorMaterial[]
+}
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -42,14 +67,16 @@ function csrfToken(): string | undefined {
 
 async function request<T>(method: string, path: string, body?: unknown): Promise<T> {
   const headers: Record<string, string> = {}
-  if (body !== undefined) headers['Content-Type'] = 'application/json'
+  const isForm = typeof FormData !== 'undefined' && body instanceof FormData
+  // Con FormData el navegador pone él mismo el Content-Type (con el boundary): no se fija a mano
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json'
   if (method !== 'GET') {
     const token = csrfToken()
     if (token) headers['X-XSRF-TOKEN'] = token
   }
 
   const init: RequestInit = { method, headers, credentials: 'same-origin' }
-  if (body !== undefined) init.body = JSON.stringify(body)
+  if (body !== undefined) init.body = isForm ? (body as FormData) : JSON.stringify(body)
   const response = await fetch(path, init)
 
   if (!response.ok) {
@@ -81,4 +108,12 @@ export const api = {
     request<void>('POST', `/api/tutor/students/${encodeURIComponent(id)}/deactivate`),
   reactivateStudent: (id: string) =>
     request<void>('POST', `/api/tutor/students/${encodeURIComponent(id)}/reactivate`),
+
+  listMaterial: () => request<MaterialList>('GET', '/api/material'),
+  uploadMaterial: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return request<MaterialDocument>('POST', '/api/material', form)
+  },
+  deleteMaterial: (id: string) => request<void>('DELETE', `/api/material/${encodeURIComponent(id)}`),
 }

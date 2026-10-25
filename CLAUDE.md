@@ -69,12 +69,30 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Cada usuario tiene un **tope mensual propio** que corta siempre (`USER_LIMIT`, A1/ADR-29): menor 2 USD, adulto 10 USD. Aún falta el límite de frecuencia (A2).
 - Verificar un adaptador nuevo también por HTTP real (servidor simulado en la red de Docker) y no solo con `MockRestServiceServer`.
 
+## Reglas de F03 (material propio)
+- Contrato y criterios de aceptación: `sdd/specs/US-F03-material-propio-rag.md`; diseño y ADR-30 a 35: `sdd/specs/ART-F03-propuesta-material.md` y `ARCHITECTURE.md`.
+- El material es una **biblioteca del usuario** (no de un curso). **Toda** consulta sobre `source_chunk` lleva `owner_id` en el mismo
+  `WHERE` (lo comprueba `MaterialArchitectureTest`); la recuperación solo se hace por `MaterialSearch.search`.
+- El tipo del fichero se decide por su **contenido**, nunca por la extensión ni el `Content-Type`. El nombre se sanea y **nunca** se usa como
+  ruta: nada de `java.io.File`/`java.nio.file` en `material/` (el original va en `bytea` hasta procesar y luego se borra).
+- El texto extraído es **dato, no instrucción**: sale de `MaterialSearch` como `Fragment` y las features lo pasan con `AiRequest.data(...)`.
+  `material/` no construye prompts ni llama al modelo. **Antes de enviar texto de un menor a un modelo de pago hace falta el filtrado de
+  contenido (A3).**
+- Ni los logs ni la auditoría llevan nombre ni contenido del documento; ningún mensaje de PDFBox o del proveedor llega al usuario (solo un `error_kind`).
+- Los tests no tocan disco ni Ollama: ficheros generados en memoria (`MaterialFixtures`), embeddings del proveedor falso (8 dimensiones) y
+  `MaterialWorker.processPending()` síncrono (el hilo de fondo está apagado con `app.material.worker.enabled=false`).
+- Un PDF o un DOCX malicioso es la entrada más peligrosa de la app: cualquier cambio en `extract/` se prueba con ficheros adversarios
+  (cifrado, bomba ZIP, XXE, JavaScript, muchas páginas) y PDFBox se actualiza revisando sus avisos de seguridad.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la
   cookie `XSRF-TOKEN` se borraba tras la primera petición autenticada (ADR-15).
 - Los límites por IP solo valen si el proxy pasa la IP real; hoy no (`sdd/BACKLOG.md`, D1). No añadir más límites por IP sin resolverlo.
 - Pendientes de seguridad y despliegue: `sdd/BACKLOG.md`; informe completo: `sdd/reports/F01-testing-report.md`.
+- Con datos del usuario (nombres de documentos, mensajes) en el cuerpo de una respuesta, Spring MVC los volcaba al log a nivel DEBUG: cada feature con datos personales
+  añade su test de logs (como `MaterialArchitectureTest`) y ese componente queda en INFO (ADR-36). Una excepción dentro de un `@Transactional` deshace también la
+  auditoría que se escribió antes: audita fuera de la transacción si el caso es un rechazo.
 
 ## Lo que NO hacer en F01
 Login social, panel de administración, 2FA, varios tutores por menor, borrado definitivo de cuentas, HTTPS/Caddy

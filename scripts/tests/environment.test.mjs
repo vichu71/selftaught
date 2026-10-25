@@ -237,3 +237,31 @@ test('F02 el informe del benchmark se escribe en sdd/benchmarks y esa carpeta ex
   assert.match(JSON.stringify(bench.services.benchmark.volumes ?? []), /sdd[\\/]+benchmarks/);
   assert.ok(existsSync(`${REPO}/sdd/benchmarks`), 'falta sdd/benchmarks');
 });
+
+// ---------- F03: material propio ----------
+
+test('F03 nginx admite subidas de hasta 11 MB solo en /api/material y deja 1 MB para el resto de /api', () => {
+  const conf = read('frontend/nginx.conf');
+  const block = conf.match(/location\s+\/api\/material\s*\{[^}]*\}/);
+  assert.ok(block, 'falta el bloque location /api/material');
+  assert.match(block[0], /client_max_body_size\s+11m;/);
+  assert.match(block[0], /proxy_pass\s+http:\/\/backend:8080/);
+  assert.match(block[0], /proxy_set_header\s+X-Forwarded-For\s+\$remote_addr;/); // la IP real no se puede falsear
+  assert.match(conf, /location\s+\/api\/\s*\{[^}]*client_max_body_size\s+1m;/);
+});
+
+test('F03 los límites de material llegan al backend con sus valores por defecto y están en .env.example', () => {
+  const environment = base.services.backend.environment;
+  assert.match(String(environment.MATERIAL_MAX_FILE_MB), /^\$\{MATERIAL_MAX_FILE_MB:-10\}$/);
+  assert.match(String(environment.MATERIAL_MAX_DOCUMENTS), /^\$\{MATERIAL_MAX_DOCUMENTS:-20\}$/);
+  const lines = read('.env.example').split('\n').filter((l) => /^[A-Z_]+=/.test(l));
+  const env = Object.fromEntries(lines.map((l) => [l.split('=')[0], l.slice(l.indexOf('=') + 1).trim()]));
+  assert.equal(env.MATERIAL_MAX_FILE_MB, '10');
+  assert.equal(env.MATERIAL_MAX_DOCUMENTS, '20');
+});
+
+test('F03 el backend sigue en solo lectura y sin volúmenes para ficheros subidos', () => {
+  const backend = base.services.backend;
+  assert.equal(backend.read_only, true);
+  assert.ok(!(backend.volumes ?? []).some((v) => /material|upload/i.test(JSON.stringify(v))), 'no debe haber volúmenes de ficheros subidos');
+});

@@ -1,7 +1,8 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)** y **F02 (capa de IA y control de gasto)
-> implementadas y probadas**. Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md` y `F02-testing-report.md`;
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)** y
+> **F03 (material propio, subida e indexado)** implementadas y probadas.
+> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md` y `F03-testing-report.md`;
 > resumen de cada ciclo en `sdd/reports/F0x-ciclo-completado.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general
@@ -41,6 +42,26 @@ el filtro de sesión → `AccessGuard` (permisos) → controlador. Todo evento r
 Las features piden una **tarea** (`OUTLINE`, `LESSON`, `ASSESSMENT`, `TUTOR`, `EMBEDDING`); qué proveedor y modelo la atienden es
 configuración. El texto del usuario o del material viaja siempre como dato, nunca dentro de las instrucciones.
 
+## Material propio (F03)
+
+```
+ Navegador ──► POST /api/material (multipart)                       AC-1..5
+                 │  MaterialService ── valida (tamaño, nº de documentos, firma del fichero), sanea el nombre,
+                 │                     calcula el hash y guarda el ORIGINAL en source_document.content (bytea)   → 202 UPLOADED
+                 ▼
+          MaterialWorker (un hilo; cola en BD: UPLOADED → PROCESSING → READY | ERROR)                            AC-9
+                 │  FileTypeDetector ─► PdfTextExtractor | DocxTextExtractor | PlainTextExtractor              AC-5..7
+                 │  Chunker ─► fragmentos de ≈ 1 000 caracteres con solape, con página y desplazamiento
+                 │  AiGateway.embed (tarea EMBEDDING → Ollama, coste 0) en lotes de 16
+                 └─► UNA transacción: bloquea el documento, guarda fragmentos + vectores, borra el original    AC-8
+ feature futura (F05/F07) ──► MaterialSearch.search(userId, consulta, k, documentos?)                           AC-12
+                 │  embedding de la consulta + similitud por coseno, siempre con owner_id = userId
+                 └─► List<Fragment>: texto, documento, página, posición, puntuación → se pasan al modelo con AiRequest.data(...)  AC-13
+```
+
+El material es una **biblioteca del usuario** (no pertenece a un curso). Lo ve su propietario y, en solo lectura, el tutor de un menor;
+solo el propietario lo borra (borrado real: documento, fragmentos y vectores). La búsqueda no se expone por HTTP en F03.
+
 ## Modelo de datos
 
 ```
@@ -58,6 +79,14 @@ ai_usage            id, request_id, attempt, occurred_at, user_id (nulo), course
                     error_kind, finish_reason, duration_ms        -- solo se añade; sin columnas de contenido
 ai_budget_alert     month (aaaa-mm), threshold (80|100), raised_at  -- PK (month, threshold): un aviso por mes y umbral
 ai_generation_lock  user_id (PK → app_user), owner, acquired_at, expires_at
+
+-- F03 (migración V3)
+source_document     id, owner_id → app_user, display_name (≤ 120, saneado), media_type (PDF|DOCX|TEXT), size_bytes, content_sha256,
+                    status (UPLOADED|PROCESSING|READY|ERROR), error_kind, attempts, page_count, chunk_count,
+                    content (bytea, solo hasta procesar; luego NULL), created_at, updated_at, processing_started_at
+                    UNIQUE (owner_id, content_sha256) · UNIQUE (id, owner_id)
+source_chunk        id, document_id + owner_id (FK compuesta → source_document, ON DELETE CASCADE), ordinal, page, start_offset,
+                    end_offset, text, embedding (vector, sin dimensión fija), embedding_model     -- índice por owner_id; sin índice ANN
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -76,6 +105,9 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `GET/POST /api/tutor/students` | adulto | lista y alta de sus menores |
 | `POST /api/tutor/students/{id}/reset-password` · `deactivate` · `reactivate` | adulto tutor de `{id}` | 404 si no es suyo |
 | `GET /api/ai/usage` | autenticado | adulto: su gasto, el estado del tope global y el de sus menores; menor: solo su nº de llamadas |
+| `POST /api/material` | autenticado (adulto o menor) | multipart `file`; 202; 400 vacío · 413 grande · 415 tipo · 409 límite o duplicado |
+| `GET /api/material` · `GET /api/material/{id}` | propietario; el tutor ve los de sus menores | `{ own, minors }`; ajeno o inexistente = 404 |
+| `DELETE /api/material/{id}` | solo el propietario | 204; el tutor recibe 403 (auditado); ajeno = 404 |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -88,7 +120,8 @@ selftaught/
 ├─ backend/                          # Spring Boot (Maven)
 │  └─ src/main/java/es/vicai/studylab/{auth,user,audit,mail,security,config}
 │     src/main/java/es/vicai/studylab/ai/{provider,prompt,budget,lock,benchmark}   # F02: capa de IA
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA)
+│     src/main/java/es/vicai/studylab/material/{extract,chunk}   # F03: subida, extracción, troceado, cola y búsqueda
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material)
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
@@ -283,3 +316,50 @@ selftaught/
 - Límites conocidos: con varias llamadas simultáneas del mismo usuario el sobrepaso queda acotado por las llamadas en curso (la generación
   de curso va con `GenerationLock`). El importe no lo cambia el tutor desde la app: es configuración.
 - Revisitar si: el tutor debe poder ajustar el tope de cada menor, o hace falta un límite de frecuencia además del de gasto (A2).
+
+### ADR-30: El material es una biblioteca del usuario, no de un curso
+- Motivo: los cursos no existen hasta F04/F05. El propietario es la frontera de aislamiento; la lista de documentos de una búsqueda es un filtro adicional.
+- Alternativas descartadas: tabla de cursos mínima en F03 (adelanta decisiones de F04/F05 y habría que migrarla).
+- Revisitar si: F05 necesita que un curso "congele" qué documentos usó (tabla de unión `course_document`).
+
+### ADR-31: Tipo por firma y extracción acotada, sin Apache POI
+- Motivo: la extensión y el `Content-Type` los pone el cliente. El tipo se decide por los bytes iniciales (`%PDF-`, ZIP con `[Content_Types].xml` y
+  `word/document.xml` y sin macros, texto UTF-8 sin NUL). PDFBox solo lee texto (límite de páginas, sin JS ni enlaces); el DOCX se lee con ZIP+StAX con
+  DTD y entidades externas desactivadas y límites de entradas y tamaño descomprimido; todo en una tarea con tiempo máximo.
+- Alternativas descartadas: Apache Tika/POI (muchas dependencias y superficie de ataque), confiar en la extensión.
+- Revisitar si: se admiten más formatos (entonces, otra librería con su propia revisión). PDFBox es la única dependencia nueva: revisar sus avisos de seguridad al actualizar.
+
+### ADR-32: Cola de procesado en la base de datos, con el original solo hasta procesarlo
+- Motivo: el estado ya es una columna, sobrevive a reinicios y no necesita broker. El original se guarda en `bytea` hasta `READY`/`ERROR` y luego se
+  borra: no hay ficheros en disco (contenedor de solo lectura), ni nombres usados como ruta, ni material duplicado. Reclamo con `FOR UPDATE SKIP LOCKED`;
+  al arrancar, los `PROCESSING` vuelven a `UPLOADED` y tras 3 intentos fallidos el documento pasa a `ERROR`. Los fragmentos se guardan en **una
+  transacción** que antes bloquea la fila del documento: si se borró mientras tanto, no se guarda nada.
+- Alternativas descartadas: `@Async` en memoria (se pierde al reiniciar), carpeta de ficheros (superficie de path traversal), broker externo (sobreingeniería).
+- Revisitar si: hay mucho volumen (varios workers; `SKIP LOCKED` ya lo permite) o hay que conservar el original (OCR, reindexado).
+
+### ADR-33: Búsqueda vectorial exacta, filtrada siempre por propietario; columna `vector` sin dimensión
+- Motivo: con ≤ 20 documentos por usuario el escaneo exacto con `owner_id` en el `WHERE` es rápido y **no puede devolver fragmentos de otro usuario por
+  efecto del índice**: un índice ANN (HNSW) filtrado puede devolver menos resultados de los pedidos. La columna sin dimensión fija evita atarla al modelo
+  y a la configuración de tests; cada fragmento guarda su `embedding_model` y la búsqueda solo compara con el vigente. La FK compuesta
+  `(document_id, owner_id)` hace imposible un fragmento con un propietario distinto al de su documento.
+- Alternativas descartadas: HNSW/IVFFlat ahora (complejidad y riesgo de filtrado sin necesidad), `vector(768)` fijo.
+- Revisitar si: un usuario supera ≈ 100 000 fragmentos, o si se cambia el modelo (hay que reindexar: no hay reindexado en v1).
+
+### ADR-34: El texto del documento es dato, nunca instrucción
+- Motivo: un PDF puede contener "ignora tus instrucciones". Los fragmentos salen de `MaterialSearch` como `Fragment` y las features los pasan con
+  `AiRequest.data(...)`, nunca dentro de una plantilla (`PromptAssembler` ya los separa y escapa). Un test de arquitectura impide que `material/`
+  construya prompts o llame al modelo.
+- Condición registrada: antes de que F05/F07 envíen texto de un **menor** a un modelo de pago debe existir el filtrado de contenido (A3).
+- Revisitar si: el contenido se muestra al usuario como HTML (hoy no: solo texto plano).
+
+### ADR-35: Borrado real y auditoría sin contenido
+- Motivo: es material del usuario (no una cuenta): borrar significa borrar documento, fragmentos y vectores. La auditoría registra id, tipo y
+  resultado (`DOCUMENT_UPLOADED`, `DOCUMENT_READY`, `DOCUMENT_FAILED`, `DOCUMENT_DELETED`), **sin nombre ni contenido**. Los logs tampoco los llevan.
+- Revisitar si: hace falta papelera o recuperar documentos.
+
+### ADR-36: Spring MVC no registra cuerpos de respuesta (privacidad del material)
+- Motivo (descubierto en la FASE 7): con nivel DEBUG, Spring MVC escribe en el log el cuerpo de cada respuesta, y con material eso incluía los nombres de los
+  documentos del usuario. Un operador que subiera el nivel para depurar los habría volcado a los logs. `logging.level.org.springframework.web.servlet.mvc.method.annotation`
+  se fija en INFO y `MaterialArchitectureTest` lo comprueba capturando los logs con el raíz en DEBUG.
+- Alternativas descartadas: confiar en que nadie suba el nivel; ofuscar los nombres en la respuesta.
+- Revisitar si: otra feature devuelve datos personales en el cuerpo (menores, conversaciones del tutor): añadir su propio test de logs.

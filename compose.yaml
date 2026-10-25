@@ -66,6 +66,9 @@ services:
       AI_BUDGET_MODE: ${AI_BUDGET_MODE:-WARN}
       AI_USER_LIMIT_MINOR_USD: ${AI_USER_LIMIT_MINOR_USD:-2.00}
       AI_USER_LIMIT_ADULT_USD: ${AI_USER_LIMIT_ADULT_USD:-10.00}
+      # F03: límites del material propio
+      MATERIAL_MAX_FILE_MB: ${MATERIAL_MAX_FILE_MB:-10}
+      MATERIAL_MAX_DOCUMENTS: ${MATERIAL_MAX_DOCUMENTS:-20}
     read_only: true
     tmpfs:
       - /tmp

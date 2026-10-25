@@ -13,6 +13,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /** Respuestas de error uniformes. Nunca se devuelve el detalle de una excepción inesperada. */
@@ -36,6 +37,19 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case PROVIDER_AUTH, PROVIDER_REJECTED, INVALID_RESPONSE, CONFIG -> HttpStatus.BAD_GATEWAY;
         };
         return ResponseEntity.status(status).body(Map.of("code", "AI_" + e.kind().name(), "message", e.getMessage()));
+    }
+
+    /** Una subida que el servidor corta por tamaño antes de llegar al servicio de material (F03, AC-3). */
+    ResponseEntity<Map<String, String>> handleMaxUpload(MaxUploadSizeExceededException e) {
+        return ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE)
+                .body(Map.of("code", "MATERIAL_TOO_LARGE", "message", "El fichero supera el tamaño máximo permitido"));
+    }
+
+    @Override
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    protected ResponseEntity<Object> handleMaxUploadSizeExceededException(MaxUploadSizeExceededException ex, HttpHeaders headers,
+            HttpStatusCode status, WebRequest request) {
+        return (ResponseEntity) handleMaxUpload(ex);
     }
 
     @ExceptionHandler(ApiException.class)

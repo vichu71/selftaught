@@ -43,6 +43,13 @@ public class RequiredSettingsCheck implements ApplicationListener<ApplicationPre
         missing.addAll(AiSettingsValidator.validate(ai, env.acceptsProfiles(Profiles.of("prod")),
                 env.acceptsProfiles(Profiles.of("benchmark"))));
 
+        // F03: los límites del material tienen que ser positivos (si no, nada se podría subir o se subiría sin límite)
+        es.vicai.studylab.material.MaterialProperties material = Binder.get(env)
+                .bind("app.material", Bindable.of(es.vicai.studylab.material.MaterialProperties.class))
+                .orElseGet(es.vicai.studylab.material.MaterialProperties::defaults);
+        if (material.maxFileMb() <= 0) missing.add("MATERIAL_MAX_FILE_MB (app.material.max-file-mb, debe ser mayor que 0)");
+        if (material.maxDocuments() <= 0) missing.add("MATERIAL_MAX_DOCUMENTS (app.material.max-documents, debe ser mayor que 0)");
+
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Falta configuración obligatoria: " + String.join(", ", missing)
                     + ". Defínela en las variables de entorno (ver .env.example).");

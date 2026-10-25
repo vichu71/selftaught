@@ -26,6 +26,7 @@ async function logout() {
     <section class="card">
       <h2>Tu espacio de estudio</h2>
       <p class="muted">Aquí aparecerán tus cursos.</p>
+      <p><RouterLink to="/material" data-testid="material-link">Mi material</RouterLink> · sube tus apuntes (PDF, Word o texto).</p>
     </section>
 
     <StudentsPanel v-if="auth.isTutor" />
