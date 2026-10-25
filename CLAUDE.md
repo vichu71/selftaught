@@ -122,6 +122,15 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Frontend: el contenido del modelo y del alumno se pinta siempre como texto o con `MarkdownContent`; nada de `v-html`. Los estados de carga y los errores nunca enseñan el código del backend.
 - Lecciones de F06: los envíos por hora se cuentan sobre los intentos conservados (`max-submissions-per-hour` ≤ `max-attempts-per-piece`, ADR-54). Un botón que desaparece tras el primer clic no se puede pulsar dos veces en un test: se prueba un clic y que ya no está. La verificación con el stack usa el servidor simulado `f06-stub` (responde también a la corrección).
 
+## Reglas de F07 (tutor IA por lección)
+- Contrato y criterios de aceptación: `sdd/specs/US-F07-tutor-ia.md`; diseño y ADR-55 a 58: `sdd/specs/ART-F07-propuesta-tutor.md` y `ARCHITECTURE.md`.
+- El paquete `tutor/` usa la tarea **`TUTOR`** (sin tarea ni variable nueva) y **nunca `GenerationLock`**: ese cerrojo es solo de la generación de cursos (ADR-20). «Una respuesta a la vez» y los límites (30/h, 150/día) viven en la BD con un cerrojo por usuario (ADR-55): la pregunta nace `PENDING`,
+  pasa a `OK` con su respuesta o a `FAILED` si el modelo falla (nunca se ve) y los fallos y los bloqueos **cuentan** para el límite.
+- Todo lo que va al modelo es **dato** etiquetado: audiencia, curso, capítulo, lección (≤ 12 000 caracteres), fallos, fuentes, historial (6 intercambios, 6 000 caracteres) y pregunta. De lo que falló el alumno solo van **enunciado y resultado**, nunca su respuesta ni la solución; nada de los exámenes (ADR-56).
+- **Menores:** `ContentGuard` sobre la pregunta (antes de enviarla), sobre los fragmentos (antes de enviarlos) y sobre la respuesta (antes de mostrarla); los bloqueos quedan en el hilo como `BLOCKED` o `FILTERED` para su tutor y la auditoría lleva ids, nunca el texto (ADR-57). Quien use `MaterialSearch` aplica también el filtro.
+- La respuesta se valida con `TutorAnswerValidator` (no vacía, ≤ 4 000 caracteres, sin HTML crudo ni enlaces peligrosos, citas `[n]` que existan; sin material no hay citas), con un reintento (ADR-58); sin streaming. En el frontend se pinta siempre con `MarkdownContent`.
+- El hilo es por lección y usuario; el adulto lo vacía, el **menor no** (403 `THREAD_PROTECTED`, su tutor lo ve) y el tutor adulto no lo lee por esta API hasta F08. Ni logs ni auditoría llevan preguntas, respuestas, lecciones ni fragmentos (lo comprueba `TutorArchitectureTest`).
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

@@ -4,8 +4,8 @@ Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el 
 con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
-> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41)
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). Pendientes: `sdd/BACKLOG.md`.
+> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) en curso: documentada, aún sin código. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -144,6 +144,17 @@ Desde «Tus cursos» entras en un curso: el temario muestra tu avance, qué lecc
   ejercicios) y cuenta en tu tope mensual; no hay variables nuevas.
 - **Menores:** su respuesta pasa por el filtro de contenido antes de enviarse a la IA (si coincide, se ve «Contenido inapropiado. Consulta con tu adulto.» y se puede autocorregir); su tutor verá los intentos en su panel (F08).
 - Lo que escribes (respuestas, intentos) no se guarda en logs ni en la auditoría.
+
+## Tutor IA por lección (F07)
+
+Debajo de cada lección ya generada hay un chat para preguntar tus dudas. El tutor conoce la lección, su capítulo y el resumen de tu curso; si el curso tiene **material propio**, busca fragmentos relevantes y los cita como «Fuente n (página)»;
+y si fallaste ejercicios de ese capítulo, sabe cuáles (solo el enunciado y que los fallaste, **nunca** tu respuesta ni las soluciones). Explica, da pistas y ejemplos, **no resuelve exámenes ni ejercicios por ti** y, si la pregunta no es del curso, te redirige.
+
+- **Conversación:** se guarda por lección (hasta 200 mensajes). Un adulto puede **vaciarla**; la de un menor no se borra porque su adulto tutor puede verla (su panel llega con F08) y el menor lo ve avisado en el chat.
+- **Límites por usuario:** 30 mensajes por hora y 150 al día (cuentan también los bloqueados y los fallidos) y una respuesta a la vez. Usa la tarea `TUTOR` (`APP_AI_TASKS_TUTOR_*`: un modelo medio o barato) y cuenta en tu tope mensual y en «Resultados».
+  Si se alcanza el tope o el proveedor falla, ves un mensaje claro en el chat y tu pregunta sigue en la caja.
+- **Menores:** su pregunta, los fragmentos del material y la respuesta del tutor pasan por el filtro de contenido; si salta, ven «Contenido inapropiado. Consulta con tu adulto.» (o un texto fijo) y queda en el hilo para su tutor.
+- Lo que se dice en el chat no se guarda en logs ni en la auditoría. Sin variables nuevas: los límites son valores de ingeniería (`app.tutor.*`).
 
 ## Tests
 

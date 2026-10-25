@@ -122,6 +122,27 @@ El **progreso no se guarda**: una lección cuenta si hay fila en `lesson_progres
 La solución de un ejercicio y la opción correcta de un examen **no salen del servidor** hasta que el alumno responde o entrega (la exportación del curso sí las lleva: es su propio contenido). Las respuestas del alumno
 no van a logs ni a la auditoría. Los límites (120 envíos por hora, 20 correcciones de IA al día, 200 intentos guardados por pieza) se cuentan en la BD.
 
+## Tutor IA por lección (F07)
+
+```
+ Alumno ──► POST /api/courses/{c}/pieces/{lección}/tutor {question}                                                                          AC-1..16
+   1. valida ids (404), lección DONE (409) y pregunta de 1 a 1 000 caracteres sin caracteres de control (400)
+   2. transacción con cerrojo por usuario (pg_advisory_xact_lock): límites 30/h y 150/día (429 TUTOR_RATE_LIMITED), respuesta en marcha (429 TUTOR_BUSY) y
+      reserva la pregunta como PENDING (ADR-55)
+   3. MENOR: ContentGuard.localCheck(pregunta) ── coincide ─► pregunta BLOCKED + respuesta fija BLOCKED, auditoría TUTOR_QUESTION_BLOCKED, 201 sin llamar al modelo (ADR-57)
+   4. contexto como DATOS (ADR-56): audiencia · curso (tema, enfoque, nivel, objetivo, títulos) · capítulo y objetivo · lección (≤ 12 000 caracteres) ·
+      fallos del capítulo (enunciado y «fallado»/«a medias», sin la respuesta del alumno) · historial (6 intercambios, 6 000 caracteres) ·
+      fuentes: MaterialSearch sobre los documentos del curso (SourcePack; menor: sin los fragmentos que rechaza ContentGuard)
+   5. AiGateway.complete(TUTOR) .course(id) → TutorAnswerValidator (no vacía, ≤ 4 000, sin HTML crudo, citas que existan); un reintento; si no, FAILED y 502 TUTOR_FAILED (ADR-58)
+   6. MENOR: ContentGuard sobre la respuesta ── coincide ─► texto fijo FILTERED + auditoría TUTOR_ANSWER_FILTERED
+   7. una transacción: pregunta → OK, respuesta OK/FILTERED con sus fuentes [{n, page}], poda a 200 mensajes por lección; 201 con los dos mensajes
+ GET …/tutor    ─► hilo de la lección (OK, BLOCKED y FILTERED; nunca PENDING ni FAILED) y canClear (adulto)
+ DELETE …/tutor ─► el adulto vacía su hilo; el menor recibe 403 THREAD_PROTECTED porque su adulto tutor lo ve (F08)
+```
+
+El hilo vive en `tutor_message`. La pregunta nace `PENDING` (reserva el límite y la «respuesta a la vez» con un cerrojo de la BD, así que vale con varias instancias) y, si el modelo falla, pasa a `FAILED` y no se ve: no hay mensajes huérfanos y los
+fallos cuentan para el límite. El tutor usa la tarea `TUTOR` (sin `GenerationLock`) y no recibe nada de los exámenes ni las soluciones de los ejercicios. Ni logs ni auditoría llevan lo que se dice en el chat.
+
 ## Modelo de datos
 
 ```
@@ -171,6 +192,11 @@ lesson_progress     owner_id, piece_id (lección), course_id, completed_at · PK
 exercise_attempt    id, owner_id, course_id, piece_id, item_index (0..7), answer (≤ 2 000), self_result (CORRECT|PARTIAL|INCORRECT), ai_result, ai_comment (≤ 600),
                     ai_requested_at (cuenta las correcciones de IA del día), created_at · índice (owner_id, created_at)
 exam_attempt        id, owner_id, course_id, piece_id (examen), status (STARTED|SUBMITTED), answers (jsonb), correct/total (0 ≤ correct ≤ total), started_at, submitted_at · índice por propietario
+
+-- F07 (migración V7)
+tutor_message       id, owner_id, course_id, piece_id (una lección), role (USER|TUTOR), status (PENDING|OK|FAILED|BLOCKED|FILTERED), content (≤ 6 000),
+                    sources (jsonb [{n, page}], solo respuestas con material), created_at · FK compuestas → course_piece y course, ON DELETE CASCADE ·
+                    índices (owner_id, piece_id, created_at) y (owner_id, created_at)
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -205,6 +231,7 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `PUT …/exercises/{i}/attempts/{a}/result` · `POST …/ai-grade` | propietario | autocorrección (204) · «Corregir con IA» (200 `{verdict, comment}`); 409 `AI_GRADING_ALREADY` · 422 `ANSWER_NOT_ALLOWED` (menores) · 429 `AI_GRADING_LIMIT`, `GRADING_BUSY` · 502 `GRADING_FAILED` |
 | `POST …/pieces/{pid}/exam/attempts` · `…/{a}/submit` · `GET …/{a}` | propietario | empezar (sin respuestas) · entregar `{answers}` (200 nota y correcciones, idempotente) · ver un intento entregado |
 | `GET …/pieces/{pid}/attempts` | propietario | historial `{kind, attempts}`, el más reciente primero |
+| `GET/POST/DELETE /api/courses/{id}/pieces/{pid}/tutor` | propietario | hilo de la lección · pregunta `{question}` (201 `{user, tutor}`; 400 · 404 · 409 lección sin generar · 429 `TUTOR_RATE_LIMITED`, `TUTOR_BUSY`, `AI_*` · 502 `TUTOR_FAILED`) · vaciar (adulto: 204; menor: 403 `THREAD_PROTECTED`) |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -221,7 +248,8 @@ selftaught/
 │     src/main/java/es/vicai/studylab/{course,safety}            # F04: asistente y cursos; filtro de menores reutilizable (ContentGuard)
 │     src/main/java/es/vicai/studylab/generation                 # F05: cola, generador, validadores de salida, SourcePack, hilos de fondo
 │     src/main/java/es/vicai/studylab/study                       # F06: progreso, intentos de ejercicio y examen, corrección con IA
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio)
+│     src/main/java/es/vicai/studylab/tutor                       # F07: hilo por lección, contexto, límites, filtro de menores y llamada al modelo
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -582,3 +610,28 @@ selftaught/
   desincronice. La retención (200 intentos por pieza) borra lo antiguo, así que el límite por hora no puede superar al de intentos por pieza o la poda dejaría el límite sin efecto. Los valores por defecto lo cumplen.
 - Alternativas descartadas: un contador por usuario y hora (otra tabla que mantener y purgar), no podar (la BD crece sin fin).
 - Revisitar si: se quiere cambiar alguno de los dos valores (F6-6: validarlo al arrancar) o si el tutor necesita conservar todos los intentos de un menor (F08).
+
+### ADR-55: El hilo del tutor vive en la BD y los mensajes provisionales sostienen los límites y la «respuesta a la vez»
+- Motivo: la pregunta del alumno se guarda como `PENDING` antes de llamar al modelo: reserva el límite por hora y por día (contando también lo bloqueado y lo fallido, así un bucle de fallos no gasta sin freno) y impide dos respuestas a la vez por usuario con un cerrojo de la BD
+  en la misma transacción, sin estado en memoria (vale con varias instancias; resuelve para el tutor lo que F6-2 deja pendiente en la corrección con IA). Si el modelo falla, el mensaje pasa a `FAILED` y no se ve: no quedan preguntas sin respuesta en el hilo.
+- Alternativas descartadas: contar solo lo guardado (los fallos no limitarían), un conjunto en memoria (solo una instancia), guardar el intercambio al terminar (no hay forma de reservar el límite ni de saber que hay uno en marcha).
+- Revisitar si: el volumen de mensajes obliga a purgar `FAILED` y `PENDING` antiguos por separado.
+
+### ADR-56: El tutor recibe un contexto acotado y, de lo que falló el alumno, solo enunciado y resultado
+- Motivo: la lección (recortada a 12 000 caracteres), el resumen del curso, el capítulo y los fragmentos del material van como datos, y el historial se limita a los últimos 6 intercambios y 6 000 caracteres: es el mayor gasto recurrente (F02). Para reforzar, se envía el enunciado
+  y «fallado» o «a medias» de los ejercicios del capítulo, **nunca** lo que escribió el alumno ni la solución: así el tutor no puede filtrar lo que no tiene, ni se mandan al modelo textos de un menor sin necesidad. El tutor no recibe nada de los exámenes.
+- Alternativas descartadas: enviar la lección entera y todo el historial (coste), mandar la respuesta del alumno para explicar el fallo con precisión (privacidad y filtro adicional), dar al tutor las soluciones (podría revelarlas).
+- Revisitar si: se mide que sin la respuesta literal el refuerzo es pobre (backlog, F7-1).
+
+### ADR-57: Filtro de menores en tres puntos y los bloqueos quedan en el hilo
+- Motivo: para un menor, `ContentGuard` se aplica a la pregunta (antes de enviarla), a los fragmentos del material (antes de enviarlos, condición de ADR-34) y a la respuesta del modelo (antes de mostrarla). Un bloqueo no es un error: queda en el hilo con una respuesta fija y una marca (`BLOCKED` o `FILTERED`)
+  para que su adulto tutor lo vea (F08), igual que los temas bloqueados de F04. El mensaje al menor es siempre «Contenido inapropiado. Consulta con tu adulto.» (pregunta) o un texto fijo (respuesta), sin categoría. La auditoría lleva ids, nunca el texto.
+- Riesgo asumido: la lista local es corta y solo en español (F4-3); el modelo recibe la instrucción de tono escolar como segunda capa.
+- Alternativas descartadas: rechazar con un error HTTP (no quedaría en el hilo para el tutor), no filtrar la salida.
+- Revisitar si: el tutor adulto debe poder desbloquear una pregunta concreta (F08).
+
+### ADR-58: La respuesta llega completa, validada y con un reintento; sin streaming
+- Motivo: el filtro de menores y la validación de citas necesitan el texto entero antes de mostrarlo, el coste de cada llamada se registra exacto y los adaptadores de la capa de IA no hacen streaming. La respuesta se acota a 4 000 caracteres, no puede traer HTML crudo ni citas a fragmentos que no se enviaron (como en F05);
+  una respuesta vacía o inservible se reintenta una vez y, si sigue mal, el alumno recibe un error amable y no se guarda nada. Un indicador de espera cubre los segundos de la llamada.
+- Alternativas descartadas: streaming (cambia todos los adaptadores y deja pasar texto sin filtrar), aceptar cualquier texto del modelo sin validar.
+- Revisitar si: la espera con un modelo real resulta larga para el alumno.
