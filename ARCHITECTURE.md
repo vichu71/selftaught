@@ -615,7 +615,9 @@ selftaught/
 - Motivo: la pregunta del alumno se guarda como `PENDING` antes de llamar al modelo: reserva el límite por hora y por día (contando también lo bloqueado y lo fallido, así un bucle de fallos no gasta sin freno) y impide dos respuestas a la vez por usuario con un cerrojo de la BD
   en la misma transacción, sin estado en memoria (vale con varias instancias; resuelve para el tutor lo que F6-2 deja pendiente en la corrección con IA). Si el modelo falla, el mensaje pasa a `FAILED` y no se ve: no quedan preguntas sin respuesta en el hilo.
 - Alternativas descartadas: contar solo lo guardado (los fallos no limitarían), un conjunto en memoria (solo una instancia), guardar el intercambio al terminar (no hay forma de reservar el límite ni de saber que hay uno en marcha).
-- Revisitar si: el volumen de mensajes obliga a purgar `FAILED` y `PENDING` antiguos por separado.
+- Los límites se cuentan sobre los mensajes **conservados**, así que el tope de conservación por lección (`app.tutor.max-stored`, 400) no puede bajar del doble del límite diario (150): con 200, quien preguntara 150 veces en una lección nunca llegaría al límite porque la poda se llevaría sus preguntas
+  antiguas (se vio al implementar; mismo invariante que ADR-54). Por la misma razón, **vaciar la conversación reinicia el contador** de quien lo hace: solo un adulto puede y el tope mensual por usuario sigue cortando (F7-6).
+- Revisitar si: el volumen de mensajes obliga a purgar `FAILED` y `PENDING` antiguos por separado, o si F7-6 se resuelve contando las llamadas `TUTOR` de `ai_usage`.
 
 ### ADR-56: El tutor recibe un contexto acotado y, de lo que falló el alumno, solo enunciado y resultado
 - Motivo: la lección (recortada a 12 000 caracteres), el resumen del curso, el capítulo y los fragmentos del material van como datos, y el historial se limita a los últimos 6 intercambios y 6 000 caracteres: es el mayor gasto recurrente (F02). Para reforzar, se envía el enunciado
