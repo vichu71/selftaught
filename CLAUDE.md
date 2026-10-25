@@ -90,6 +90,9 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   cookie `XSRF-TOKEN` se borraba tras la primera petición autenticada (ADR-15).
 - Los límites por IP solo valen si el proxy pasa la IP real; hoy no (`sdd/BACKLOG.md`, D1). No añadir más límites por IP sin resolverlo.
 - Pendientes de seguridad y despliegue: `sdd/BACKLOG.md`; informe completo: `sdd/reports/F01-testing-report.md`.
+- Con datos del usuario (nombres de documentos, mensajes) en el cuerpo de una respuesta, Spring MVC los volcaba al log a nivel DEBUG: cada feature con datos personales
+  añade su test de logs (como `MaterialArchitectureTest`) y ese componente queda en INFO (ADR-36). Una excepción dentro de un `@Transactional` deshace también la
+  auditoría que se escribió antes: audita fuera de la transacción si el caso es un rechazo.
 
 ## Lo que NO hacer en F01
 Login social, panel de administración, 2FA, varios tutores por menor, borrado definitivo de cuentas, HTTPS/Caddy

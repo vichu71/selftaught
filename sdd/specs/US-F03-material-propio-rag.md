@@ -60,3 +60,16 @@ y el filtrado de contenido de menores (A3, F04).
 - Los 16 AC tienen test y pasan en contenedor, con cobertura ≥ 80 %. Ningún test llama a una API de pago (los embeddings de test usan el proveedor falso; un test opt-in usa el Ollama real).
 - Verificado con el stack levantado: subida real de un PDF, un DOCX y un TXT, estado hasta `READY`, búsqueda interna correcta y borrado completo; y el aislamiento entre dos usuarios.
 - `README`, `ARCHITECTURE.md` y `CLAUDE.md` actualizados. `security-checklist` y `llm-integration-review` pasadas e informadas.
+
+## Cambios respecto a lo especificado (FASE 8, 25-10-2026)
+
+- **AC-3:** los errores de tamaño responden 413 con `MATERIAL_TOO_LARGE` tanto desde el servicio (10 MB + 1 byte) como desde el servidor web y nginx (11 MB), y las
+  variables son `MATERIAL_MAX_FILE_MB` y `MATERIAL_MAX_DOCUMENTS`. El límite de nginx (11 MB) debe subirse a mano si se sube el del backend.
+- **AC-9:** los motivos de error de un documento son `NO_TEXT`, `ENCRYPTED`, `CORRUPT`, `TOO_MANY_PAGES`, `TOO_LARGE`, `TOO_MUCH_TEXT`, `INDEXING_UNAVAILABLE` e
+  `INDEXING_FAILED`. Tras 3 intentos fallidos un documento pasa a `ERROR`; el tiempo máximo de extracción es de 60 s (ADR-32).
+- **AC-12:** `MaterialSearch` devuelve una lista vacía, sin llamar al modelo, si el usuario no tiene material indexado con el modelo vigente.
+- **AC-14:** además de la auditoría, **los logs tampoco llevan nombres ni contenido** (ADR-36).
+- **AC-15:** una petición sin sesión **y sin token CSRF** recibe 403; con token y sin sesión, 401.
+- **AC-16:** el contador de la lista muestra el número de documentos, sin «de 20» (el límite no viaja al frontend). No se ha comprobado visualmente en un navegador.
+- **Añadido:** `ZipDirectory` (lee solo los nombres del directorio central de un ZIP, sin descomprimir) y `MaterialConfig` (límites multipart en memoria, derivados de
+  `MATERIAL_MAX_FILE_MB`).

@@ -1,8 +1,8 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)** y **F02 (capa de IA y control de gasto)
-> implementadas y probadas**; **F03 (material propio)** documentada y en desarrollo (los apartados de F03 describen lo diseñado, ADR-30 a 35).
-> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md` y `F02-testing-report.md`;
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)** y
+> **F03 (material propio, subida e indexado)** implementadas y probadas.
+> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md` y `F03-testing-report.md`;
 > resumen de cada ciclo en `sdd/reports/F0x-ciclo-completado.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general
@@ -356,3 +356,10 @@ selftaught/
 - Motivo: es material del usuario (no una cuenta): borrar significa borrar documento, fragmentos y vectores. La auditoría registra id, tipo y
   resultado (`DOCUMENT_UPLOADED`, `DOCUMENT_READY`, `DOCUMENT_FAILED`, `DOCUMENT_DELETED`), **sin nombre ni contenido**. Los logs tampoco los llevan.
 - Revisitar si: hace falta papelera o recuperar documentos.
+
+### ADR-36: Spring MVC no registra cuerpos de respuesta (privacidad del material)
+- Motivo (descubierto en la FASE 7): con nivel DEBUG, Spring MVC escribe en el log el cuerpo de cada respuesta, y con material eso incluía los nombres de los
+  documentos del usuario. Un operador que subiera el nivel para depurar los habría volcado a los logs. `logging.level.org.springframework.web.servlet.mvc.method.annotation`
+  se fija en INFO y `MaterialArchitectureTest` lo comprueba capturando los logs con el raíz en DEBUG.
+- Alternativas descartadas: confiar en que nadie suba el nivel; ofuscar los nombres en la respuesta.
+- Revisitar si: otra feature devuelve datos personales en el cuerpo (menores, conversaciones del tutor): añadir su propio test de logs.
