@@ -1,0 +1,48 @@
+# Términos que bloquean un tema para un MENOR (capa local del filtro, ADR-39). Un término por línea: CATEGORÍA: texto.
+# Se normalizan igual que el tema (sin tildes ni mayúsculas, letras sueltas unidas, dígitos y símbolos habituales sustituidos por letras).
+# Son frases concretas y no palabras sueltas, a propósito: los temas escolares delicados (guerras, reproducción, drogas y salud, historia)
+# deben pasar. Ante la duda, no se añade: la valoración del modelo y la supervisión del tutor son las otras capas.
+# Se edita sin recompilar el código, pero hay que reiniciar el backend. Solo español (F4-3 del backlog).
+
+EXPLICIT: porno
+EXPLICIT: pornografia
+EXPLICIT: xxx
+EXPLICIT: sexo explicito
+EXPLICIT: sexo anal
+EXPLICIT: sexo oral
+EXPLICIT: videos de sexo
+EXPLICIT: hentai
+
+VIOLENCE: hacer una bomba
+VIOLENCE: fabricar una bomba
+VIOLENCE: construir una bomba
+VIOLENCE: como matar
+VIOLENCE: como torturar
+VIOLENCE: como asesinar
+VIOLENCE: como secuestrar
+VIOLENCE: fabricar un arma
+VIOLENCE: hacer un arma casera
+VIOLENCE: tiroteo en mi colegio
+VIOLENCE: como hacer dano a alguien
+
+DRUGS: fabricar metanfetamina
+DRUGS: fabricar drogas
+DRUGS: hacer drogas en casa
+DRUGS: comprar droga
+DRUGS: comprar drogas
+DRUGS: cocinar cocaina
+DRUGS: cocinar heroina
+DRUGS: como drogarme
+DRUGS: como colocarme
+
+SELF_HARM: como suicidarme
+SELF_HARM: como suicidarse
+SELF_HARM: formas de suicidarme
+SELF_HARM: quiero suicidarme
+SELF_HARM: cortarme las venas
+SELF_HARM: cortarse las venas
+SELF_HARM: hacerme dano
+SELF_HARM: hacerse dano
+SELF_HARM: autolesionarme
+SELF_HARM: como autolesionarse
+SELF_HARM: dejar de comer para adelgazar rapido

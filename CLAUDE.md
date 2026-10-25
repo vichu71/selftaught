@@ -84,12 +84,25 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Un PDF o un DOCX malicioso es la entrada más peligrosa de la app: cualquier cambio en `extract/` se prueba con ficheros adversarios
   (cifrado, bomba ZIP, XXE, JavaScript, muchas páginas) y PDFBox se actualiza revisando sus avisos de seguridad.
 
+## Reglas de F04 (asistente de creación de curso)
+- Contrato y criterios de aceptación: `sdd/specs/US-F04-asistente-creacion-curso.md`; diseño y ADR-37 a 41: `sdd/specs/ART-F04-propuesta-asistente.md` y `ARCHITECTURE.md`.
+- **Antes de enviar a un modelo de pago cualquier texto de un menor** (tema, material, mensaje al tutor IA) se pasa por `safety.ContentGuard.localCheck`. Es la condición de ADR-34 y la
+  capa local del filtro (ADR-39); F05 y F07 la usan, no escriben su propio filtro. El mensaje al menor es siempre «Contenido inapropiado. Consulta con tu adulto.», **sin categoría ni motivo**.
+- Las respuestas del modelo **nunca** se usan sin pasar por un parser de esquema estricto (`IntakeParser` es el patrón): ids generados por el servidor, longitudes y campos acotados, y un
+  fallo de formato degrada a valores por defecto, no a un error técnico. Una tarea nueva que devuelva JSON sigue el mismo patrón.
+- Lo que vuelve al cliente de un asistente con IA lo guarda **el servidor** (`course_intake`): el cliente solo devuelve ids de opciones. La ficha del curso (`course.sheet`, `schemaVersion: 1`)
+  es el contrato con F05: si cambia, sube la versión.
+- F04 solo envía el **tema** al modelo; nunca texto de documentos (lo comprueba `CourseArchitectureTest`). Los temas y los intentos bloqueados no van a logs ni a la auditoría con su texto.
+- Límites por usuario contados en la BD (no por IP): `COURSE_INTAKES_PER_HOUR` y `COURSE_MAX_PENDING`. Una consulta rechazada por límite no deja fila ni llama al modelo.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la
   cookie `XSRF-TOKEN` se borraba tras la primera petición autenticada (ADR-15).
 - Los límites por IP solo valen si el proxy pasa la IP real; hoy no (`sdd/BACKLOG.md`, D1). No añadir más límites por IP sin resolverlo.
 - Pendientes de seguridad y despliegue: `sdd/BACKLOG.md`; informe completo: `sdd/reports/F01-testing-report.md`.
+- En los tests de entorno, `docker compose config --format json` da el entorno de un servicio como **lista** `CLAVE=valor` cuando se combinan dos ficheros (compose.dev.yaml) y como objeto con uno solo.
+- En Vitest, un botón `type="submit"` no envía un formulario de un montaje sin documento: usa `@click` en el botón (y `@submit.prevent` para la tecla Intro). Y `uploadedAndProcessed` procesa los documentos pendientes de TODOS los usuarios: sube el que debe quedar pendiente el último.
 - Con datos del usuario (nombres de documentos, mensajes) en el cuerpo de una respuesta, Spring MVC los volcaba al log a nivel DEBUG: cada feature con datos personales
   añade su test de logs (como `MaterialArchitectureTest`) y ese componente queda en INFO (ADR-36). Una excepción dentro de un `@Transactional` deshace también la
   auditoría que se escribió antes: audita fuera de la transacción si el caso es un rechazo.

@@ -1,8 +1,8 @@
 # Arquitectura — Study Lab (nombre provisional)
 
-> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)** y
-> **F03 (material propio, subida e indexado)** implementadas y probadas.
-> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md` y `F03-testing-report.md`;
+> Se actualiza al cerrar cada feature. Estado: **F01 (base técnica, cuentas y roles)**, **F02 (capa de IA y control de gasto)**,
+> **F03 (material propio, subida e indexado)** y **F04 (asistente de creación de curso)** implementadas y probadas.
+> Informes de pruebas y seguridad: `sdd/reports/F01-testing-report.md`, `F02-testing-report.md`, `F03-testing-report.md` y `F04-testing-report.md`;
 > resumen de cada ciclo en `sdd/reports/F0x-ciclo-completado.md`. Pendientes: `sdd/BACKLOG.md`.
 
 ## Visión general
@@ -62,6 +62,25 @@ configuración. El texto del usuario o del material viaja siempre como dato, nun
 El material es una **biblioteca del usuario** (no pertenece a un curso). Lo ve su propietario y, en solo lectura, el tutor de un menor;
 solo el propietario lo borra (borrado real: documento, fragmentos y vectores). La búsqueda no se expone por HTTP en F03.
 
+## Asistente de creación de curso (F04)
+
+```
+ Navegador ──► POST /api/courses/intake {topic, documentIds}                                                  AC-1..5, 8..13
+                 │  1. valida el tema y los documentos (propios y READY)  ·  2. límites por usuario: 30 consultas/h y 5 cursos pendientes (A2)
+                 │  3. si es MENOR: ContentGuard.localCheck(tema) ── bloquea sin llamar al modelo ─► 422 TOPIC_NOT_ALLOWED
+                 │  4. AiGateway.complete(INTAKE): tema + audiencia (escolar|general) como DATOS → JSON con valoración y 0–3 preguntas
+                 │  5. IntakeParser valida el JSON contra un esquema estricto (un reintento; si falla, 0 preguntas y valores por defecto)
+                 │  6. MENOR + «no apropiado» ─► consulta BLOCKED (queda para el tutor, F08) ─► 422  ·  si no, consulta OPEN con las preguntas
+                 ▼                                                                       guardadas por el SERVIDOR (course_intake)
+ Navegador ──► POST /api/courses {intakeId, answers}                                                          AC-5..7, 13, 14
+                 │  SheetFactory: respuestas validadas contra las preguntas guardadas + valores por defecto → ficha v1
+                 └─► course (PENDING_GENERATION) + course_document   (idempotente: un curso por consulta)  ──►  F05 lo recogerá
+ safety.ContentGuard ── capa local reutilizable por F05 y F07 antes de enviar texto de un menor a un modelo de pago (ADR-39, cierra A3)
+```
+
+La **ficha del curso** (`course.sheet`, JSON con `schemaVersion: 1`) es el contrato con F05: tema, enfoque, nivel de partida, objetivo, número de temas (3 a 12),
+examen por tema y ids de documentos. F04 solo envía al modelo el **tema**; nunca el texto de un documento. Las respuestas del modelo nunca llegan al cliente sin validar.
+
 ## Modelo de datos
 
 ```
@@ -87,6 +106,15 @@ source_document     id, owner_id → app_user, display_name (≤ 120, saneado), 
                     UNIQUE (owner_id, content_sha256) · UNIQUE (id, owner_id)
 source_chunk        id, document_id + owner_id (FK compuesta → source_document, ON DELETE CASCADE), ordinal, page, start_offset,
                     end_offset, text, embedding (vector, sin dimensión fija), embedding_model     -- índice por owner_id; sin índice ANN
+
+-- F04 (migración V4)
+course_intake       id, owner_id → app_user, topic (≤ 200), document_ids (jsonb), status (OPEN|CONSUMED|BLOCKED), questions (jsonb, nulo si se bloqueó),
+                    blocked_category (EXPLICIT|VIOLENCE|DRUGS|SELF_HARM|OTHER), created_at, expires_at (+1 h)   -- índice (owner_id, created_at): cuenta A2
+course               id, owner_id → app_user, intake_id (UNIQUE → course_intake), title, status (PENDING_GENERATION|GENERATING|READY|FAILED),
+                    sheet (jsonb, ficha v1), created_at, updated_at · UNIQUE (id, owner_id)
+course_document     course_id, document_id, owner_id · PK (course_id, document_id)
+                    FK compuestas (course_id, owner_id) → course y (document_id, owner_id) → source_document, ambas ON DELETE CASCADE
+ai_usage            el CHECK de `task` admite también 'INTAKE'
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -108,6 +136,9 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `POST /api/material` | autenticado (adulto o menor) | multipart `file`; 202; 400 vacío · 413 grande · 415 tipo · 409 límite o duplicado |
 | `GET /api/material` · `GET /api/material/{id}` | propietario; el tutor ve los de sus menores | `{ own, minors }`; ajeno o inexistente = 404 |
 | `DELETE /api/material/{id}` | solo el propietario | 204; el tutor recibe 403 (auditado); ajeno = 404 |
+| `POST /api/courses/intake` | autenticado (adulto o menor) | `{topic, documentIds}` → `{intakeId, questions}`; 400 · 404 documento · 409 `COURSE_LIMIT_REACHED` · 422 `TOPIC_NOT_ALLOWED` (menores) · 429 `RATE_LIMITED` |
+| `POST /api/courses` | propietario de la consulta | `{intakeId, answers}` → 201 curso (repetido: 200 el mismo); 400 respuesta inválida · 404 · 409 · 410 `INTAKE_EXPIRED` |
+| `GET /api/courses` · `GET /api/courses/{id}` | propietario | ajeno o inexistente = 404; el tutor aún no ve los de su menor (F08) |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -121,7 +152,9 @@ selftaught/
 │  └─ src/main/java/es/vicai/studylab/{auth,user,audit,mail,security,config}
 │     src/main/java/es/vicai/studylab/ai/{provider,prompt,budget,lock,benchmark}   # F02: capa de IA
 │     src/main/java/es/vicai/studylab/material/{extract,chunk}   # F03: subida, extracción, troceado, cola y búsqueda
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material)
+│     src/main/java/es/vicai/studylab/{course,safety}            # F04: asistente y cursos; filtro de menores reutilizable (ContentGuard)
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos)
+│     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
@@ -363,3 +396,37 @@ selftaught/
   se fija en INFO y `MaterialArchitectureTest` lo comprueba capturando los logs con el raíz en DEBUG.
 - Alternativas descartadas: confiar en que nadie suba el nivel; ofuscar los nombres en la respuesta.
 - Revisitar si: otra feature devuelve datos personales en el cuerpo (menores, conversaciones del tutor): añadir su propio test de logs.
+
+### ADR-37: La consulta del asistente vive en el servidor
+- Motivo: las preguntas las decide el modelo; si el cliente las devolviera con sus respuestas, podría inventar preguntas, valores o «campos de la ficha». Guardar la consulta con sus
+  preguntas validadas permite validar las respuestas contra lo que el servidor generó, hacer idempotente el «Aceptar» (`course.intake_id` único), contar el límite de frecuencia por
+  usuario (consultas de la última hora, sin depender de la IP: D1) y conservar los intentos bloqueados para el tutor.
+- Alternativas descartadas: asistente sin estado (el cliente reenvía preguntas y respuestas), sesión HTTP (el backend es sin estado).
+- Revisitar si: el volumen obliga a purgar consultas antiguas (hay que fijar una retención: F4-1 del backlog).
+
+### ADR-38: Una sola llamada al modelo, con salida JSON validada y degradación sin errores
+- Motivo: tema, valoración de idoneidad y preguntas salen de **una** llamada (coste mínimo). Los adaptadores no usan la «salida estructurada» de cada proveedor, así que el modelo responde con
+  JSON en texto y `IntakeParser` lo valida contra un esquema estricto (máx. 3 preguntas, 2 a 4 opciones con una por defecto, campos conocidos y sin repetir, longitudes acotadas) antes de usarlo.
+  Los ids los genera el servidor y siempre se añade «Como tú veas». Un fallo de formato nunca llega al usuario: un reintento y, si falla, 0 preguntas con valores por defecto.
+- Alternativas descartadas: dos llamadas (una para filtrar y otra para preguntar: más cara y más lenta), confiar en el texto del modelo sin validar.
+- Revisitar si: se elige un proveedor con salida estructurada fiable para todos los modelos.
+
+### ADR-39: `ContentGuard` en dos capas, reutilizable (cierra A3)
+- Motivo: para un menor, la capa local (términos explícitos, normalizados sin tildes, mayúsculas, símbolos ni espaciado) responde **sin llamar al modelo** y sin coste; la capa del modelo valora
+  «apropiado para escolares» dentro de la llamada del asistente. La capa local está en el paquete `safety` para que F05 (lecciones) y F07 (tutor) la usen **antes de enviar texto de un menor a un
+  modelo de pago**, que es la condición que dejó ADR-34. La lista de términos es un fichero de recursos. A los adultos no se les aplica. El mensaje al menor es «Contenido inapropiado. Consulta con tu adulto.»
+  y nunca revela la categoría; el tutor ve el intento (F08).
+- Riesgo asumido: falsos positivos (un tema escolar legítimo bloqueado: el mensaje remite al adulto) y falsos negativos con otros idiomas o disfraces; no sustituye a la supervisión del tutor.
+- Alternativas descartadas: solo lista (deja pasar temas disfrazados), solo modelo (cuesta una llamada por intento y depende del proveedor), servicio de moderación externo (otro proveedor y otra política de datos).
+- Revisitar si: el tutor necesita desbloquear un tema concreto, o hay que cubrir más idiomas.
+
+### ADR-40: El curso nace en F04, con su ficha versionada y su enlace a documentos
+- Motivo: «Aceptar» necesita guardar algo y F05 necesita un sitio donde leer el contrato. `course.sheet` es JSONB con `schemaVersion`; `course_document` enlaza con las claves compuestas que ya
+  protegen el material (nadie puede usar un documento ajeno). Estados `PENDING_GENERATION | GENERATING | READY | FAILED` definidos desde ya para no migrar el CHECK en F05.
+- Alternativas descartadas: no guardar nada hasta F05, columnas separadas para cada campo de la ficha (cada cambio de la ficha sería una migración).
+- Revisitar si: F05 necesita consultar por campos de la ficha (entonces se promocionan a columnas).
+
+### ADR-41: Límite de frecuencia por usuario contado en la base de datos (cierra A2 del asistente)
+- Motivo: hoy los límites por IP no valen detrás de nginx (D1). La frecuencia (30 consultas por hora) y los cursos pendientes (5) se cuentan por usuario sobre `course_intake` y `course`;
+  una consulta rechazada por límite no deja fila ni llama al modelo.
+- Revisitar si: los endpoints de F05/F07 necesitan un contador genérico reutilizable (extraerlo entonces).

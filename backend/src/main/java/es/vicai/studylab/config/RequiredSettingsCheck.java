@@ -50,6 +50,13 @@ public class RequiredSettingsCheck implements ApplicationListener<ApplicationPre
         if (material.maxFileMb() <= 0) missing.add("MATERIAL_MAX_FILE_MB (app.material.max-file-mb, debe ser mayor que 0)");
         if (material.maxDocuments() <= 0) missing.add("MATERIAL_MAX_DOCUMENTS (app.material.max-documents, debe ser mayor que 0)");
 
+        // F04: los límites del asistente tienen que ser positivos (con 0 nadie podría crear un curso)
+        es.vicai.studylab.course.CourseProperties course = Binder.get(env)
+                .bind("app.course", Bindable.of(es.vicai.studylab.course.CourseProperties.class))
+                .orElseGet(es.vicai.studylab.course.CourseProperties::defaults);
+        if (course.intakesPerHour() <= 0) missing.add("COURSE_INTAKES_PER_HOUR (app.course.intakes-per-hour, debe ser mayor que 0)");
+        if (course.maxPending() <= 0) missing.add("COURSE_MAX_PENDING (app.course.max-pending, debe ser mayor que 0)");
+
         if (!missing.isEmpty()) {
             throw new IllegalStateException("Falta configuración obligatoria: " + String.join(", ", missing)
                     + ". Defínela en las variables de entorno (ver .env.example).");

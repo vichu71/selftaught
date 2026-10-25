@@ -138,6 +138,20 @@ class AiStartupSettingsTest {
     }
 
     @Test
+    void f04_theIntakeTaskIsRequiredLikeTheOthersAndTheErrorNamesIt() {
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.tasks.intake.provider="})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.tasks.intake"));
+    }
+
+    @Test
+    void f04_theCourseLimitsMustBePositiveOrTheAppDoesNotStartNamingTheVariable() {
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.course.intakes-per-hour=0"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("COURSE_INTAKES_PER_HOUR"));
+        assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.course.max-pending=-1"})))
+                .satisfies(e -> assertThat(fullMessage(e)).contains("COURSE_MAX_PENDING"));
+    }
+
+    @Test
     void edge_anUnconfiguredTaskFailsNamingIt() {
         assertThatThrownBy(() -> start("test", args(VALID, new String[] {"--app.ai.tasks.tutor.provider="})))
                 .satisfies(e -> assertThat(fullMessage(e)).contains("app.ai.tasks.tutor"));

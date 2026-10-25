@@ -265,3 +265,42 @@ test('F03 el backend sigue en solo lectura y sin volúmenes para ficheros subido
   assert.equal(backend.read_only, true);
   assert.ok(!(backend.volumes ?? []).some((v) => /material|upload/i.test(JSON.stringify(v))), 'no debe haber volúmenes de ficheros subidos');
 });
+
+// ---------- F04: asistente de creación de curso ----------
+
+test('F04 la tarea INTAKE y los límites del asistente llegan al backend, y en dev la tarea usa el proveedor falso', () => {
+  const environment = base.services.backend.environment;
+  assert.match(String(environment.APP_AI_TASKS_INTAKE_PROVIDER), /^\$\{APP_AI_TASKS_INTAKE_PROVIDER:-\}$/);
+  assert.match(String(environment.APP_AI_TASKS_INTAKE_MODEL), /^\$\{APP_AI_TASKS_INTAKE_MODEL:-\}$/);
+  assert.match(String(environment.COURSE_INTAKES_PER_HOUR), /^\$\{COURSE_INTAKES_PER_HOUR:-30\}$/);
+  assert.match(String(environment.COURSE_MAX_PENDING), /^\$\{COURSE_MAX_PENDING:-5\}$/);
+  // Al combinar dos ficheros, Compose puede dar el entorno como lista "CLAVE=valor" en lugar de como objeto
+  const devEnvironment = dev.services.backend.environment;
+  const devValue = (key) => (Array.isArray(devEnvironment) ? devEnvironment.find((e) => e.startsWith(`${key}=`))?.slice(key.length + 1) : devEnvironment[key]);
+  assert.match(String(devValue('APP_AI_TASKS_INTAKE_PROVIDER')), /^\$\{APP_AI_TASKS_INTAKE_PROVIDER:-fake\}$/);
+  assert.match(String(devValue('APP_AI_TASKS_INTAKE_MODEL')), /^\$\{APP_AI_TASKS_INTAKE_MODEL:-fake-1\}$/);
+});
+
+test('F04 la plantilla de variables documenta los límites del asistente y la tarea INTAKE', () => {
+  const text = read('.env.example');
+  const lines = text.split('\n').filter((l) => /^[A-Z_]+=/.test(l));
+  const env = Object.fromEntries(lines.map((l) => [l.split('=')[0], l.slice(l.indexOf('=') + 1).trim()]));
+  assert.equal(env.COURSE_INTAKES_PER_HOUR, '30');
+  assert.equal(env.COURSE_MAX_PENDING, '5');
+  assert.match(text, /APP_AI_TASKS_INTAKE/, 'la tarea INTAKE debe estar documentada junto a las demás');
+});
+
+test('F04 la plantilla del asistente y la lista de términos del filtro de menores existen en el código, no en el entorno', () => {
+  assert.ok(existsSync(`${REPO}/backend/src/main/resources/prompts/intake.txt`), 'falta prompts/intake.txt');
+  assert.ok(existsSync(`${REPO}/backend/src/main/resources/safety/blocked-terms.txt`), 'falta safety/blocked-terms.txt');
+  assert.doesNotMatch(read('backend/src/main/resources/prompts/intake.txt'), /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
+});
+
+test('F04 el asistente no monta volúmenes ni publica el backend', () => {
+  for (const cfg of all) {
+    for (const [name, s] of services(cfg)) {
+      assert.ok(!JSON.stringify(s.volumes ?? []).match(/course|intake/i), `${name} no debe montar volúmenes del asistente`);
+    }
+  }
+  assert.ok(!published(base).some((p) => p.name === 'backend'), 'el backend no se publica fuera de la red de Compose en prod');
+});

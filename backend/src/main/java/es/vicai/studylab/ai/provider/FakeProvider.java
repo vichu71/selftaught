@@ -26,6 +26,8 @@ public class FakeProvider implements AiProvider {
     private volatile ChatResult response;
     private volatile Duration delay = Duration.ZERO;
     private volatile Integer dimensions;
+    private volatile List<String> sequence;
+    private final AtomicInteger sequenceIndex = new AtomicInteger();
 
     public FakeProvider(AiProperties props) {
         this.props = props;
@@ -45,11 +47,20 @@ public class FakeProvider implements AiProvider {
         failuresLeft.set(0);
         delay = Duration.ZERO;
         dimensions = null;
+        sequence = null;
+        sequenceIndex.set(0);
         response = new ChatResult("respuesta-falsa", 100, 50, false, FinishReason.STOP);
     }
 
     public void respondWith(String text, int inputTokens, int outputTokens) {
+        sequence = null;
         response = new ChatResult(text, inputTokens, outputTokens, false, FinishReason.STOP);
+    }
+
+    /** Una respuesta distinta por llamada, en orden; cuando se acaban, se repite la última. Para probar reintentos (F04). */
+    public void respondWithSequence(String... texts) {
+        sequenceIndex.set(0);
+        sequence = List.of(texts);
     }
 
     public void respondWithoutUsage(String text) {
@@ -94,6 +105,11 @@ public class FakeProvider implements AiProvider {
         calls.add(call);
         pause();
         failIfRequested();
+        List<String> texts = sequence;
+        if (texts != null && !texts.isEmpty()) {
+            String next = texts.get(Math.min(sequenceIndex.getAndIncrement(), texts.size() - 1));
+            return new ChatResult(next, 100, 50, false, FinishReason.STOP);
+        }
         return response;
     }
 

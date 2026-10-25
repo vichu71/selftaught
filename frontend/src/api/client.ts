@@ -45,6 +45,45 @@ export interface MinorMaterial {
   documents: MaterialDocument[]
 }
 
+export interface IntakeOption {
+  id: string
+  label: string
+  isDefault: boolean
+}
+
+export interface IntakeQuestion {
+  id: string
+  text: string
+  options: IntakeOption[]
+}
+
+export interface IntakeResult {
+  intakeId: string
+  questions: IntakeQuestion[]
+}
+
+export interface CourseSheet {
+  schemaVersion: number
+  topic: string
+  focus: string
+  startLevel: string
+  goal: string
+  topicsCount: number
+  examPerTopic: boolean
+  documentIds: string[]
+}
+
+export type CourseStatus = 'PENDING_GENERATION' | 'GENERATING' | 'READY' | 'FAILED'
+
+export interface Course {
+  id: string
+  title: string
+  status: CourseStatus
+  sheet: CourseSheet
+  documents: { id: string; name: string }[]
+  createdAt: string
+}
+
 export interface MaterialList {
   own: MaterialDocument[]
   minors: MinorMaterial[]
@@ -116,4 +155,10 @@ export const api = {
     return request<MaterialDocument>('POST', '/api/material', form)
   },
   deleteMaterial: (id: string) => request<void>('DELETE', `/api/material/${encodeURIComponent(id)}`),
+
+  startIntake: (topic: string, documentIds: string[]) => request<IntakeResult>('POST', '/api/courses/intake', { topic, documentIds }),
+  createCourse: (intakeId: string, answers: { questionId: string; optionId: string }[]) =>
+    request<Course>('POST', '/api/courses', { intakeId, answers }),
+  listCourses: () => request<Course[]>('GET', '/api/courses'),
+  getCourse: (id: string) => request<Course>('GET', `/api/courses/${encodeURIComponent(id)}`),
 }

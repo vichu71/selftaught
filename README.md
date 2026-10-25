@@ -4,7 +4,7 @@ Web de ayuda al estudio con IA: dices qué quieres aprender y la IA te monta el 
 con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
-> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29) y **F03** (material propio: subida e indexado, ADR-30 a 36). Pendientes: `sdd/BACKLOG.md`.
+> (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36) y **F04** (asistente de creación de curso, ADR-37 a 41). Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -93,6 +93,22 @@ listo* (o *error*, con su motivo) y puedes borrarlo en cualquier momento, con su
 - La búsqueda dentro del material es un servicio interno (`MaterialSearch`) que usarán las features de generación y el tutor; todavía no
   tiene pantalla. Siempre filtra por propietario.
 - Si cambias de modelo de embeddings hay que reindexar: los fragmentos antiguos dejan de usarse (sin reindexado automático en v1).
+
+## Crear un curso (F04)
+
+Desde «Tus cursos» → **Nuevo curso**: escribes qué quieres estudiar, dices si tienes información que aportar (documentos de «Mi material»), contestas de 0 a 3 preguntas
+sencillas que decide la IA (cada una con su opción por defecto y «Como tú veas») y aceptas el resumen. El curso queda **pendiente de generar**: la generación llega con F05.
+
+| Variable | Para qué |
+|---|---|
+| `APP_AI_TASKS_INTAKE_PROVIDER` / `_MODEL` | Modelo del asistente (tarea `INTAKE`). Basta uno rápido y barato; en desarrollo, el proveedor falso |
+| `COURSE_INTAKES_PER_HOUR` | Consultas al asistente por usuario y hora (30 por defecto) |
+| `COURSE_MAX_PENDING` | Cursos pendientes de generar por usuario (5 por defecto) |
+
+- **Menores:** un tema inapropiado no se crea; el menor ve «Contenido inapropiado. Consulta con tu adulto.» y el intento queda guardado para su tutor (su pantalla llega con F08).
+  El filtro tiene dos capas (lista de términos local y valoración del modelo) y no se aplica a los adultos. La lista está en `backend/src/main/resources/safety/blocked-terms.txt`.
+- El asistente solo envía al modelo el **tema**: nunca el texto de tus documentos.
+- La edad del menor no se guarda: el nivel de partida se pregunta dentro del asistente.
 
 ## Tests
 
