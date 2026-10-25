@@ -17,6 +17,16 @@ describe('frontend source policy', () => {
     expect(offenders.map(([file]) => file)).toEqual([])
   })
 
+  // ADR-45 (F05): `marked` solo se usa para LEER el Markdown en tokens; nunca para producir HTML
+  it('uses the Markdown library only inside MarkdownContent and only to read tokens', () => {
+    const importers = Object.entries(sources).filter(([, code]) => /from ['"]marked['"]|require\(['"]marked['"]\)/.test(code))
+    expect(importers.map(([file]) => file)).toEqual(['/src/components/MarkdownContent.vue'])
+    const code = Object.entries(sources).filter(([, c]) => /marked/.test(c)).map(([, c]) => c).join('\n')
+    expect(code).toMatch(/lexer/)
+    expect(code).not.toMatch(/marked\.parse\(|marked\.parseInline\(|\bmarked\(|new Marked|\.use\(/)
+    expect(code).not.toMatch(/Renderer/)
+  })
+
   it('never keeps tokens or credentials in web storage (the session is an HttpOnly cookie)', () => {
     const offenders = Object.entries(sources).filter(([, code]) => /localStorage|sessionStorage|indexedDB/.test(code))
     expect(offenders.map(([file]) => file)).toEqual([])

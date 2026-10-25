@@ -81,6 +81,26 @@ solo el propietario lo borra (borrado real: documento, fragmentos y vectores). L
 La **ficha del curso** (`course.sheet`, JSON con `schemaVersion: 1`) es el contrato con F05: tema, enfoque, nivel de partida, objetivo, número de temas (3 a 12),
 examen por tema y ids de documentos. F04 solo envía al modelo el **tema**; nunca el texto de un documento. Las respuestas del modelo nunca llegan al cliente sin validar.
 
+## Generación del curso (F05)
+
+```
+ course (PENDING_GENERATION) ──► GenerationWorkerLoop (2 hilos, sondeo 3 s; apagado en tests) ──► CourseGenerator.processPending()
+   1. reclama un curso con FOR UPDATE SKIP LOCKED, de un propietario activo y sin otro curso GENERATING  ·  GenerationLock.acquire (una generación por usuario)
+   2. sin temario: AiGateway OUTLINE (ficha + audiencia como DATOS) ─► OutlineParser ─► temas, capítulos y TODAS las piezas (PENDING) en una transacción
+        └─ menor y «appropriate=false» ─► FAILED / TOPIC_NOT_ALLOWED (cierra F4-5), sin generar nada
+   3. por cada pieza PENDING o FAILED, en orden seq:  lease.renew() (si false, aborta sin escribir)  ·  con material: MaterialSearch (k = 4) ─► SourcePack
+        (fragmentos numerados, solo de los documentos del curso; para un menor se descartan los que ContentGuard bloquea)  ·  AiGateway LESSON | ASSESSMENT
+        ─► LessonValidator | ExercisesParser | ExamParser  ·  menor: ContentGuard sobre lo generado  ·  DONE
+   4. validación fallida: un reintento (para un menor, con instrucción reforzada); si falla otra vez, FAILED y sigue con la siguiente pieza
+   5. AiException USER_LIMIT / BUDGET_BLOCKED ─► PAUSED / BUDGET · PROVIDER_* / CONFIG ─► PAUSED / PROVIDER · USER_NOT_ALLOWED ─► vuelve a la cola · cerrojo perdido ─► vuelve a la cola
+   6. fin: todo DONE ─► READY  ·  alguna FAILED ─► PAUSED / CONTENT  ·  libera el cerrojo y audita (sin contenido)
+ POST /api/courses/{id}/resume ─► PAUSED → PENDING_GENERATION (enfriamiento de 60 s); el generador continúa solo por lo que falta; una pieza DONE no se regenera nunca
+```
+
+Cada petición a la IA lleva los datos `pieza` (`temario | leccion | ejercicios | examen`) y `audiencia` (`escolar | general`); las lecciones con material llevan además `fuentes` (fragmentos numerados, sin
+nombres de documento) y los ejercicios la `leccion` ya generada. La lección es Markdown y los ejercicios y exámenes JSON estricto (ADR-43). El frontend pinta el Markdown con `marked.lexer` y elementos Vue de
+una lista cerrada, sin HTML (ADR-45). El paquete `course/` sigue sin poder leer material: la generación vive en `generation/`, el único que usa `MaterialSearch`.
+
 ## Modelo de datos
 
 ```
@@ -115,6 +135,14 @@ course               id, owner_id → app_user, intake_id (UNIQUE → course_int
 course_document     course_id, document_id, owner_id · PK (course_id, document_id)
                     FK compuestas (course_id, owner_id) → course y (document_id, owner_id) → source_document, ambas ON DELETE CASCADE
 ai_usage            el CHECK de `task` admite también 'INTAKE'
+
+-- F05 (migración V5)
+course              + status 'PAUSED' · stop_reason (BUDGET|PROVIDER|CONTENT en pausa; TOPIC_NOT_ALLOWED|LIMIT en fallo) · resumed_at · completed_at
+course_topic        id, course_id + owner_id (FK compuesta → course, CASCADE), position, title (≤ 120), summary (≤ 300) · UNIQUE (course_id, position) · UNIQUE (id, owner_id)
+course_chapter      id, topic_id + owner_id (FK compuesta → course_topic, CASCADE), course_id, position, title (≤ 120), objective (≤ 200)
+course_piece        id, course_id, owner_id, topic_id, chapter_id (nulo en el examen), kind (LESSON|EXERCISES|EXAM), seq (UNIQUE por curso), status (PENDING|DONE|FAILED),
+                    error_kind, attempts, content_md (lección), content_json (ejercicios, examen), sources (jsonb [{n, documentId, page}], sin FK), created_at, generated_at
+ai_usage            índice por course_id: el coste del curso se suma al consultarlo, no se guarda
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -138,7 +166,10 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `DELETE /api/material/{id}` | solo el propietario | 204; el tutor recibe 403 (auditado); ajeno = 404 |
 | `POST /api/courses/intake` | autenticado (adulto o menor) | `{topic, documentIds}` → `{intakeId, questions}`; 400 · 404 documento · 409 `COURSE_LIMIT_REACHED` · 422 `TOPIC_NOT_ALLOWED` (menores) · 429 `RATE_LIMITED` |
 | `POST /api/courses` | propietario de la consulta | `{intakeId, answers}` → 201 curso (repetido: 200 el mismo); 400 respuesta inválida · 404 · 409 · 410 `INTAKE_EXPIRED` |
-| `GET /api/courses` · `GET /api/courses/{id}` | propietario | ajeno o inexistente = 404; el tutor aún no ve los de su menor (F08) |
+| `GET /api/courses` · `GET /api/courses/{id}` | propietario | ajeno o inexistente = 404; el tutor aún no ve los de su menor (F08). El detalle (F05) añade `stopReason`, `progress {done,total}`, `costUsd` y el temario con el estado de cada pieza |
+| `GET /api/courses/{id}/pieces/{pieceId}` | propietario | lección (`markdown`), ejercicios o examen; el contenido solo llega si la pieza está `DONE`; ajena = 404 |
+| `POST /api/courses/{id}/resume` | propietario | 202; 409 si no está en pausa · 429 `RESUME_TOO_SOON` (60 s) |
+| `GET /api/courses/{id}/export` | propietario | JSON versionado con el curso; citas como «Fuente n», sin nombres de documento, ids ni datos del usuario |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -153,7 +184,8 @@ selftaught/
 │     src/main/java/es/vicai/studylab/ai/{provider,prompt,budget,lock,benchmark}   # F02: capa de IA
 │     src/main/java/es/vicai/studylab/material/{extract,chunk}   # F03: subida, extracción, troceado, cola y búsqueda
 │     src/main/java/es/vicai/studylab/{course,safety}            # F04: asistente y cursos; filtro de menores reutilizable (ContentGuard)
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos)
+│     src/main/java/es/vicai/studylab/generation                 # F05: cola, generador, validadores de salida, SourcePack, hilos de fondo
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -430,3 +462,48 @@ selftaught/
 - Motivo: hoy los límites por IP no valen detrás de nginx (D1). La frecuencia (30 consultas por hora) y los cursos pendientes (5) se cuentan por usuario sobre `course_intake` y `course`;
   una consulta rechazada por límite no deja fila ni llama al modelo.
 - Revisitar si: los endpoints de F05/F07 necesitan un contador genérico reutilizable (extraerlo entonces).
+
+### ADR-42: La generación es una cola en la BD de piezas con estado
+- Motivo: un curso son decenas de llamadas que duran minutos. Con una fila por pieza (`PENDING | DONE | FAILED`) el progreso es una consulta, reanudar es seguir por lo que falta, un reinicio no pierde ni repite nada
+  y «nunca se regenera lo ya generado» deja de ser una promesa del código para ser una condición del `WHERE`. Reclamo con `SKIP LOCKED` y `GenerationLock` renovado entre llamadas (cierra A4).
+- Alternativas descartadas: un documento JSON del curso entero (no se puede preguntar por piezas ni reanudar a medias), tareas en memoria (se pierden al reiniciar), un broker de mensajes (sobreingeniería).
+- Revisitar si: hay muchos usuarios a la vez (subir los hilos o separar el proceso).
+
+### ADR-43: Lecciones en Markdown validado, ejercicios y exámenes en JSON estricto; una pieza que falla no tumba el curso
+- Motivo: el texto largo se escribe mejor y falla menos como Markdown que como cadena dentro de un JSON; los ejercicios y exámenes, que F06 tendrá que corregir, necesitan estructura. Cada tipo tiene su validador (patrón de
+  `IntakeParser`: vacío ante cualquier fallo, nunca lanza). Un fallo se reintenta una vez; si persiste, la pieza queda `FAILED` y el curso sigue, para no perder 40 piezas buenas por una mala. Al final, el curso se pausa con `CONTENT` y reanudar reintenta solo las fallidas.
+- Alternativas descartadas: todo en JSON, abortar el curso ante la primera pieza inválida, guardar lo que el modelo diga sin validar.
+- Revisitar si: se adopta la salida estructurada de los proveedores (el JSON dejaría de romperse).
+
+### ADR-44: Pausa por tope o por proveedor, reanudación manual con enfriamiento
+- Motivo: sin reintentos automáticos que gasten sin que nadie lo vea. Al alcanzar el tope (`USER_LIMIT`, `BUDGET_BLOCKED`) o caer el proveedor, el curso pasa a `PAUSED` con su motivo y no hace más llamadas. «Reanudar» tiene un enfriamiento
+  de 60 s por curso (A2) y solo vale en `PAUSED`; un curso reanudado vuelve a la cola y continúa por lo que falta.
+- Alternativas descartadas: reintento automático cada N minutos, estados distintos para cada causa de pausa.
+- Revisitar si: hace falta avisar por correo cuando una pausa dure mucho.
+
+### ADR-45: El Markdown se pinta sin HTML: tokens de `marked.lexer` a elementos Vue de una lista permitida
+- Motivo: el contenido lo escribe un modelo y puede intentar cualquier cosa. En lugar de convertir a HTML y sanear (el punto donde siempre falla algo), `marked` solo **lee** el texto en tokens y `MarkdownContent` construye
+  elementos Vue con una lista cerrada (títulos, párrafos, listas, énfasis, código, citas, tablas, enlaces `http(s)` con `rel="noopener noreferrer nofollow"`). El HTML crudo, las imágenes, los enlaces con otro esquema y las fórmulas salen
+  como texto; la profundidad y el nº de tokens están acotados. No hay `v-html` ni `innerHTML`, y el test de política del frontend exige que `marked` solo se importe en `MarkdownContent` y solo se use `lexer`.
+- Alternativas descartadas: `marked` + DOMPurify (dos librerías y una cadena HTML en medio), lector propio (más código crítico), `v-html` con sanear (prohibido).
+- Revisitar si: se necesitan fórmulas (KaTeX, que añadiría su propia revisión) o imágenes.
+
+### ADR-46: Con material propio, solo fragmentos de los documentos del curso, numerados y verificados
+- Motivo: la lección cita lo que usa. `SourcePack` numera los fragmentos recuperados (solo de los documentos enlazados al curso y del propietario, con `MaterialSearch`) y guarda el mapa `[n] → documento y página`. El modelo recibe los textos como
+  **datos**, sin los nombres de los documentos; la lección se acepta solo si sus marcadores `[n]` existen. Para un menor, antes de enviar nada al modelo se descartan los fragmentos que coinciden con `ContentGuard` (condición de ADR-34, cierra F3-1).
+  La exportación cita «Fuente n» con la página, nunca el nombre del documento.
+- Alternativas descartadas: enviar el documento entero, permitir citas sin comprobar, citar por nombre de fichero.
+- Revisitar si: se quiere citar con enlace al documento dentro de la aplicación (F06).
+
+### ADR-47: El contenido generado para un menor se comprueba antes de guardarse y el tema se vuelve a valorar en el temario
+- Motivo: F04 acepta el tema de un menor aunque la valoración del modelo falte (F4-5). El temario trae su propia valoración: si el modelo lo juzga no apto para escolares, el curso pasa a `FAILED / TOPIC_NOT_ALLOWED` sin generar nada. Además todo lo
+  generado para un menor pasa por la capa local de `ContentGuard` antes de guardarse (un reintento con instrucción reforzada; si persiste, pieza `FAILED` y auditoría `COURSE_CONTENT_BLOCKED` sin el contenido).
+- Riesgo asumido: la lista local es corta y solo en español; la valoración del modelo y el tutor son las otras capas.
+- Revisitar si: el tutor debe poder aprobar o rechazar contenido concreto (F08).
+
+### ADR-48: Los ejercicios esperan a su lección y el reclamo respeta el cerrojo vigente
+- Motivo: los ejercicios se escriben a partir del texto de la lección; sin ella no se pide nada y la pieza queda `PENDING` hasta que «Reanudar» reintente la lección (ahorra llamadas que saldrían incoherentes).
+  El reclamo de la cola ignora a los usuarios con un cerrojo vigente o un curso ya generándose, de modo que ni se llena la auditoría de denegaciones ni se disputa el cerrojo; al arrancar, los cerrojos de los
+  propietarios de cursos interrumpidos se liberan (una sola instancia: nada se está generando de verdad). Un fallo inesperado pausa el curso en vez de repetirse en bucle.
+- Alternativas descartadas: generar ejercicios sin lección (incoherentes), intentar el cerrojo siempre y aceptar las denegaciones, dejar caducar los cerrojos tras un reinicio (hasta 20 minutos de espera).
+- Revisitar si: hay más de una instancia del backend (el arranque no podría liberar cerrojos ajenos).
