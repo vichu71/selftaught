@@ -359,3 +359,19 @@ test('F07 la plantilla del tutor está en el código, es una instrucción fija y
   assert.doesNotMatch(text, /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
   assert.match(text.toLowerCase(), /pistas/);
 });
+
+test('F08 el panel no añade dependencias, variables obligatorias ni plantillas de IA nuevas', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F08 no necesita librerías nuevas');
+  const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
+  assert.ok(!required.some((k) => /GUARDIAN|PANEL/.test(k)), 'el panel no exige variables obligatorias');
+  assert.ok(!existsSync(`${REPO}/backend/src/main/resources/prompts/guardian.txt`), 'el panel no llama a la IA: no hay plantilla');
+});
+
+test('F08 la migración del panel solo añade el índice de la auditoría por actor', () => {
+  const file = 'backend/src/main/resources/db/migration/V8__guardian.sql';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const sql = read(file);
+  assert.match(sql, /CREATE INDEX audit_event_actor_idx ON audit_event \(actor_user_id, action, occurred_at\)/i);
+  assert.doesNotMatch(sql, /CREATE TABLE|DROP |GRANT/i, 'el panel no crea tablas ni cambia permisos');
+});

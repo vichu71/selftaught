@@ -173,3 +173,25 @@ describe('StudentsPanel', () => {
     expect(byId(wrapper, 'student-s9').text()).toContain('<img src=x onerror=alert(1)>')
   })
 })
+
+// F08 AC-1: cada alumno, activo o dado de baja, lleva a su panel de actividad
+describe('StudentsPanel: acceso al panel de actividad', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(api.listStudents).mockResolvedValue([hugo, lola])
+  })
+
+  it('offers the activity panel of every student, also of a deactivated one', async () => {
+    const { wrapper } = await mountPanel()
+
+    expect(byId(wrapper, 'student-activity-s1').attributes('href')).toBe('/alumnos/s1')
+    expect(byId(wrapper, 'student-activity-s2').attributes('href')).toBe('/alumnos/s2')
+  })
+
+  it('shows no access when the adult has no students', async () => {
+    vi.mocked(api.listStudents).mockResolvedValue([])
+    const { wrapper } = await mountPanel()
+
+    expect(wrapper.find('[data-testid^="student-activity-"]').exists()).toBe(false)
+  })
+})
