@@ -211,3 +211,9 @@ a.button-link {
 .options { margin: .25rem 0 .5rem; }
 details { margin: .5rem 0; }
 summary { cursor: pointer; font-weight: 600; min-height: 2.75rem; display: flex; align-items: center; }
+
+/* Indicador de actividad del curso (F5-6) */
+.activity { display: flex; align-items: center; gap: .6rem; margin: 0 0 .5rem; color: var(--muted); font-size: .9rem; }
+.spinner { width: 1rem; height: 1rem; border: 2px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; flex: none; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spinner { animation: none; border-top-color: var(--primary); } }

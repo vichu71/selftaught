@@ -45,6 +45,7 @@
 | F5-2 | 🟡 Enlaces `http(s)` en las lecciones: su texto lo escribe el modelo. Para menores, pintar solo el texto o mostrar el dominio | `MarkdownContent.vue`; hoy se permiten con `rel` seguro |
 | F5-3 | 🟡 Dos hilos de generación: con más de dos personas a la vez, el resto espera en cola | `app.generation.worker.threads` |
 | F5-4 | 🟡 No hay forma de borrar un curso ni de purgar sus piezas | El gasto queda en `ai_usage` |
+| F5-6 | ✅ Hecho: indicador de actividad en la pantalla del curso («Comprobado hace N s» con rueda animada) y aviso «esperando a que termine tu otro curso» (`waitingForOther` en el detalle) | Cambio pequeño tras la primera prueba con modelos reales |
 | F5-5 | 🟡 Segunda capa de filtro para menores sobre cada lección (valoración del modelo o moderación) y otros idiomas | Junto con F4-3; decidir en F07/F08 |
 
 ## Mejoras (🟡)

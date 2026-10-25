@@ -71,6 +71,32 @@ class GenerationAccessTest extends GenerationTestBase {
     }
 
     @Test
+    void ac10_aQueuedCourseSaysItIsWaitingForAnotherCourseOfTheSameUserThatIsBeingGenerated() throws Exception {
+        String ana = logged("ana@example.com");
+        UUID anaId = idOf("ana@example.com");
+        UUID running = insertCourse(anaId, "Primer curso", 2, true, List.of());
+        UUID queued = insertCourse(anaId, "Segundo curso", 2, true, List.of());
+        owner.update("UPDATE course SET status = 'GENERATING' WHERE id = ?", running);
+
+        detail(ana, queued).andExpect(jsonPath("$.waitingForOther").value(true));
+        detail(ana, running).andExpect(jsonPath("$.waitingForOther").doesNotExist());
+
+        owner.update("UPDATE course SET status = 'READY' WHERE id = ?", running);
+        detail(ana, queued).andExpect(jsonPath("$.waitingForOther").doesNotExist());
+    }
+
+    @Test
+    void ac10_aGenerationOfAnotherUserNeverMakesMyQueuedCourseWait() throws Exception {
+        String ana = logged("ana@example.com");
+        logged("luis@example.com");
+        UUID queued = insertCourse(idOf("ana@example.com"), "Mi curso", 2, true, List.of());
+        UUID other = insertCourse(idOf("luis@example.com"), "Curso de Luis", 2, true, List.of());
+        owner.update("UPDATE course SET status = 'GENERATING' WHERE id = ?", other);
+
+        detail(ana, queued).andExpect(jsonPath("$.waitingForOther").doesNotExist());
+    }
+
+    @Test
     void ac10_aForeignCourseAndANonexistentOneAnswerTheSame404() throws Exception {
         logged("ana@example.com");
         String luis = logged("luis@example.com");

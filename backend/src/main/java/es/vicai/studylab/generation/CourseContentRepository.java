@@ -89,6 +89,12 @@ public class CourseContentRepository {
                 rs.getString("sources"));
     }
 
+    /** Si la misma persona tiene otro curso generándose: el suyo espera su turno (una generación a la vez por usuario). */
+    public boolean otherGenerating(UUID courseId, UUID ownerId) {
+        return jdbc.sql("SELECT EXISTS (SELECT 1 FROM course WHERE owner_id = :owner AND id <> :id AND status = 'GENERATING')")
+                .param("owner", ownerId).param("id", courseId).query(Boolean.class).single();
+    }
+
     /** El coste de un curso es la suma de sus llamadas registradas: una sola fuente de verdad. */
     public BigDecimal cost(UUID courseId, UUID ownerId) {
         return jdbc.sql("SELECT COALESCE(sum(cost_usd), 0) FROM ai_usage WHERE course_id = :course AND user_id = :owner")

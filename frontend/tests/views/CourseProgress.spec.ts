@@ -183,3 +183,65 @@ describe('CourseStatusView: progreso de la generación', () => {
     expect(byId(m.wrapper, 'resume').exists()).toBe(false)
   })
 })
+
+// F5-6: se nota que el curso trabaja (indicador animado y «hace N s») y, si espera por otro curso del mismo usuario, lo dice
+describe('CourseStatusView: indicador de actividad', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(api.getCourse).mockResolvedValue(detail() as never)
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  it.each(['PENDING_GENERATION', 'GENERATING'])('shows an activity indicator while the course is %s', async (status) => {
+    vi.mocked(api.getCourse).mockResolvedValue(detail({ status }) as never)
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'activity').exists()).toBe(true)
+    expect(byId(m.wrapper, 'activity').attributes('role')).toBe('status')
+  })
+
+  it.each(['READY', 'PAUSED', 'FAILED'])('shows no activity indicator once the course is %s', async (status) => {
+    vi.mocked(api.getCourse).mockResolvedValue(detail({ status }) as never)
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'activity').exists()).toBe(false)
+  })
+
+  it('says when it was last checked and counts the seconds, starting again with every refresh', async () => {
+    vi.useFakeTimers()
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+    expect(byId(m.wrapper, 'updated').text()).toContain('0 s')
+
+    await vi.advanceTimersByTimeAsync(2100)
+    expect(byId(m.wrapper, 'updated').text()).toContain('2 s')
+
+    await vi.advanceTimersByTimeAsync(1100) // llega el sondeo de los 3 s y vuelve a cero
+    await flushPromises()
+    expect(byId(m.wrapper, 'updated').text()).toMatch(/\b[01] s/)
+  })
+
+  it('tells the user the course waits for another one of theirs that is being generated', async () => {
+    vi.mocked(api.getCourse).mockResolvedValue(detail({ status: 'PENDING_GENERATION', outline: [], progress: { done: 0, total: 0 }, waitingForOther: true }) as never)
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'course-status').text().toLowerCase()).toContain('esperando')
+    expect(byId(m.wrapper, 'course-status').text().toLowerCase()).toContain('en cola')
+  })
+
+  it('keeps the plain queue message when it is not waiting for another course', async () => {
+    vi.mocked(api.getCourse).mockResolvedValue(detail({ status: 'PENDING_GENERATION', outline: [], progress: { done: 0, total: 0 } }) as never)
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'course-status').text().toLowerCase()).not.toContain('esperando')
+  })
+
+  it('stops the clock when the user leaves the page', async () => {
+    vi.useFakeTimers()
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+    m.wrapper.unmount()
+
+    expect(vi.getTimerCount()).toBe(0)
+  })
+})

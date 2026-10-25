@@ -116,6 +116,7 @@ export interface CourseDetail extends Course {
   costUsd?: number
   generatedByAi?: boolean
   outline?: OutlineTopic[]
+  waitingForOther?: boolean
 }
 
 export interface Exercise {
