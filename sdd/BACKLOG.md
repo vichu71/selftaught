@@ -53,11 +53,22 @@
 | # | Qué | Nota |
 |---|-----|------|
 | F6-1 | 🟠 Medir con tu modelo real cuántas veces «Corregir con IA» acierta o se equivoca, y cuánto cuesta | Solo lo puede hacer el usuario; se verifica con un modelo simulado |
-| F6-2 | 🟡 «Una corrección de IA a la vez por usuario» está en memoria: con varias instancias del backend debe pasar a la BD | ADR-52 |
+| F6-2 | 🟡 «Una corrección de IA a la vez por usuario» está en memoria: con varias instancias del backend debe pasar a la BD (el tutor de F07 ya lo hace así: ADR-55) | ADR-52 |
 | F6-3 | 🟡 La exportación del curso lleva soluciones y respuestas correctas: si se usa antes de examinarse, rompe la autoevaluación | ADR-50 |
 | F6-4 | El tutor ve los intentos de su menor (texto de las respuestas, notas y fallos) | Llega con F08; el dato ya se guarda en `exercise_attempt` y `exam_attempt` |
 | F6-6 | 🟡 Validar al arrancar que `app.study.max-submissions-per-hour` no supere a `max-attempts-per-piece` (la poda de intentos dejaría sin efecto el límite por hora) | Hoy solo está documentado en `StudyProperties` |
 | F6-5 | Más tipos de pregunta (verdadero/falso, huecos, respuesta abierta en examen) y motor de cálculo para matemáticas y ciencias | v2; F05 solo genera test |
+
+## Anotado en F07 (tutor IA)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F7-1 | 🟠 Medir con tu modelo real la calidad pedagógica del tutor: que guíe sin resolver ejercicios, que redirija lo que no es del curso, el tono según la edad y cuánto cuesta una conversación | Solo lo puede hacer el usuario con sus claves; las instrucciones fijas son hoy la única garantía |
+| F7-2 | 🟡 El filtro de menores solo cubre español (F4-3) y es una lista corta: no hay una valoración del modelo sobre cada pregunta ni respuesta | Segunda capa a decidir en F08 junto con F5-5 |
+| F7-3 | 🟡 Un alumno que pegue un enunciado de examen y pida la solución: el tutor no tiene soluciones ni exámenes, pero podría razonarla; las instrucciones piden pistas | Medirlo con F7-1 |
+| F7-4 | El tutor adulto lee las conversaciones, los bloqueos y los filtrados de su menor | Llega con F08; el dato ya se guarda en `tutor_message` |
+| F7-5 | 🟡 Streaming de la respuesta, voz, imágenes y memoria entre cursos | Fuera de v1 (ADR-58) |
+| F7-6 | 🟡 Un adulto que vacía una conversación borra también las preguntas que cuentan para el límite por hora y por día: puede preguntar más de 30 por hora vaciando entre medias | Solo adultos (el menor no puede vaciar) y el tope mensual del usuario sigue cortando; arreglo posible: contar las llamadas `TUTOR` de `ai_usage` o una tabla de eventos |
 
 ## Mejoras (🟡)
 
@@ -97,7 +108,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | # | Qué | Prioridad |
 |---|-----|-----------|
 | A1 | ✅ **Hecho (25-10-2026, ADR-29):** tope de gasto por usuario (menor 2 USD, adulto 10 USD al mes), corta siempre. Pendiente menor: que el tutor pueda ajustar el tope de cada menor desde la app | ✅ |
-| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41) , para «Reanudar» de F05 (60 s por curso, ADR-44) y para los envíos y las correcciones de IA de F06 (ADR-53); falta en la subida de material (F3-6) y en los endpoints de F07 | 🟡 F07 |
+| A2 | Límite de **frecuencia** por usuario: ✅ hecho para el asistente de F04 (ADR-41) , para «Reanudar» de F05 (60 s por curso, ADR-44) , los envíos y las correcciones de IA de F06 (ADR-53) y los mensajes del tutor de F07 (ADR-55); falta en la subida de material (F3-6) | 🟡 F3-6 |
 | A3 | ✅ **Hecho en F04 (ADR-39):** `safety.ContentGuard` es el punto de enganche reutilizable. Falta usarlo en F05 (lecciones) y F07 (tutor) antes de enviar texto de un menor a un modelo de pago | ✅ |
 | A4 | Usar `GenerationLock` en F05 llamando a `Lease.renew()` entre llamadas de IA; validar la salida del modelo contra un esquema antes de guardarla | ✅ **Hecho en F05 (ADR-42 y 43):** cerrojo renovado antes de cada llamada y cuatro validadores de salida; verificado en el stack |
 | A5 | Timeout **por tarea** (hoy es el mayor de las tareas de cada proveedor) | 🟡 |

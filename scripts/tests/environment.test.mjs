@@ -344,3 +344,18 @@ test('F06 la plantilla de la corrección con IA está en el código, pide JSON y
   assert.doesNotMatch(text, /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
   assert.match(text.toLowerCase(), /json/);
 });
+
+test('F07 el tutor no añade dependencias al frontend ni variables obligatorias nuevas al entorno', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F07 no necesita librerías nuevas');
+  const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
+  assert.ok(!required.some((k) => /^TUTOR_|APP_TUTOR/.test(k)), 'los límites del tutor son valores de ingeniería, no variables obligatorias');
+});
+
+test('F07 la plantilla del tutor está en el código, es una instrucción fija y no lleva marcadores de datos del usuario', () => {
+  const file = 'backend/src/main/resources/prompts/tutor.txt';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const text = read(file);
+  assert.doesNotMatch(text, /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
+  assert.match(text.toLowerCase(), /pistas/);
+});
