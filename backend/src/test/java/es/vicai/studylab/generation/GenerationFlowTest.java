@@ -206,6 +206,19 @@ class GenerationFlowTest extends GenerationTestBase {
         assertThat(exercises.dataMessage()).contains("Lección-unica-xyz"); // el contenido de la lección va como dato, para que sean coherentes
     }
 
+    @Test
+    void ac15_theStartAndTheEndOfAGenerationAreAuditedWithTheCourseIdAndNothingElse() throws Exception {
+        logged("ana@example.com");
+        UUID course = insertCourse(idOf("ana@example.com"), "tema-secreto-xyz", 2, false, List.of());
+        modelDoes(happy(2));
+
+        generator.processPending();
+
+        assertThat(auditActions()).contains("COURSE_GENERATION_STARTED", "COURSE_GENERATION_COMPLETED");
+        String details = owner.queryForObject("SELECT string_agg(details::text, ' ') FROM audit_event WHERE action LIKE 'COURSE_GENERATION_%'", String.class);
+        assertThat(details).contains(course.toString()).doesNotContain("tema-secreto-xyz").doesNotContain("Tema 1 de prueba");
+    }
+
     // ---------- cerrojo, colas y reinicios (AC-1, AC-2) ----------
 
     @Test

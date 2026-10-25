@@ -148,6 +148,7 @@ public class CourseGenerator {
         }
         try (lease) {
             Halt halt = null;
+            audit.record("COURSE_GENERATION_STARTED", AuditService.OK, claim.ownerId(), claim.ownerId(), null, Map.of("courseId", claim.id().toString()));
             try {
                 run(new Context(claim, readSheet(claim), lease));
             } catch (Halt h) {
