@@ -227,9 +227,37 @@ export const api = {
     request<Piece>('GET', `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`),
   resumeCourse: (id: string) => request<CourseDetail>('POST', `/api/courses/${encodeURIComponent(id)}/resume`),
   exportUrl: (id: string) => exportPath(id),
+  getResults: () => request<Results>('GET', '/api/results'),
+  getUsage: () => request<Usage>('GET', '/api/ai/usage'),
 }
 
 /** Dirección de la exportación del curso (se abre como descarga; no es una llamada de la API). */
 export function exportPath(id: string): string {
   return `/api/courses/${encodeURIComponent(id)}/export`
+}
+
+export interface CourseResult {
+  id: string
+  title: string
+  status: CourseStatus
+  stopReason?: StopReason | null
+  done: number
+  failed: number
+  pending: number
+  total: number
+  calls: number
+  costUsd?: number
+  createdAt: string
+}
+
+/** Resultados de los cursos propios; un menor recibe las piezas pero ningún importe. */
+export interface Results {
+  courses: CourseResult[]
+  totalCostUsd?: number
+}
+
+export interface Usage {
+  month: string
+  you: { calls: number; spendUsd?: number; limitUsd?: number; limitReached: boolean }
+  budget?: { percent: number; level: string }
 }

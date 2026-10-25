@@ -49,6 +49,17 @@ describe('api client: generation', () => {
     await expect(api.resumeCourse('c1')).rejects.toBeInstanceOf(ApiError)
   })
 
+  it('reads the results and the usage with plain GET requests', async () => {
+    fetchMock.mockResolvedValue(respond(200, { courses: [] }))
+
+    await api.getResults()
+    await api.getUsage()
+
+    expect(fetchMock.mock.calls[0][0]).toBe('/api/results')
+    expect(fetchMock.mock.calls[1][0]).toBe('/api/ai/usage')
+    expect(fetchMock.mock.calls.every(([, init]) => (init.method ?? 'GET') === 'GET')).toBe(true)
+  })
+
   it('points the export at the course export endpoint', () => {
     expect(api.exportUrl('c 1')).toBe('/api/courses/c%201/export')
   })

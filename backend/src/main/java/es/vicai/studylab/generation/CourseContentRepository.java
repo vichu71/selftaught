@@ -89,6 +89,27 @@ public class CourseContentRepository {
                 rs.getString("sources"));
     }
 
+    /** Un curso con sus piezas por estado y el coste y las llamadas registradas. */
+    public record ResultRow(UUID id, String title, String status, String stopReason, int done, int failed, int pending, long calls,
+                            BigDecimal costUsd, java.time.Instant createdAt) {}
+
+    /** Todos los cursos de un propietario, el más reciente primero, con el recuento de sus piezas y su gasto. */
+    public List<ResultRow> results(UUID ownerId) {
+        return jdbc.sql("""
+                SELECT c.id, c.title, c.status, c.stop_reason, c.created_at,
+                       count(p.id) FILTER (WHERE p.status = 'DONE') AS done,
+                       count(p.id) FILTER (WHERE p.status = 'FAILED') AS failed,
+                       count(p.id) FILTER (WHERE p.status = 'PENDING') AS pending,
+                       (SELECT count(*) FROM ai_usage u WHERE u.course_id = c.id AND u.user_id = c.owner_id) AS calls,
+                       (SELECT COALESCE(sum(u.cost_usd), 0) FROM ai_usage u WHERE u.course_id = c.id AND u.user_id = c.owner_id) AS cost
+                FROM course c LEFT JOIN course_piece p ON p.course_id = c.id AND p.owner_id = c.owner_id
+                WHERE c.owner_id = :owner GROUP BY c.id ORDER BY c.created_at DESC, c.id""")
+                .param("owner", ownerId)
+                .query((rs, row) -> new ResultRow(rs.getObject("id", UUID.class), rs.getString("title"), rs.getString("status"),
+                        rs.getString("stop_reason"), rs.getInt("done"), rs.getInt("failed"), rs.getInt("pending"), rs.getLong("calls"),
+                        rs.getBigDecimal("cost"), rs.getTimestamp("created_at").toInstant())).list();
+    }
+
     /** Si la misma persona tiene otro curso generándose: el suyo espera su turno (una generación a la vez por usuario). */
     public boolean otherGenerating(UUID courseId, UUID ownerId) {
         return jdbc.sql("SELECT EXISTS (SELECT 1 FROM course WHERE owner_id = :owner AND id <> :id AND status = 'GENERATING')")
