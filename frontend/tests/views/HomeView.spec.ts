@@ -49,6 +49,14 @@ describe('HomeView', () => {
     expect(text).toContain('conversaciones')
   })
 
+  // F09 AC-16: un acceso a la pantalla de códigos
+  it('offers the way to enter a share code, to adults and to minors', async () => {
+    for (const user of [adult, minor]) {
+      const { wrapper } = await mountApp(HomeView, { user })
+      expect(byId(wrapper, 'redeem-link').attributes('href')).toBe('/codigo')
+    }
+  })
+
   it('does not show that notice to adults', async () => {
     const { wrapper } = await mountApp(HomeView, { user: adult })
     expect(byId(wrapper, 'guardian-notice').exists()).toBe(false)
