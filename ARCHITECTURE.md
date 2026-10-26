@@ -191,6 +191,7 @@ F10 no toca el backend, la base de datos ni los contratos HTTP: rehace la presen
 - **Colocación:** ancho = una zona por tema apilada en vertical (el ancho nunca desborda, un curso de 150 piezas solo crece en alto; los temas lejanos se pliegan si hay más de 40 paradas); estrecho (< 640 px) = una columna. Cada parada es un círculo (lección) o un cuadrado (examen), y su estado se dice también con texto.
 - **Seguridad del frontend (se mantiene):** nada de `v-html` ni de SVG montado como cadena; el texto de la IA o del usuario es siempre texto Vue; el Markdown solo con `MarkdownContent`; ningún recurso de terceros (fuentes incluidas); la política de nginx sigue siendo `default-src 'self'`.
 - **Dependencias:** `reka-ui`, `lucide-vue-next` y tres paquetes de Fontsource (Bricolage Grotesque, Newsreader, Space Mono), todas con versión exacta; el test de entorno las lista a propósito.
+- Se vio al implementar: el mapa es un SVG con tramos en ángulo recto (salen hacia un lado para no cruzar el nombre de la parada), el nombre se parte en dos líneas en ancho y va a la derecha de la parada en móvil; los ejercicios se abren desde la lista (no son parada); «Lista» distingue una lección preparada y sin estudiar de una en cola; el diálogo de confirmación lo teletransporta Reka UI al `body`.
 - **Piel intercambiable:** colores y formas viven en `tokens.css` y en `ui/`; la variante «Mundo que crece» (prototipo en `sdd/design/F10/MundoC.dc.html`) se podría probar cambiando esa capa sin rehacer las vistas.
 
 ## Modelo de datos
@@ -762,6 +763,7 @@ selftaught/
 ### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; «sigue donde lo dejaste» = la primera lección lista sin hacer del curso terminado con más avance (sin llegar al 100 %)
 - Motivo: la lista de cursos ya llega ordenada y `StudyOverview` dice qué está hecho; no hace falta endpoint ni migración. Mantener el backend intacto hace que F10 sea reversible y que sus tests no se muevan.
 - Alternativas descartadas: guardar la última lección vista (columna y endpoint nuevos); calcularla en el servidor.
+- Se vio al implementar: con «primer curso de la lista» salía un curso sin avance antes que otro con avance; se cambió a «el de más avance que no llega al 100 %».
 - Revisitar si: se quiere «lo último que estudié» entre varios cursos (un campo `lastStudiedAt` en la lista de cursos).
 
 ### ADR-68: El mapa es SVG propio con una función de colocación pura y una lista equivalente debajo

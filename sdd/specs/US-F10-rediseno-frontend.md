@@ -42,6 +42,12 @@ Supuestos míos (a confirmar): se mantiene el modo oscuro automático que ya exi
 - Navegación con teclado y con lector de pantalla por todo el flujo: acceso → inicio → curso → lección → ejercicio → examen.
 - Navegador sin soporte de alguna propiedad CSS moderna: el diseño se degrada a una versión sencilla pero usable.
 
+### Casos borde añadidos al implementar
+- Un curso al que le faltan lecciones por generar: el mapa muestra «En cola» sin inventar una parada «ahora»; con una lección lista pero sin estudiar sale «Lista».
+- Varios cursos en marcha: «sigue donde lo dejaste» elige el de más avance sin llegar al 100 %.
+- Los ejercicios no son parada: se abren desde su lección en la lista y quedan «en cola» mientras no estén generados.
+- Fuera de alcance real: migrar cada vista a `UiField`/`UiButton` (las vistas siguen con las clases compartidas), 360/430 px y zoom 200 % en navegador (sin recorrer a mano).
+
 ### Fuera de alcance (v1)
 - Cambios de funcionalidad, de API o de reglas de negocio; el backend no se toca.
 - La variante «Mundo que crece», ilustraciones propias y mascota.

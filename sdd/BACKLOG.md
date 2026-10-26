@@ -155,3 +155,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F10-5 | 🟡 Nombre y logo siguen siendo provisionales; sin mascota ni ilustraciones | La variante «Mundo que crece» (`sdd/design/F10/MundoC.dc.html`) queda en el radar |
 | F10-6 | 🟡 La comprobación visual (móvil, zoom 200 %, teclado) es manual; no hay capturas de referencia automáticas | Valorar pruebas visuales si el diseño crece |
 | F10-7 | 🟡 Mapa lineal: no soporta ramas ni prerrequisitos entre lecciones | ADR-68; revisitar si el curso deja de ser lineal |
+| F10-8 | 🟡 Las vistas siguen con las clases compartidas (`button.primary`, `label`/`input`) en lugar de `UiField`/`UiButton` | Migrarlas una a una cambia muchas pruebas sin cambiar lo que se ve; hacerlo si se cambia de piel |
+| F10-9 | 🟡 La pantalla de edición del curso sigue densa (muchos botones por fila) | Mejora de contenido, no de marco |
+| F10-10 | 🟡 Sin recorrer a mano en el navegador: 360 y 430 px, zoom 200 %, recorrido con teclado de acceso a examen y lector de pantalla | Pasada manual o prueba visual automática |
+| F10-11 | 🟡 El contraste se comprueba sobre los tokens, no con una herramienta de accesibilidad sobre las pantallas | Valorar axe u otra en el navegador |
