@@ -44,6 +44,12 @@ Supuestos míos (a confirmar): «Mundo» reemplaza a «Mapa» en esta rama (sin 
 - Usuario menor frente a adulto: nada se decide por ocultar en la interfaz; el aviso de visibilidad del adulto sigue visible.
 - Navegador sin soporte de alguna propiedad moderna: se degrada a una versión sencilla pero usable.
 
+### Casos borde añadidos al implementar
+- Un curso al 100 % y la cuenta del menor con esta piel se cubren por pruebas, no se vieron en el navegador.
+- Con pocas paradas por tema la colina deja espacio vacío a la derecha (sin decoración añadida).
+- Tras reconstruir el stack el navegador puede mostrar el `index.html` antiguo hasta recargar (BACKLOG F11-6).
+- Fuera de alcance real: 360/430 px, zoom 200 % y teclado completo sin recorrer a mano.
+
 ### Fuera de alcance (v1)
 - Cambios de funcionalidad, de API o de reglas de negocio; el backend no se toca.
 - Selector de piel por usuario y convivir con «Mapa» en la misma rama (si el usuario lo pide, es otra feature).

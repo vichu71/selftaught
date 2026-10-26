@@ -164,6 +164,8 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - La **fase de una planta** sale solo de `world/plantStage.ts` (0 / 1–39 / 40–99 / 100; sin porcentaje, semilla «Preparándose») y siempre se dice también con texto. Las ilustraciones son plantillas Vue con **clases que leen tokens**: ningún `fill`/`stroke` con color a mano, ni `<image>`, `foreignObject` ni imágenes externas.
 - El camino se dibuja con `map/roadPath.ts` (función pura) sobre las posiciones de `layoutMap`; la lista equivalente, los ids (`map-item-*`, `map-link-*`) y los roles de F10 no cambian. Todo par de color nuevo (cielo, hierba, camino) entra en `tests/design/contrast.spec.ts`.
 
+- Lecciones de F11: un `width`/`height` genérico en una clase de ilustración (`.plant`) pisa el tamaño que cada sitio le da; se fija el tamaño en el contexto (`.continue-plant`, `.plant-card .plant`). Tras reconstruir el stack hay que **recargar** el navegador (conserva el `index.html` antiguo). El contraste del foco exige un color que se distinga a la vez del fondo claro y del botón primario: en claro, un azul casi negro; en noche, blanco con el primario más oscuro.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la
