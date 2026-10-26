@@ -194,6 +194,24 @@ F10 no toca el backend, la base de datos ni los contratos HTTP: rehace la presen
 - Se vio al implementar: el mapa es un SVG con tramos en ángulo recto (salen hacia un lado para no cruzar el nombre de la parada), el nombre se parte en dos líneas en ancho y va a la derecha de la parada en móvil; los ejercicios se abren desde la lista (no son parada); «Lista» distingue una lección preparada y sin estudiar de una en cola; el diálogo de confirmación lo teletransporta Reka UI al `body`.
 - **Piel intercambiable:** colores y formas viven en `tokens.css` y en `ui/`; la variante «Mundo que crece» (prototipo en `sdd/design/F10/MundoC.dc.html`) se podría probar cambiando esa capa sin rehacer las vistas.
 
+## Piel «Mundo que crece» (F11)
+
+F11 sustituye la piel «Mapa» por «Mundo» **en su rama** (`feature/F11-piel-mundo-que-crece`); `main` conserva «Mapa» hasta que se decida cuál se queda (ADR-73). Sigue siendo solo frontend: sin migraciones, endpoints ni cambios de contrato.
+
+```
+ styles/tokens.css  mismos NOMBRES del contrato de F10 + paisaje (--color-sky, grass, leaf, trunk, soil, sun, fruit, cloud, road); claro y noche      fonts.css: Fredoka + Newsreader (ADR-77)
+ world/   plantStage.ts (porcentaje → seed|sprout|tree|fruit, ADR-74) · PlantIllustration.vue · Landscape.vue · Mascot.vue · Wanderer.vue      SVG como plantillas Vue, colores por clases con tokens (ADR-75)
+ map/     layoutMap.ts (sin cambios de contrato) ─► roadPath.ts (puntos → trazo suave, función pura, ADR-76) ─► CourseMap.vue (colinas por tema, camino, piedras y puertas, lista equivalente)
+ Inicio   CoursesPanel: una planta por curso (data-stage, fase dicha con texto) + el mismo enlace, estado y barra de progreso · ContinueCard integrada en el paisaje
+```
+
+- **Fase de la planta:** 0 % semilla, 1–39 % brote, 40–99 % árbol, 100 % árbol con frutos; sin porcentaje (en cola o generándose) es una semilla con «Preparándose». El texto de la fase va siempre junto a la ilustración.
+- **Camino:** las paradas siguen siendo `circle[data-kind="lesson"]` (piedras) y `rect[data-kind="exam"]` (puertas), con el mismo orden, estados y lista equivalente que en F10; solo cambia el trazo (curvo) y las zonas (colinas). «Tú estás aquí» lo marca el personaje (`map-wanderer`) y la etiqueta en texto.
+- **Seguridad y accesibilidad (se mantienen):** nada de `v-html`, `<image>`, `foreignObject` ni recursos externos (lo comprueba la prueba de seguridad ampliada a `world/` y `map/`); contraste AA sobre los tokens, incluidos los pares sobre cielo y hierba, en claro y en noche; movimiento solo con `no-preference`.
+- Se vio al implementar: el camino sale de los puntos de las paradas más desvíos hacia un lado en los cambios de fila (el nombre cuelga debajo de la parada); lo recorrido es la parte inicial mientras los tramos consecutivos estén hechos; el personaje va junto a la parada actual (en ancho, a su derecha sobre el camino); un `width: 100%` general de `.plant` pisaba el tamaño de cada contexto y se quitó; tras reconstruir, el navegador puede conservar el `index.html` antiguo (BACKLOG F11-6).
+- **Tutor flotante:** en una lección el tutor es un botón fijo («Pregunta al tutor», `TutorLauncher.vue`) que abre un panel junto al texto, sin ir al final de la página; el chat sigue montado al cerrar (no se pierde lo escrito), el foco va a la pregunta al abrir y vuelve al botón con Escape o al cerrar. No aparece en ejercicios ni exámenes. Los límites, el filtro de menores y el aviso al menor son los de F07 (no cambian).
+- **Dependencias:** `@fontsource-variable/fredoka` entra con versión exacta; salen `@fontsource-variable/bricolage-grotesque` y `@fontsource/space-mono`. El test de entorno se actualiza a propósito.
+
 ## Modelo de datos
 
 ```
@@ -322,7 +340,8 @@ selftaught/
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
-│  └─ src/{styles,ui,layouts,map}    # F10: tokens y estilos base, componentes base, marco de navegación, mapa del curso
+│  ├─ src/{styles,ui,layouts,map}    # F10: tokens y estilos base, componentes base, marco de navegación, mapa del curso
+│  └─ src/world                      # F11 (rama de la piel «Mundo»): fases de planta e ilustraciones SVG; map/ gana roadPath.ts
 ├─ sdd/design/F10/                   # prototipos de diseño de referencia (Mapa y Mundo)
 ├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
 ├─ scripts/                          # seed y tests de política del entorno
@@ -790,3 +809,28 @@ selftaught/
 - Motivo: reducir el diff de pruebas y asegurar que ninguna regla de F01–F09 (aviso al menor, visor Markdown, mensaje sin categoría, códigos que se ven una vez) pierde su prueba al mover el HTML.
 - Alternativas descartadas: reescribir los tests desde cero (riesgo de perder casos borde); congelar la estructura antigua (impide el rediseño).
 - Revisitar si: el número de pruebas que cambian en una vista se dispara (dividir la vista en entregas).
+
+### ADR-73: «Mundo» sustituye a «Mapa» en su rama y conserva los nombres de los tokens
+- Motivo: así las vistas, los componentes y casi todos los tests de F10 se reutilizan; solo cambian los valores y lo que el diseño pide. El usuario compara dos ramas, no dos pieles dentro de una.
+- Alternativas descartadas: selector de piel (doble mantenimiento y una decisión de producto y de almacenamiento que nadie pidió); una rama que copie las vistas (se desincroniza).
+- Revisitar si: se decide que convivan (tokens por tema de datos y pruebas para ambas).
+
+### ADR-74: La fase de la planta es una función pura del porcentaje, y siempre se dice con texto
+- Motivo: es lo único que la ilustración sabe del curso; una función total y probada en sus fronteras (0, 1, 39, 40, 99, 100, ausente) evita sorpresas, y el texto asegura que no depende de ver la ilustración ni el color.
+- Alternativas descartadas: guardar la fase en el servidor (no hace falta); decidirla dentro del componente (no se prueba sin montar).
+- Revisitar si: se quieren más fases o fases por tipo de curso.
+
+### ADR-75: Las ilustraciones son componentes SVG coloreados por clases con tokens
+- Motivo: la regla «colores solo en `tokens.css`» (F10) debe seguir valiendo para las ilustraciones, y así el modo oscuro y un cambio de piel las alcanzan sin tocarlas; el SVG se escribe como plantilla Vue, nunca como cadena.
+- Alternativas descartadas: imágenes SVG/PNG en ficheros (colores fuera de los tokens y una petición más por imagen); atributos `fill` con colores fijos (rompen la prueba y el modo oscuro).
+- Revisitar si: el número de ilustraciones crece tanto que convenga un sistema de iconos.
+
+### ADR-76: El camino se curva con una función pura sobre la colocación existente
+- Motivo: la posición de las paradas ya está resuelta y probada (`layoutMap`); curvar el trazo es presentación, y una función pura de puntos a `d` se prueba sin navegador (sin salir del ancho). El contrato accesible no cambia.
+- Alternativas descartadas: una colocación nueva para el paisaje (duplica lógica y pruebas); una librería de rutas (peso y superficie sin necesidad).
+- Revisitar si: aparecen ramas o prerrequisitos entre lecciones (ADR-68).
+
+### ADR-77: Fredoka para titulares y etiquetas, Newsreader para leer; se retiran Bricolage y Space Mono
+- Motivo: identidad redondeada sin perder la lectura cómoda; menos peso total (se quitan tres ficheros de fuente y se añade uno).
+- Alternativas descartadas: una sola familia redondeada también para leer (cansa en lecciones largas); mantener las tres de F10 (peso y dos identidades mezcladas).
+- Revisitar si: la lectura de lecciones se queja de la tipografía (probar otra de lectura redondeada).

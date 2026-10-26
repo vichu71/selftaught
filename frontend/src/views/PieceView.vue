@@ -8,6 +8,7 @@ import ExercisePractice from '@/components/ExercisePractice.vue'
 import LessonControls from '@/components/LessonControls.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
 import TutorChat from '@/components/TutorChat.vue'
+import TutorLauncher from '@/components/TutorLauncher.vue'
 
 const route = useRoute()
 const piece = ref<Piece | null>(null)
@@ -61,7 +62,9 @@ watch(() => route.params.pieceId, (id, old) => {
           </div>
           </div>
           <LessonControls :key="piece.id" :course-id="courseId" :piece-id="piece.id" :done="piece.done === true" :navigation="piece.navigation" />
-          <TutorChat :key="`tutor-${piece.id}`" :course-id="courseId" :piece-id="piece.id" />
+          <TutorLauncher :key="`launcher-${piece.id}`">
+            <TutorChat :course-id="courseId" :piece-id="piece.id" />
+          </TutorLauncher>
         </template>
         <template v-else-if="piece.kind === 'EXERCISES'">
           <ol class="exercises" data-testid="exercises">

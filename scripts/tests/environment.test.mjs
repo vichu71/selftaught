@@ -7,12 +7,12 @@ import { existsSync, readFileSync } from 'node:fs';
 
 const REPO = process.env.REPO_DIR ?? '/repo';
 
-// Dependencias del frontend vigentes. F10 amplió a propósito la lista de F05 (marked, pinia, vue, vue-router):
-// primitivas accesibles, iconos y tipografías autoalojadas. Añadir otra exige actualizar esta lista con el motivo.
+// Dependencias del frontend vigentes. F10 amplió a propósito la lista de F05 (marked, pinia, vue, vue-router): primitivas accesibles,
+// iconos y tipografías autoalojadas. F11 cambió las tipografías de «Mapa» (Bricolage, Space Mono) por Fredoka. Añadir otra exige actualizar
+// esta lista con el motivo.
 const FRONTEND_DEPS = [
-  '@fontsource-variable/bricolage-grotesque',
+  '@fontsource-variable/fredoka',
   '@fontsource-variable/newsreader',
-  '@fontsource/space-mono',
   'lucide-vue-next',
   'marked',
   'pinia',
@@ -416,7 +416,7 @@ test('F10 las dependencias del frontend son exactamente las acordadas, todas con
   const pkg = JSON.parse(read('frontend/package.json'));
   // F10 amplía a propósito la lista de F05 (marked, pinia, vue, vue-router): primitivas accesibles, iconos y tipografías autoalojadas
   assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS);
-  for (const name of ['@fontsource-variable/bricolage-grotesque', '@fontsource-variable/newsreader', '@fontsource/space-mono', 'lucide-vue-next', 'marked', 'reka-ui']) {
+  for (const name of FRONTEND_DEPS.filter((d) => !['pinia', 'vue', 'vue-router'].includes(d))) {
     assert.match(pkg.dependencies[name], /^\d+\.\d+\.\d+$/, `${name} debe llevar una versión exacta, sin ^ ni ~`);
     assert.match(read('frontend/package-lock.json'), new RegExp(`"node_modules/${name}"`), `${name} debe estar en el fichero de versiones bloqueadas`);
   }
@@ -435,4 +435,15 @@ test('F10 es solo de frontend: el backend, el Compose y las variables de entorno
   }
   assert.ok(!existsSync(`${REPO}/backend/src/main/resources/db/migration/V10__rediseno.sql`), 'F10 no añade migraciones');
   assert.ok(!published(base).some((p) => p.name === 'frontend' && ![80, 8080].includes(Number(p.target))), 'el frontend no publica puertos nuevos');
+});
+
+// ---------- F11: piel «Mundo que crece» ----------
+
+test('F11 las tipografías de Mapa se retiran y la nueva va autoalojada, sin tocar el backend ni el entorno', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.ok(!('@fontsource-variable/bricolage-grotesque' in pkg.dependencies), 'Bricolage Grotesque ya no se usa');
+  assert.ok(!('@fontsource/space-mono' in pkg.dependencies), 'Space Mono ya no se usa');
+  assert.match(pkg.dependencies['@fontsource-variable/fredoka'], /^\d+\.\d+\.\d+$/, 'Fredoka debe llevar una versión exacta');
+  assert.ok(!existsSync(`${REPO}/backend/src/main/resources/db/migration/V10__rediseno.sql`), 'F11 no añade migraciones');
+  assert.doesNotMatch(read('frontend/index.html'), /fonts\.googleapis|fonts\.gstatic/, 'las fuentes no vienen de terceros');
 });

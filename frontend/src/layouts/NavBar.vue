@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import Mascot from '@/world/Mascot.vue'
 import { BookOpenText, LogOut, Map as MapIcon, BarChart3 } from 'lucide-vue-next'
 
 const auth = useAuthStore()
@@ -24,7 +25,7 @@ async function logout() {
 <template>
   <header class="nav-bar" data-testid="nav-bar">
     <div class="nav-inner">
-      <RouterLink to="/" class="brand">Study Lab</RouterLink>
+      <RouterLink to="/" class="brand"><Mascot class="brand-mascot" data-testid="nav-mascot" />Study Lab</RouterLink>
       <nav class="nav-links" aria-label="Principal">
         <RouterLink to="/" class="nav-link" :class="{ 'is-active': section === 'map' }" :aria-current="section === 'map' ? 'page' : undefined" data-testid="nav-map">
           <MapIcon :size="18" aria-hidden="true" />&nbsp;Mapa

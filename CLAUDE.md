@@ -159,6 +159,13 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Movimiento solo dentro de `prefers-reduced-motion: no-preference`; objetivos táctiles de al menos 44 px (`--size-tap`); móvil probado a 360–430 px.
 - Lecciones de F10: **Vitest sustituye los `.css` por una cadena vacía** (también con `?raw`): las pruebas de estilos leen los ficheros con `node:fs` desde `process.cwd()`. El diálogo de Reka UI se teletransporta al `body`: se busca en `document.body` y se limpia en `afterEach`; las pestañas de Reka se activan con `mousedown`, no con `click`. Un slot de VTU dado como cadena es una plantilla (usa una función para probar texto). **Nada se da por bueno solo con tests de DOM**: la pasada en el navegador encontró texto invisible, nombres solapados y tramos que cruzaban títulos. El navegador de la app puede estar oculto (viewport 0×0): `resize_window` a un tamaño concreto devuelve capturas.
 
+## Reglas de F11 (piel «Mundo que crece», rama aparte)
+- Contrato y criterios de aceptación: `sdd/specs/US-F11-piel-mundo-que-crece.md`; diseño y ADR-73 a 77: `sdd/specs/ART-F11-propuesta-mundo.md` y `ARCHITECTURE.md`. **Solo frontend**; vive en `feature/F11-piel-mundo-que-crece` y reemplaza a «Mapa» allí. Las reglas de F10 siguen valiendo salvo las de tipografías (ahora Fredoka y Newsreader).
+- La **fase de una planta** sale solo de `world/plantStage.ts` (0 / 1–39 / 40–99 / 100; sin porcentaje, semilla «Preparándose») y siempre se dice también con texto. Las ilustraciones son plantillas Vue con **clases que leen tokens**: ningún `fill`/`stroke` con color a mano, ni `<image>`, `foreignObject` ni imágenes externas.
+- El camino se dibuja con `map/roadPath.ts` (función pura) sobre las posiciones de `layoutMap`; la lista equivalente, los ids (`map-item-*`, `map-link-*`) y los roles de F10 no cambian. Todo par de color nuevo (cielo, hierba, camino) entra en `tests/design/contrast.spec.ts`.
+
+- Lecciones de F11: un `width`/`height` genérico en una clase de ilustración (`.plant`) pisa el tamaño que cada sitio le da; se fija el tamaño en el contexto (`.continue-plant`, `.plant-card .plant`). Tras reconstruir el stack hay que **recargar** el navegador (conserva el `index.html` antiguo). El contraste del foco exige un color que se distinga a la vez del fondo claro y del botón primario: en claro, un azul casi negro; en noche, blanco con el primario más oscuro.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la
