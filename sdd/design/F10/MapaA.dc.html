@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>A Mapa</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,800&family=Space+Mono:wght@400;700&display=swap">
+<style>body{margin:0;background:#EDE7FF}a{color:inherit;text-decoration:none}</style>
+</helmet>
+<div style="min-height: 1000px; background-color: #EDE7FF; background-image: radial-gradient(#C9BDF2 1.5px, transparent 1.5px); background-size: 24px 24px; color: #111; font-family: 'Bricolage Grotesque', system-ui, sans-serif; padding: 32px 40px 48px; box-sizing: border-box">
+  <header style="display: flex; align-items: center; gap: 24px; flex-wrap: wrap">
+    <a href="MapaA.dc.html" style="font-weight: 800; font-size: 34px; letter-spacing: -0.03em; background: #FFD83D; border: 3px solid #111; box-shadow: 5px 5px 0 #111; padding: 4px 16px; transform: rotate(-2deg); display: inline-block">Study Lab</a>
+    <nav style="display: flex; gap: 10px; flex-grow: 1; flex-wrap: wrap">
+      <a href="MapaA.dc.html" style="border: 3px solid #111; background: #111; color: #fff; border-radius: 999px; padding: 6px 18px; font-weight: 800">Mapa</a>
+      <a href="MapaA.dc.html" style="border: 3px solid #111; background: #fff; border-radius: 999px; padding: 6px 18px; font-weight: 800">Mi material</a>
+      <a href="MapaA.dc.html" style="border: 3px solid #111; background: #fff; border-radius: 999px; padding: 6px 18px; font-weight: 800">Resultados</a>
+    </nav>
+    <span style="font-weight: 800; border: 3px solid #111; background: #FF6FB1; border-radius: 50%; width: 44px; height: 44px; display: inline-flex; align-items: center; justify-content: center; box-shadow: 3px 3px 0 #111">A</span>
+  </header>
+
+  <h1 style="margin: 44px 0 4px; font-weight: 800; font-size: 84px; line-height: 0.95; letter-spacing: -0.045em">Estás <span style="background: #6BE3A5; border: 3px solid #111; padding: 0 14px; display: inline-block; transform: rotate(1.5deg)">aquí</span>.</h1>
+  <p style="margin: 14px 0 0; font-size: 20px; font-weight: 500; max-width: 560px">Ana, llevas 5 de 12 paradas de Historia antigua. La siguiente está a un clic.</p>
+
+  <div style="margin-top: 36px; display: flex; gap: 28px; flex-wrap: wrap; align-items: flex-start">
+    <section style="flex: 1 1 760px; min-width: 0; background: #fff; border: 3px solid #111; box-shadow: 8px 8px 0 #111; border-radius: 14px; padding: 20px 24px 28px">
+      <div style="display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap">
+        <h2 style="margin: 0; font-weight: 800; font-size: 26px"><a href="MapaCurso.dc.html" style="text-decoration: underline">Línea 1 · Historia antigua</a></h2>
+        <span style="display: flex; gap: 8px; flex-wrap: wrap">
+          <a href="MapaA.dc.html" style="border: 2.5px solid #111; background: #FFD83D; border-radius: 999px; padding: 2px 14px; font-weight: 800; font-size: 14px">Historia</a>
+          <a href="MapaA.dc.html" style="border: 2.5px solid #111; background: #fff; border-radius: 999px; padding: 2px 14px; font-weight: 800; font-size: 14px">Fracciones</a>
+          <a href="MapaA.dc.html" style="border: 2.5px solid #111; background: #fff; border-radius: 999px; padding: 2px 14px; font-weight: 800; font-size: 14px">Inglés</a>
+        </span>
+      </div>
+      <svg viewBox="0 0 1160 420" style="width: 100%; height: auto; margin-top: 8px" role="img" aria-label="Mapa del curso: 5 paradas hechas, la actual en el tema 2">
+        <path d="M60 300 H220 L300 190 H520 L600 300 H820 L900 190 H1100" fill="none" stroke="#111" stroke-width="16" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M60 300 H220 L300 190 H520 L600 300 H660" fill="none" stroke="#6BE3A5" stroke-width="8" stroke-linejoin="round" stroke-linecap="round"/>
+        <g stroke="#111" stroke-width="5">
+          <circle cx="60" cy="300" r="20" fill="#6BE3A5"/>
+          <circle cx="220" cy="300" r="20" fill="#6BE3A5"/>
+          <circle cx="410" cy="190" r="20" fill="#6BE3A5"/>
+          <circle cx="520" cy="190" r="20" fill="#6BE3A5"/>
+          <circle cx="600" cy="300" r="20" fill="#6BE3A5"/>
+          <circle cx="720" cy="300" r="30" fill="#FF6FB1"/>
+          <circle cx="820" cy="300" r="20" fill="#fff"/>
+          <circle cx="1000" cy="190" r="20" fill="#fff"/>
+          <rect x="1076" y="166" width="48" height="48" rx="8" fill="#FFD83D"/>
+        </g>
+        <g font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="17" fill="#111" text-anchor="middle">
+          <text x="60" y="352">1.1 Ciudades</text>
+          <text x="220" y="352">1.2 Escritura</text>
+          <text x="410" y="152">Examen I</text>
+          <text x="520" y="152">2.0 Egipto</text>
+          <text x="600" y="352">2.1 El Nilo</text>
+          <text x="820" y="352">2.2 Faraones</text>
+          <text x="1000" y="152">Examen II</text>
+          <text x="1100" y="246">Tema III</text>
+        </g>
+        <g font-family="Bricolage Grotesque, sans-serif" font-weight="800" font-size="22" fill="#111" text-anchor="middle"><text x="720" y="307">!</text></g>
+        <g transform="translate(720 240)"><rect x="-58" y="-26" width="116" height="34" rx="8" fill="#111"/><path d="M-8 8 L0 18 L8 8 Z" fill="#111"/><text x="0" y="-3" font-family="Space Mono, monospace" font-weight="700" font-size="15" fill="#fff" text-anchor="middle">TÚ ESTÁS AQUÍ</text></g>
+      </svg>
+      <div style="display: flex; gap: 22px; flex-wrap: wrap; font-size: 14px; font-weight: 500">
+        <span style="display: flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 50%; background: #6BE3A5; border: 2.5px solid #111"></span>Hecho</span>
+        <span style="display: flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 50%; background: #FF6FB1; border: 2.5px solid #111"></span>Ahora</span>
+        <span style="display: flex; align-items: center; gap: 8px"><span style="width: 14px; height: 14px; border-radius: 50%; background: #fff; border: 2.5px solid #111"></span>Por venir</span>
+      </div>
+    </section>
+
+    <aside style="flex: 0 1 340px; min-width: 280px; display: flex; flex-direction: column; gap: 24px">
+      <a href="MapaLeccion.dc.html" style="display: block; background: #FF6FB1; border: 3px solid #111; box-shadow: 8px 8px 0 #111; border-radius: 14px; padding: 22px; transform: rotate(1deg)">
+        <p style="margin: 0; font-family: 'Space Mono', monospace; font-weight: 700; font-size: 13px">SIGUIENTE PARADA</p>
+        <p style="margin: 6px 0 14px; font-weight: 800; font-size: 30px; line-height: 1.05; letter-spacing: -0.02em">El Nilo y su gente</p>
+        <span style="display: inline-block; background: #111; color: #fff; border-radius: 999px; padding: 8px 20px; font-weight: 800">Entrar →</span>
+      </a>
+      <div style="background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0 #111; border-radius: 14px; padding: 20px">
+        <p style="margin: 0 0 10px; font-weight: 800; font-size: 20px">¿Otra línea nueva?</p>
+        <input type="text" aria-label="Tema" placeholder="Quiero aprender…" style="width: 100%; box-sizing: border-box; font: inherit; font-weight: 500; padding: 10px 12px; border: 3px solid #111; border-radius: 10px; background: #FFF8D6">
+        <p style="margin: 12px 0 0; display: flex; gap: 14px; align-items: center"><a href="MapaA.dc.html" style="background: #FFD83D; border: 3px solid #111; border-radius: 999px; padding: 6px 18px; font-weight: 800">Crear con IA</a><a href="MapaA.dc.html" style="font-weight: 500; text-decoration: underline">Tengo un código</a></p>
+      </div>
+      <div style="background: #fff; border: 3px solid #111; box-shadow: 6px 6px 0 #111; border-radius: 14px; padding: 18px 20px">
+        <p style="margin: 0 0 8px; font-weight: 800; font-size: 20px">Mis menores</p>
+        <p style="margin: 0; display: flex; justify-content: space-between"><span style="font-weight: 800">Hugo</span><span style="background: #FF6FB1; border: 2.5px solid #111; border-radius: 999px; padding: 0 10px; font-size: 13px; font-weight: 800">1 aviso</span></p>
+        <p style="margin: 6px 0 0; display: flex; justify-content: space-between"><span style="font-weight: 800">Marta</span><span style="font-size: 14px">todo en orden</span></p>
+      </div>
+    </aside>
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":1000}}'>
+class Component extends DCLogic { renderVals() { return {}; } }
+</script>
+</body>
+</html>
