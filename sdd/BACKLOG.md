@@ -159,3 +159,13 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F10-9 | 🟡 La pantalla de edición del curso sigue densa (muchos botones por fila) | Mejora de contenido, no de marco |
 | F10-10 | 🟡 Sin recorrer a mano en el navegador: 360 y 430 px, zoom 200 %, recorrido con teclado de acceso a examen y lector de pantalla | Pasada manual o prueba visual automática |
 | F10-11 | 🟡 El contraste se comprueba sobre los tokens, no con una herramienta de accesibilidad sobre las pantallas | Valorar axe u otra en el navegador |
+
+## Anotado en F11 (piel «Mundo que crece»)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F11-1 | 🟡 «Mundo» reemplaza a «Mapa» solo en su rama; no hay selector de piel | ADR-73: decidir cuál se queda en `main` o si conviven (entonces, tokens por tema y pruebas para las dos) |
+| F11-2 | 🟡 Las cuatro plantas son genéricas: no hay ilustración por curso ni paisaje personalizable | Fuera de v1 |
+| F11-3 | 🟡 Mascota y personaje sencillos, nombre y logo provisionales | Valorar ilustración profesional si «Mundo» se queda |
+| F11-4 | 🟡 Las pantallas no se prototiparon antes (decisión del usuario); el informe las compara con «Mapa» en el navegador | Riesgo de rehacer ilustraciones |
+| F11-5 | 🟡 Heredan los pendientes de F10 (F10-8 a F10-11: migrar vistas a `ui/`, pantalla de edición densa, 360/430 px y zoom a mano, contraste con herramienta en el navegador) | |
