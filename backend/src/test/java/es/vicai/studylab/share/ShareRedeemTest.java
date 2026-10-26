@@ -217,7 +217,7 @@ class ShareRedeemTest extends ShareTestBase {
         assertThat(count("SELECT count(*) FROM tutor_message WHERE owner_id = ?", luisId)).isZero();
         assertThat(count("SELECT count(*) FROM course_intake WHERE owner_id = ? AND status <> 'CONSUMED'", luisId)).isZero();
         assertThat(count("SELECT count(*) FROM ai_usage WHERE user_id = ?", luisId)).isZero();
-        assertThat(owner.queryForObject("SELECT sheet::text FROM course WHERE id = ?", String.class, copy)).contains("\"documentIds\":[]");
+        assertThat(count("SELECT jsonb_array_length(sheet->'documentIds') FROM course WHERE id = ?", copy)).isZero();
     }
 
     @Test

@@ -35,7 +35,11 @@ public class CourseContentService {
 
     public record Progress(int done, int total) {}
 
-    public record PieceRef(UUID id, String status) {}
+    /** {@code outdated}: la pieza ya no encaja con lo que cambió (F09); el propietario decide si regenerarla. */
+    public record PieceRef(UUID id, String status, boolean outdated) {}
+
+    /** Solo en una copia (F09): de qué versión del original salió. Nunca el id del original. */
+    public record Copy(Integer originVersion) {}
 
     public record ChapterView(UUID id, String title, String objective, PieceRef lesson, PieceRef exercises) {}
 
@@ -46,7 +50,7 @@ public class CourseContentService {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CourseDetailView(UUID id, String title, String status, CourseSheet sheet, List<CourseRepository.DocumentRef> documents,
                                    Instant createdAt, String stopReason, Progress progress, BigDecimal costUsd, boolean generatedByAi, Boolean waitingForOther,
-                                   List<TopicView> outline) {}
+                                   int version, Copy copy, List<TopicView> outline) {}
 
     public record SourceView(int n, Integer page) {}
 
@@ -110,13 +114,15 @@ public class CourseContentService {
         for (CourseContentRepository.TopicRow topic : content.topics(base.id(), owner)) {
             outline.add(new TopicView(topic.id(), topic.title(), topic.summary(), chaptersByTopic.getOrDefault(topic.id(), List.of()), ref(exams.get(topic.id()))));
         }
+        CourseContentRepository.VersionInfo info = content.versionInfo(base.id(), owner);
         return new CourseDetailView(base.id(), base.title(), base.status(), base.sheet(), base.documents(), base.createdAt(),
                 content.stopReason(base.id(), owner).orElse(null), new Progress(done, pieces.size()), content.cost(base.id(), owner), true,
-                "PENDING_GENERATION".equals(base.status()) && content.otherGenerating(base.id(), owner) ? Boolean.TRUE : null, outline);
+                "PENDING_GENERATION".equals(base.status()) && content.otherGenerating(base.id(), owner) ? Boolean.TRUE : null, info.version(),
+                info.copy() ? new Copy(info.originVersion()) : null, outline);
     }
 
     private static PieceRef ref(CourseContentRepository.PieceStatus piece) {
-        return piece == null ? null : new PieceRef(piece.id(), piece.status());
+        return piece == null ? null : new PieceRef(piece.id(), piece.status(), piece.outdated());
     }
 
     // ---------- pieza ----------
