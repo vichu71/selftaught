@@ -41,10 +41,14 @@ const TEXT: [string, string][] = [
   ['--color-danger-text', '--color-paper'], ['--color-danger-text', '--color-surface'],
   ['--color-on-primary', '--color-primary'], ['--color-on-accent', '--color-accent'],
   ['--color-on-ok', '--color-ok'], ['--color-on-now', '--color-now'], ['--color-on-danger', '--color-danger'],
+  // F11: el texto que se apoya en el paisaje (cielo y hierba)
+  ['--color-ink', '--color-sky'], ['--color-muted', '--color-sky'], ['--color-link', '--color-sky'], ['--color-ink', '--color-grass'],
 ]
 const UI: [string, string][] = [
   ['--color-line', '--color-paper'], ['--color-line', '--color-surface'],
   ['--color-focus', '--color-paper'], ['--color-focus', '--color-surface'], ['--color-focus', '--color-primary'],
+  // F11: el camino y los contornos de las paradas se ven sobre la hierba y sobre el cielo
+  ['--color-road', '--color-grass'], ['--color-line', '--color-grass'], ['--color-line', '--color-sky'], ['--color-focus', '--color-grass'],
 ]
 
 // F10 AC-13, ADR-71: el contraste se comprueba sobre los tokens, en claro y en oscuro
@@ -73,7 +77,22 @@ describe('tokens.css · contraste', () => {
 
   it('the state colours of the map differ from each other (done, now, to come)', () => {
     for (const palette of [light, dark]) {
-      expect(new Set([palette['--color-ok'], palette['--color-now'], palette['--color-paper']]).size).toBe(3)
+      expect(new Set([palette['--color-ok'], palette['--color-now'], palette['--color-surface']]).size).toBe(3)
     }
+  })
+
+  // F11 AC-8: las ilustraciones solo usan colores de tokens, definidos como #rrggbb en claro y en oscuro
+  it('defines every illustration colour in light and in dark, and the sky differs from the grass', () => {
+    for (const palette of [light, dark]) {
+      for (const name of ['--color-sky', '--color-grass', '--color-leaf', '--color-trunk', '--color-soil', '--color-sun', '--color-fruit', '--color-cloud', '--color-road']) {
+        expect(palette[name], name).toMatch(/^#[0-9a-fA-F]{6}$/)
+      }
+      expect(palette['--color-sky']).not.toBe(palette['--color-grass'])
+    }
+  })
+
+  it('the night landscape is darker than the day one', () => {
+    expect(luminance(dark['--color-sky'])).toBeLessThan(luminance(light['--color-sky']))
+    expect(luminance(dark['--color-grass'])).toBeLessThan(luminance(light['--color-grass']))
   })
 })

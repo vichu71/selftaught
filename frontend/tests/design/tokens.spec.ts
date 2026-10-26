@@ -18,7 +18,9 @@ const REQUIRED_TOKENS = [
   '--color-now', '--color-on-now', '--color-danger', '--color-on-danger', '--color-danger-text',
   '--space-1', '--space-2', '--space-3', '--space-4', '--space-5', '--space-6',
   '--radius-1', '--radius-2', '--radius-pill', '--border-width', '--shadow-hard',
-  '--font-display', '--font-reading', '--font-mono', '--size-tap',
+  '--font-display', '--font-reading', '--size-tap',
+  // F11: paisaje e ilustraciones
+  '--color-sky', '--color-grass', '--color-leaf', '--color-trunk', '--color-soil', '--color-sun', '--color-fruit', '--color-cloud', '--color-road',
 ]
 
 // F10 AC-1: todo sale de los tokens; ninguna vista lleva colores a mano
@@ -68,11 +70,15 @@ describe('fonts', () => {
     for (const [file, css] of Object.entries(styles)) expect(css, file).not.toMatch(/@import\s+url\(\s*['"]?https?:/)
   })
 
-  it('names the three families of the design', () => {
+  it('names the two families of the design (ADR-77): rounded for titles, serif for reading', () => {
     const tokens = styles['/src/styles/tokens.css'] ?? ''
-    expect(tokens).toMatch(/--font-display:[^;]*Bricolage Grotesque/)
+    expect(tokens).toMatch(/--font-display:[^;]*Fredoka/)
     expect(tokens).toMatch(/--font-reading:[^;]*Newsreader/)
-    expect(tokens).toMatch(/--font-mono:[^;]*Space Mono/)
+  })
+
+  it('no longer carries the fonts of the Mapa skin anywhere in the styles', () => {
+    for (const [file, css] of Object.entries(styles)) expect(css, file).not.toMatch(/Bricolage|Space Mono/)
+    expect(styles['/src/styles/fonts.css'] ?? '').toMatch(/Fredoka/)
   })
 })
 

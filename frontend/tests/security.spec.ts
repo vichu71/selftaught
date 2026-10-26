@@ -62,6 +62,14 @@ describe('frontend source policy', () => {
     expect(nginx).not.toMatch(/(font|style|img|connect)-src[^;"]*https?:/)
   })
 
+  // F11 AC-8, AC-15: las ilustraciones son plantillas Vue; nada incrusta imágenes, HTML ajeno ni recursos externos
+  it('keeps the illustrations as plain Vue SVG: no <image>, foreignObject, <use> of external files or embedded rasters', () => {
+    const art = Object.entries(sources).filter(([file]) => /^\/src\/(world|map)\//.test(file))
+    expect(art.length).toBeGreaterThan(3)
+    const offenders = art.filter(([, code]) => /<image|<foreignObject|xlink:href|data:image|<img|<use[^>]+href=["']https?:/i.test(code)).map(([file]) => file)
+    expect(offenders).toEqual([])
+  })
+
   // Diseño responsive desde el principio (AC-9)
   it('declares the responsive viewport meta tag', () => {
     expect(indexHtml).toMatch(/<meta[^>]+name=["']viewport["'][^>]+width=device-width/)
