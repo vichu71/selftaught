@@ -35,7 +35,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="page">
+  <div class="page">
     <h1>Crear cuenta de adulto</h1>
 
     <section v-if="sentTo" class="card" data-testid="check-email">
@@ -66,5 +66,5 @@ async function submit() {
       </button>
       <div class="links"><RouterLink to="/login">Ya tengo cuenta</RouterLink></div>
     </form>
-  </main>
+  </div>
 </template>

@@ -33,7 +33,7 @@ async function send() {
 </script>
 
 <template>
-  <main class="page" data-testid="redeem-view">
+  <div class="page" data-testid="redeem-view">
     <header class="topbar">
       <h1>Tengo un código</h1>
       <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
@@ -50,5 +50,5 @@ async function send() {
         <button type="button" class="primary" data-testid="redeem-send" :disabled="sending" @click="send">Obtener mi copia</button>
       </p>
     </section>
-  </main>
+  </div>
 </template>

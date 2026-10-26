@@ -6,6 +6,20 @@ import assert from 'node:assert/strict';
 import { existsSync, readFileSync } from 'node:fs';
 
 const REPO = process.env.REPO_DIR ?? '/repo';
+
+// Dependencias del frontend vigentes. F10 amplió a propósito la lista de F05 (marked, pinia, vue, vue-router):
+// primitivas accesibles, iconos y tipografías autoalojadas. Añadir otra exige actualizar esta lista con el motivo.
+const FRONTEND_DEPS = [
+  '@fontsource-variable/bricolage-grotesque',
+  '@fontsource-variable/newsreader',
+  '@fontsource/space-mono',
+  'lucide-vue-next',
+  'marked',
+  'pinia',
+  'reka-ui',
+  'vue',
+  'vue-router',
+];
 const load = (name) => JSON.parse(readFileSync(`${process.env.COMPOSE_OUT ?? '/out'}/${name}.json`, 'utf8'));
 const read = (path) => readFileSync(`${REPO}/${path}`, 'utf8');
 
@@ -332,7 +346,7 @@ test('F05 la generación no añade puertos, volúmenes ni variables obligatorias
 
 test('F06 el estudio no añade dependencias al frontend ni variables obligatorias al entorno', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F06 no necesita librerías nuevas');
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F06 no añade librerías al frontend (la lista vigente es la de F10)');
   const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
   assert.ok(!required.some((k) => /STUDY|GRADING/.test(k)), 'el estudio no exige variables obligatorias nuevas (la corrección con IA usa la tarea ASSESSMENT)');
 });
@@ -347,7 +361,7 @@ test('F06 la plantilla de la corrección con IA está en el código, pide JSON y
 
 test('F07 el tutor no añade dependencias al frontend ni variables obligatorias nuevas al entorno', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F07 no necesita librerías nuevas');
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F07 no añade librerías al frontend (la lista vigente es la de F10)');
   const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
   assert.ok(!required.some((k) => /^TUTOR_|APP_TUTOR/.test(k)), 'los límites del tutor son valores de ingeniería, no variables obligatorias');
 });
@@ -362,7 +376,7 @@ test('F07 la plantilla del tutor está en el código, es una instrucción fija y
 
 test('F08 el panel no añade dependencias, variables obligatorias ni plantillas de IA nuevas', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F08 no necesita librerías nuevas');
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F08 no añade librerías al frontend (la lista vigente es la de F10)');
   const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
   assert.ok(!required.some((k) => /GUARDIAN|PANEL/.test(k)), 'el panel no exige variables obligatorias');
   assert.ok(!existsSync(`${REPO}/backend/src/main/resources/prompts/guardian.txt`), 'el panel no llama a la IA: no hay plantilla');
@@ -378,7 +392,7 @@ test('F08 la migración del panel solo añade el índice de la auditoría por ac
 
 test('F09 la edición y compartir no añaden dependencias, variables obligatorias ni plantillas de IA nuevas', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F09 no necesita librerías nuevas');
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F09 no añade librerías al frontend (la lista vigente es la de F10)');
   const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
   assert.ok(!required.some((k) => /SHARE|COURSE_EDIT/.test(k)), 'los límites de F09 son valores de ingeniería, no variables obligatorias');
   for (const name of ['share', 'course-edit', 'edit']) assert.ok(!existsSync(`${REPO}/backend/src/main/resources/prompts/${name}.txt`), `F09 no llama a la IA por su cuenta: no hay plantilla ${name}`);
@@ -401,17 +415,7 @@ test('F09 la migración V9 crea los códigos, el registro de acciones y las colu
 test('F10 las dependencias del frontend son exactamente las acordadas, todas con versión exacta y bloqueadas', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
   // F10 amplía a propósito la lista de F05 (marked, pinia, vue, vue-router): primitivas accesibles, iconos y tipografías autoalojadas
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), [
-    '@fontsource-variable/bricolage-grotesque',
-    '@fontsource-variable/newsreader',
-    '@fontsource/space-mono',
-    'lucide-vue-next',
-    'marked',
-    'pinia',
-    'reka-ui',
-    'vue',
-    'vue-router',
-  ]);
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS);
   for (const name of ['@fontsource-variable/bricolage-grotesque', '@fontsource-variable/newsreader', '@fontsource/space-mono', 'lucide-vue-next', 'marked', 'reka-ui']) {
     assert.match(pkg.dependencies[name], /^\d+\.\d+\.\d+$/, `${name} debe llevar una versión exacta, sin ^ ni ~`);
     assert.match(read('frontend/package-lock.json'), new RegExp(`"node_modules/${name}"`), `${name} debe estar en el fichero de versiones bloqueadas`);

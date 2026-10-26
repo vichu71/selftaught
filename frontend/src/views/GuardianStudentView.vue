@@ -31,7 +31,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="page wide" data-testid="guardian-student">
+  <div class="page wide" data-testid="guardian-student">
     <header class="topbar">
       <h1 v-if="overview" data-testid="guardian-name">Actividad de {{ overview.student.displayName }}</h1>
       <h1 v-else>Actividad del alumno</h1>
@@ -68,5 +68,5 @@ onMounted(async () => {
         </ul>
       </section>
     </template>
-  </main>
+  </div>
 </template>

@@ -199,7 +199,7 @@ describe('Lectura de la lección', () => {
   })
 
   const lesson = (markdown: string) => ({
-    id: 'l3', kind: 'LESSON', status: 'DONE', title: 'El Nilo y su gente', content: { markdown }, sources: [],
+    id: 'l3', kind: 'LESSON', status: 'DONE', title: 'El Nilo y su gente', markdown, sources: [],
   })
 
   it('shows the lesson inside a reading container with the AI notice, and keeps the Markdown safe', async () => {

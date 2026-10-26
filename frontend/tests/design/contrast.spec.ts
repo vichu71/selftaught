@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import tokensCss from '../../src/styles/tokens.css?raw'
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
+// Vitest sustituye los .css por una cadena vacía (también con ?raw): se leen como ficheros
+const tokensCss = readFileSync(join(process.cwd(), 'src/styles/tokens.css'), 'utf8')
 
 /** Devuelve el cuerpo `{ ... }` que empieza en la primera llave tras `from`, con llaves anidadas. */
 function block(css: string, from: number): string {

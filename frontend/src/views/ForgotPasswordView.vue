@@ -30,7 +30,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="page">
+  <div class="page">
     <h1>Recuperar contraseña</h1>
 
     <section v-if="sent" class="card" data-testid="sent">
@@ -46,5 +46,5 @@ async function submit() {
       <button class="primary" type="submit" data-testid="submit" :disabled="loading">Enviar enlace</button>
       <div class="links"><RouterLink to="/login">Volver</RouterLink></div>
     </form>
-  </main>
+  </div>
 </template>

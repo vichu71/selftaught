@@ -2,7 +2,7 @@
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { exportPath, type CourseStatus, type StopReason } from '@/api/client'
-import CourseOutline from '@/components/CourseOutline.vue'
+import CourseMap from '@/map/CourseMap.vue'
 import { useCourseDetailStore } from '@/stores/courseDetail'
 import { useStudyStore } from '@/stores/study'
 import { BLOCKED_TEXT } from '@/stores/course'
@@ -75,7 +75,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <main class="page" data-testid="course-view">
+  <div class="page wide" data-testid="course-view">
     <header class="topbar">
       <h1 v-if="course" data-testid="course-title">{{ course.title }}</h1>
       <h1 v-else>Tu curso</h1>
@@ -113,10 +113,7 @@ onBeforeUnmount(() => {
         <a v-if="hasDone" :href="exportPath(course.id)" download class="button-link" data-testid="export-link">Descargar el curso (JSON)</a>
       </section>
 
-      <section v-if="outline.length > 0" class="card">
-        <h2>Temario</h2>
-        <CourseOutline :course-id="course.id" :outline="outline" :study="study.overview" />
-      </section>
+      <CourseMap v-if="outline.length > 0" :course-id="course.id" :outline="outline" :study="study.overview" :status="course.status" />
 
       <section class="card" data-testid="course-sheet">
         <h2>Lo que acordamos</h2>
@@ -129,5 +126,5 @@ onBeforeUnmount(() => {
         </ul>
       </section>
     </template>
-  </main>
+  </div>
 </template>

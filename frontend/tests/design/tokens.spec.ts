@@ -1,7 +1,15 @@
+import { readdirSync, readFileSync } from 'node:fs'
+import { join } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import indexHtml from '../../index.html?raw'
 
-const styles = import.meta.glob('/src/**/*.css', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
+// Vitest sustituye los .css por una cadena vacía (también con ?raw): se leen como ficheros
+const SRC = join(process.cwd(), 'src')
+const styles: Record<string, string> = Object.fromEntries(
+  (readdirSync(SRC, { recursive: true }) as string[])
+    .filter((f) => f.endsWith('.css'))
+    .map((f) => ['/src/' + f.split('\\').join('/'), readFileSync(join(SRC, f), 'utf8')]),
+)
 const sources = import.meta.glob('/src/**/*.{vue,ts}', { query: '?raw', import: 'default', eager: true }) as Record<string, string>
 
 const REQUIRED_TOKENS = [

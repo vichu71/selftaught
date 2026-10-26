@@ -34,7 +34,7 @@ function restart() {
 </script>
 
 <template>
-  <main class="page" data-testid="new-course-view">
+  <div class="page" data-testid="new-course-view">
     <header class="topbar">
       <h1>Nuevo curso</h1>
       <RouterLink to="/" data-testid="cancel-home">Volver al inicio</RouterLink>
@@ -135,5 +135,5 @@ function restart() {
       <p class="notice" role="alert" data-testid="blocked-message">{{ BLOCKED_TEXT }}</p>
       <button type="button" data-testid="blocked-back" @click="course.backFromBlocked">Volver</button>
     </section>
-  </main>
+  </div>
 </template>

@@ -1,0 +1,17 @@
+/* Movimiento (AC-15): las animaciones solo existen si el sistema no pide menos movimiento. */
+@media (prefers-reduced-motion: no-preference) {
+  .spinner { animation: spin 1s linear infinite; }
+  .ui-button, .nav-link { transition: transform 0.12s ease, box-shadow 0.12s ease; }
+  .ui-button:hover:not(:disabled) { transform: translate(-1px, -1px); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms;
+    animation-iteration-count: 1;
+    transition-duration: 0.01ms;
+    scroll-behavior: auto;
+  }
+  .spinner { animation: none; }
+}

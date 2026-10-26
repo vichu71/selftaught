@@ -37,7 +37,7 @@ async function open(attemptId: string) {
 </script>
 
 <template>
-  <main class="page wide" data-testid="attempts-view">
+  <div class="page wide" data-testid="attempts-view">
     <header class="topbar">
       <h1>Tus intentos</h1>
       <RouterLink :to="`/cursos/${courseId}/piezas/${pieceId}`" data-testid="back-piece">Volver</RouterLink>
@@ -76,5 +76,5 @@ async function open(attemptId: string) {
         <ExamResultView :result="opened" />
       </section>
     </template>
-  </main>
+  </div>
 </template>

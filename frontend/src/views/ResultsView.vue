@@ -30,7 +30,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="page wide" data-testid="results-view">
+  <div class="page wide" data-testid="results-view">
     <header class="topbar">
       <h1>Resultados</h1>
       <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
@@ -69,5 +69,5 @@ onMounted(async () => {
         <p v-if="showMoney && courses.length > 0" data-testid="results-total"><strong>Total de los cursos:</strong> {{ usd(results.totalCostUsd ?? 0) }}</p>
       </section>
     </template>
-  </main>
+  </div>
 </template>

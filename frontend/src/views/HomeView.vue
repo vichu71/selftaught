@@ -1,30 +1,51 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { ref } from 'vue'
+import { api, type Course } from '@/api/client'
+import ContinueCard from '@/components/ContinueCard.vue'
 import CoursesPanel from '@/components/CoursesPanel.vue'
 import StudentsPanel from '@/components/StudentsPanel.vue'
+import { nextStop, type NextStop } from '@/map/layoutMap'
 import { useAuthStore } from '@/stores/auth'
+import { useStudyStore } from '@/stores/study'
 
 const auth = useAuthStore()
-const router = useRouter()
+const study = useStudyStore()
+const stop = ref<NextStop | null>(null)
+const stopCourse = ref('')
 
-async function logout() {
-  await auth.logout().catch(() => undefined)
-  await router.push('/login')
+/**
+ * «Sigue donde lo dejaste» (ADR-67): la siguiente lección lista del primer curso terminado que no está al 100 %.
+ * Son datos de comodidad: si algo falla, el Inicio funciona igual sin esta tarjeta.
+ */
+async function pickContinue(courses: Course[]) {
+  const course = courses.find((c) => c.status === 'READY' && (study.percentByCourse[c.id] ?? 0) < 100)
+  if (!course) return
+  try {
+    const [detail, overview] = await Promise.all([api.getCourse(course.id), api.getStudy(course.id)])
+    const next = nextStop(course.id, detail?.outline ?? [], overview ?? null)
+    if (next) {
+      stop.value = next
+      stopCourse.value = course.title
+    }
+  } catch {
+    stop.value = null
+  }
 }
 </script>
 
 <template>
-  <main class="page wide" data-testid="app-shell">
+  <div class="page wide" data-testid="app-shell">
     <header class="topbar">
       <h1 data-testid="welcome">Hola, {{ auth.user?.displayName }}</h1>
-      <button type="button" data-testid="logout" @click="logout">Cerrar sesión</button>
     </header>
 
     <p v-if="auth.user?.kind === 'MINOR'" class="notice" data-testid="guardian-notice">
       Tu adulto tutor puede ver tus cursos, tu progreso, tus respuestas e intentos de ejercicios y exámenes y tus conversaciones con el tutor de IA.
     </p>
 
-    <CoursesPanel />
+    <ContinueCard v-if="stop" :stop="stop" :course-title="stopCourse" />
+
+    <CoursesPanel @loaded="pickContinue" />
 
     <section class="card">
       <h2>Tu espacio de estudio</h2>
@@ -34,5 +55,5 @@ async function logout() {
     </section>
 
     <StudentsPanel v-if="auth.isTutor" />
-  </main>
+  </div>
 </template>

@@ -55,8 +55,8 @@ describe('Study state in the course outline', () => {
   it('marks the lessons that are done and not the others', async () => {
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'done-p1').exists()).toBe(true)
-    expect(byId(m.wrapper, 'done-p3').exists()).toBe(false)
+    expect(byId(m.wrapper, 'map-item-p1').text()).toContain('Hecha')
+    expect(byId(m.wrapper, 'map-item-p3').text()).not.toContain('Hecha')
   })
 
   it('shows the progress of every topic', async () => {
@@ -83,7 +83,7 @@ describe('Study state in the course outline', () => {
     vi.mocked(api.getStudy).mockRejectedValue(new ApiError(500))
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'outline').exists()).toBe(true)
+    expect(byId(m.wrapper, 'map-list').exists()).toBe(true)
     expect(byId(m.wrapper, 'study-progress').exists()).toBe(false)
   })
 

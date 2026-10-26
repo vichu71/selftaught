@@ -39,7 +39,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="page">
+  <div class="page">
     <h1>Entrar en Study Lab</h1>
     <form class="card" novalidate @submit.prevent="submit">
       <label for="identifier">Correo o usuario</label>
@@ -59,5 +59,5 @@ async function submit() {
         <RouterLink to="/register">Crear cuenta de adulto</RouterLink>
       </div>
     </form>
-  </main>
+  </div>
 </template>

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises } from '@vue/test-utils'
 
 vi.mock('@/api/client', async () => {
@@ -34,8 +34,15 @@ const detail = (over: object = {}) => ({
 
 const open = (user = adult) => mountApp(CourseEditView, { user, route: '/cursos/c1/editar' })
 
+// El diálogo de confirmación se pinta fuera del componente (Reka lo teletransporta al body)
+const inBody = (id: string) => document.body.querySelector<HTMLElement>('[data-testid="' + id + '"]')
+const dialogText = () => (inBody('edit-confirm')?.textContent ?? '').toLowerCase()
+afterEach(() => { document.body.innerHTML = '' })
+
 async function click(m: Awaited<ReturnType<typeof open>>, id: string) {
-  await byId(m.wrapper, id).trigger('click')
+  const el = byId(m.wrapper, id)
+  if (el.exists()) await el.trigger('click')
+  else inBody(id)?.click()
   await flushPromises()
 }
 
@@ -191,7 +198,7 @@ describe('Edición del curso', () => {
 
     await click(m, 'edit-topic-remove-t1')
     expect(api.removeTopic).not.toHaveBeenCalled()
-    expect(byId(m.wrapper, 'edit-confirm').text().toLowerCase()).toContain('progreso')
+    expect(dialogText()).toContain('progreso')
     await click(m, 'edit-confirm-yes')
 
     expect(api.removeTopic).toHaveBeenCalledWith('c1', 't1')
@@ -205,7 +212,7 @@ describe('Edición del curso', () => {
     await click(m, 'edit-confirm-no')
 
     expect(api.removeChapter).not.toHaveBeenCalled()
-    expect(byId(m.wrapper, 'edit-confirm').exists()).toBe(false)
+    expect(inBody('edit-confirm')).toBeNull()
   })
 
   it('removes a chapter once confirmed', async () => {
@@ -323,7 +330,7 @@ describe('Edición del curso', () => {
 
     await click(m, 'edit-regenerate-e1')
     expect(api.regeneratePiece).not.toHaveBeenCalled()
-    expect(byId(m.wrapper, 'edit-confirm').text().toLowerCase()).toContain('intentos')
+    expect(dialogText()).toContain('intentos')
     await click(m, 'edit-confirm-yes')
 
     expect(api.regeneratePiece).toHaveBeenCalledWith('c1', 'e1')

@@ -95,7 +95,7 @@ describe('UiNotice', () => {
   })
 
   it('shows its content as text', () => {
-    const w = track(mount(UiNotice, { props: { tone: 'info' }, slots: { default: '<b>hola</b>' } }))
+    const w = track(mount(UiNotice, { props: { tone: 'info' }, slots: { default: () => '<b>hola</b>' } }))
 
     expect(w.text()).toBe('<b>hola</b>')
   })

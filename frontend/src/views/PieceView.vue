@@ -2,6 +2,7 @@
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type Piece } from '@/api/client'
+import Breadcrumb from '@/layouts/Breadcrumb.vue'
 import ExamTake from '@/components/ExamTake.vue'
 import ExercisePractice from '@/components/ExercisePractice.vue'
 import LessonControls from '@/components/LessonControls.vue'
@@ -37,7 +38,8 @@ watch(() => route.params.pieceId, (id, old) => {
 </script>
 
 <template>
-  <main class="page wide" data-testid="piece-view">
+  <div class="page wide" data-testid="piece-view">
+    <Breadcrumb :items="[{ label: 'Mapa', to: '/' }, { label: 'Curso', to: `/cursos/${courseId}` }, { label: piece?.title ?? 'Lección' }]" />
     <header class="topbar">
       <h1 v-if="piece" data-testid="piece-title">{{ kindLabel }}: {{ piece.title }}</h1>
       <h1 v-else>Tu curso</h1>
@@ -53,8 +55,10 @@ watch(() => route.params.pieceId, (id, old) => {
 
       <article v-if="done" class="card">
         <template v-if="piece.kind === 'LESSON'">
+          <div data-testid="lesson-reader" class="lesson-reader">
           <div data-testid="lesson">
             <MarkdownContent :source="piece.markdown ?? ''" />
+          </div>
           </div>
           <LessonControls :key="piece.id" :course-id="courseId" :piece-id="piece.id" :done="piece.done === true" :navigation="piece.navigation" />
           <TutorChat :key="`tutor-${piece.id}`" :course-id="courseId" :piece-id="piece.id" />
@@ -77,8 +81,8 @@ watch(() => route.params.pieceId, (id, old) => {
           </ul>
         </section>
 
-        <p class="muted">Contenido generado por IA: puede tener errores. Contrástalo con tus apuntes o con tu profesor.</p>
+        <p class="ai-notice">Contenido generado por IA: puede tener errores. Contrástalo con tus apuntes o con tu profesor.</p>
       </article>
     </template>
-  </main>
+  </div>
 </template>

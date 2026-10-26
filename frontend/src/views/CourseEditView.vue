@@ -2,8 +2,11 @@
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type CourseDetail, type OutlineChapter, type OutlineTopic, type PieceRef } from '@/api/client'
+import Breadcrumb from '@/layouts/Breadcrumb.vue'
 import LessonEditor from '@/components/LessonEditor.vue'
 import ShareCodes from '@/components/ShareCodes.vue'
+import UiDialog from '@/ui/UiDialog.vue'
+import UiTabs from '@/ui/UiTabs.vue'
 import { BLOCKED_TEXT } from '@/stores/course'
 
 const route = useRoute()
@@ -18,6 +21,10 @@ const lessonOpen = ref('')
 type Kind = 'rename-topic' | 'rename-chapter' | 'add-chapter' | 'add-topic'
 const form = reactive({ kind: '' as Kind | '', id: '', title: '', summary: '', objective: '', chapterTitle: '' })
 const confirming = reactive<{ message: string; run: (() => Promise<CourseDetail>) | null }>({ message: '', run: null })
+
+const tab = ref('outline')
+const tabs = [{ id: 'outline', label: 'Temario' }, { id: 'share', label: 'Compartir' }]
+const confirmOpen = computed(() => confirming.message !== '')
 
 const outline = computed<OutlineTopic[]>(() => course.value?.outline ?? [])
 const busy = computed(() => course.value?.status === 'PENDING_GENERATION' || course.value?.status === 'GENERATING')
@@ -156,7 +163,8 @@ const pieces = (chapter: OutlineChapter): { label: string; piece: PieceRef }[] =
 </script>
 
 <template>
-  <main class="page wide" data-testid="course-edit">
+  <div class="page wide" data-testid="course-edit">
+    <Breadcrumb :items="[{ label: 'Mapa', to: '/' }, { label: course?.title ?? 'Curso', to: `/cursos/${courseId}` }, { label: 'Editar' }]" />
     <header class="topbar">
       <h1 v-if="course">Editar «{{ course.title }}»</h1>
       <h1 v-else>Editar curso</h1>
@@ -170,14 +178,23 @@ const pieces = (chapter: OutlineChapter): { label: string; piece: PieceRef }[] =
       <p v-if="busy" class="notice" role="status" data-testid="edit-busy">El curso se está preparando con la IA. Podrás editarlo cuando termine.</p>
       <p v-if="error" class="error" role="alert" data-testid="edit-error">{{ error }}</p>
 
-      <section v-if="confirming.message" class="notice" role="alertdialog" data-testid="edit-confirm">
-        <p>{{ confirming.message }}</p>
-        <p class="actions">
-          <button type="button" class="primary" data-testid="edit-confirm-yes" :disabled="working" @click="confirm">Sí, continuar</button>
-          <button type="button" data-testid="edit-confirm-no" @click="closeForms">No</button>
-        </p>
-      </section>
+      <UiDialog
+        :model-value="confirmOpen"
+        title="¿Seguro?"
+        :description="confirming.message"
+        confirm-label="Sí, continuar"
+        cancel-label="No"
+        tone="danger"
+        :busy="working"
+        confirm-testid="edit-confirm-yes"
+        cancel-testid="edit-confirm-no"
+        data-testid="edit-confirm"
+        @update:model-value="(open) => !open && closeForms()"
+        @confirm="confirm"
+      />
 
+      <UiTabs v-model="tab" :tabs="tabs" id-prefix="edit-tab" label="Edición del curso">
+      <template #outline>
       <section v-if="form.kind" class="card" data-testid="edit-form">
         <h2>{{ form.kind === 'add-topic' ? 'Añadir un tema' : form.kind === 'add-chapter' ? 'Añadir un capítulo' : 'Renombrar' }}</h2>
         <label for="edit-title">Título</label>
@@ -246,8 +263,12 @@ const pieces = (chapter: OutlineChapter): { label: string; piece: PieceRef }[] =
         <p><button type="button" data-testid="edit-topic-add" :disabled="locked" @click="open('add-topic')">Añadir tema</button></p>
       </section>
 
-      <ShareCodes :course-id="courseId" :status="course.status" />
+      </template>
+      <template #share>
+        <ShareCodes :course-id="courseId" :status="course.status" />
+      </template>
+      </UiTabs>
     </template>
     <p v-else-if="error" class="error" role="alert" data-testid="edit-error">{{ error }}</p>
-  </main>
+  </div>
 </template>

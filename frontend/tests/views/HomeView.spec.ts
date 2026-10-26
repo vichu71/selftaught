@@ -62,18 +62,7 @@ describe('HomeView', () => {
     expect(byId(wrapper, 'guardian-notice').exists()).toBe(false)
   })
 
-  // AC-2: cerrar sesión
-  it('logs out and goes back to the login', async () => {
-    vi.mocked(api.logout).mockResolvedValue(undefined)
-    const { wrapper, router, auth } = await mountApp(HomeView, { user: adult })
-
-    await byId(wrapper, 'logout').trigger('click')
-    await flushPromises()
-
-    expect(api.logout).toHaveBeenCalled()
-    expect(auth.user).toBeNull()
-    expect(router.currentRoute.value.path).toBe('/login')
-  })
+  // AC-2: cerrar sesión vive ahora en la barra de navegación (F10); lo prueba tests/layouts/shell.spec.ts
 
   it('declares a responsive viewport-friendly layout container', async () => {
     const { wrapper } = await mountApp(HomeView, { user: adult })

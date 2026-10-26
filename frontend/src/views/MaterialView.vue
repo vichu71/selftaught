@@ -21,7 +21,7 @@ async function onChoose(event: Event) {
 </script>
 
 <template>
-  <main class="page wide" data-testid="material-view">
+  <div class="page wide" data-testid="material-view">
     <header class="topbar">
       <h1>Mi material</h1>
       <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
@@ -60,5 +60,5 @@ async function onChoose(event: Event) {
         <MaterialList :documents="m.documents" readonly />
       </div>
     </section>
-  </main>
+  </div>
 </template>

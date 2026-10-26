@@ -39,7 +39,7 @@ async function submit() {
 </script>
 
 <template>
-  <main class="page">
+  <div class="page">
     <h1>Elegir contraseña nueva</h1>
 
     <section v-if="done" class="card" data-testid="done">
@@ -58,5 +58,5 @@ async function submit() {
       <button class="primary" type="submit" data-testid="submit" :disabled="loading">Cambiar contraseña</button>
       <div class="links"><RouterLink to="/forgot-password">Pedir otro enlace</RouterLink></div>
     </form>
-  </main>
+  </div>
 </template>
