@@ -714,6 +714,7 @@ selftaught/
 - Motivo: el temario y las piezas ya son filas con estado (ADR-42). Cada edición es una transacción que bloquea la fila del curso (`FOR UPDATE`), comprueba que no esté en cola ni generándose, cambia las filas y sube `version`. Añadir un tema o un capítulo crea sus piezas `PENDING` y devuelve el curso a la cola:
   el generador solo mira `PENDING` y `FAILED`, así que genera **solo lo nuevo** con su cerrojo, su tope de piezas y su control de gasto, sin segundo camino hacia el modelo. Regenerar una pieza `DONE` pasa por `PENDING` solo ante una petición explícita del propietario, con confirmación en la interfaz (amplía ADR-42: «una pieza hecha no se regenera nunca» pasa a «nunca por sí sola»);
   lo que dependía de ella (intentos, progreso, hilo) se borra y sus dependientes se marcan `outdated`. Añadir y regenerar cuentan para un límite por hora y usuario en la BD (`course_action`).
+- Se vio al implementar: el tope de piezas se comprueba **antes** que el límite por hora (un rechazo por tamaño no gasta ninguna petición), reordenar con una lista que no es exactamente la misma (también con ids de otro curso) es un 400 y las ediciones que no usan IA no cuentan para el límite.
 - Alternativas descartadas: un generador de edición aparte (duplica cerrojo, gasto y validadores), regenerar los ejercicios al editar la lección (coste imprevisible), permitir edición durante la generación (carreras con el generador).
 - Revisitar si: se quiere editar ejercicios y preguntas a mano, o editar mientras se genera.
 
@@ -728,6 +729,7 @@ selftaught/
 - Motivo: quien canjea recibe el temario y el contenido de las piezas hechas, con ids nuevos y como propietario, con `origin_id` y `origin_version` (para avisar de versiones nuevas en el futuro) y su propia `version` 1. No se copian los documentos, las fuentes (se quitan también las marcas `[n]`),
   el progreso, los intentos, las conversaciones, las consultas del asistente ni el uso de IA: lo que no tiene columna que lo enlace no puede colarse, y un test cuenta filas y busca ids del original. Solo se comparten cursos `READY`, así que la copia nace completa. Si quien canjea es un menor, todo el texto pasa por `ContentGuard`
   antes de crearla y, si salta, no se crea nada y su adulto tutor lo ve en el panel (ADR-39, 57 y 60).
+- Se vio al implementar: el aviso de una copia bloqueada que ve el adulto tutor no lleva el id del curso ajeno (solo el tipo y la fecha), y la fecha del bloqueo no cuenta como canje para el límite de copias.
 - Alternativas descartadas: compartir por referencia (el original cambiaría bajo la copia), copiar también las fuentes (filtra ids de documentos de otro usuario), copiar progreso (datos del usuario).
 - Revisitar si: se avisa de versiones nuevas del original o se permite copiar cursos a medias.
 

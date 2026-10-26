@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) y **F08** (panel del adulto tutor, ADR-59 a 62) terminadas; **F09** (edición de temario y compartir por código, ADR-63 a 66) en curso: documentada, aún sin código. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
