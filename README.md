@@ -9,7 +9,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 ## Stack
 
-- Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx
+- Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx; diseño propio «Mapa» con tokens CSS, Reka UI (primitivas accesibles), Lucide (iconos) y tipografías autoalojadas
 - Backend: Spring Boot 3 (Java 21), Spring Security, Spring JDBC (JdbcClient), Flyway
 - Base de datos: PostgreSQL + pgvector
 - IA: capa propia con adaptadores para Anthropic, OpenAI y Gemini; proveedor falso en desarrollo y en tests
@@ -180,6 +180,16 @@ En la página de un curso, **Editar curso** abre su editor. Puedes **renombrar, 
 - **Tengo un código:** quien lo introduce (adulto o menor) recibe **su propia copia**, que puede editar sin afectar al original. La copia **no lleva** tu material subido, ni las fuentes de las lecciones, ni tu progreso, intentos, conversaciones ni ningún dato tuyo. Un código que no vale (mal escrito, caducado o revocado) responde siempre igual,
   y hay un límite de intentos por usuario.
 - **Menores:** lo que escriben al editar y toda la copia que canjean pasan por el filtro de contenido; si salta, no se guarda ni se crea nada y su adulto tutor lo ve en los avisos de su panel.
+
+## La interfaz «Mapa» (F10)
+
+Cada curso se ve como una **línea de metro**: las lecciones son paradas (círculos), los exámenes de tema son cuadrados, los temas son zonas y **«tú estás aquí»** marca la siguiente lección. Debajo del dibujo siempre hay la misma información como lista (para teclado y lector de pantalla).
+
+- **Inicio:** «Sigue donde lo dejaste», tus cursos con su progreso, crear un curso, «Tengo un código» y, si eres adulto tutor, tus menores con sus avisos.
+- **Navegación:** cabecera en pantalla grande y barra inferior en el móvil (Mapa · Mi material · Resultados). Las pantallas de acceso van sin navegación.
+- **Accesibilidad:** contraste AA comprobado por un test sobre los colores (claro y oscuro), foco visible, objetivos táctiles de 44 px y sin animaciones si el sistema pide menos movimiento.
+- **Para quien toque el código:** los colores, espacios y tipografías están **solo** en `frontend/src/styles/tokens.css`; las vistas usan los componentes de `frontend/src/ui/` y el mapa de `frontend/src/map/`. Los prototipos de referencia están en `sdd/design/F10/`.
+- Las fuentes viajan dentro de la propia aplicación (no se pide nada a terceros).
 
 ## Tests
 
