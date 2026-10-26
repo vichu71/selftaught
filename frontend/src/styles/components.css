@@ -36,6 +36,9 @@
 }
 .notice a { color: var(--color-on-accent); }
 
+/* Enlaces que son controles (no van dentro de una frase): objetivo táctil de al menos 44 px */
+.topbar a, .document > a, .student a, .links a, .map-item a { display: inline-flex; align-items: center; min-height: var(--size-tap); }
+
 .status-line { font-size: 1.15rem; font-weight: 700; margin: 0 0 var(--space-2); }
 
 /* ---------- Botones de las vistas ---------- */
@@ -160,7 +163,7 @@ a.button-link {
 }
 .nav-links { display: flex; gap: var(--space-2); flex: 1; }
 .nav-link {
-  display: inline-flex; align-items: center; min-height: var(--size-tap); padding: 0 var(--space-4);
+  white-space: nowrap; display: inline-flex; align-items: center; min-height: var(--size-tap); padding: 0 var(--space-4);
   border: var(--border-width) solid var(--color-line); border-radius: var(--radius-pill);
   background: var(--color-surface); color: var(--color-ink); font-weight: 700; text-decoration: none;
 }
@@ -173,6 +176,7 @@ a.button-link {
     background: var(--color-surface); border-top: var(--border-width) solid var(--color-line); padding: var(--space-2);
   }
   .nav-user-name { display: none; }
+  .nav-link { padding: 0 var(--space-3); font-size: 0.9rem; }
 }
 
 .breadcrumb { max-width: var(--width-page); margin: 0 auto; padding: var(--space-4) var(--space-4) 0; }
@@ -244,6 +248,8 @@ a.button-link {
 .map-station--done { fill: var(--color-ok); }
 .map-station--now { fill: var(--color-now); }
 .map-label { font-family: var(--font-display); font-weight: 800; font-size: 14px; fill: var(--color-ink); text-anchor: middle; }
+.map-label--side { text-anchor: start; }
+.map-zone-title--end { text-anchor: end; }
 .map-here { fill: var(--color-ink); }
 .map-here-text { font-family: var(--font-mono); font-weight: 700; font-size: 13px; fill: var(--color-paper); text-anchor: middle; }
 .map-list { list-style: none; margin: var(--space-4) 0 0; padding: 0; }
@@ -257,3 +263,5 @@ a.button-link {
 .continue-card { background: var(--color-now); color: var(--color-on-now); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: var(--shadow-hard); padding: var(--space-5); margin-bottom: var(--space-5); transform: rotate(-0.6deg); }
 .continue-card a { color: var(--color-on-now); }
 .continue-card h2 { font-size: 2rem; }
+.continue-card a.ui-button { background: var(--color-surface); color: var(--color-ink); }
+.document .ui-progress { flex: 1; min-width: 10rem; }

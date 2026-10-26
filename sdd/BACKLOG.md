@@ -148,7 +148,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 
 | # | Qué | Nota |
 |---|-----|------|
-| F10-1 | 🟡 «Sigue donde lo dejaste» usa el primer curso en marcha de la lista, no el último estudiado de verdad | ADR-67; si molesta, `lastStudiedAt` en la lista de cursos (cambio de backend) |
+| F10-1 | 🟡 «Sigue donde lo dejaste» usa el curso con más avance (sin llegar al 100 %), no el último estudiado de verdad | ADR-67; si molesta, `lastStudiedAt` en la lista de cursos (cambio de backend) |
 | F10-2 | 🟡 Reordenar sigue siendo con botones (sin arrastrar y soltar) | Cierra F9-4 solo en la presentación; arrastrar queda fuera de v1 |
 | F10-3 | 🟡 El panel del adulto sigue sin mostrar códigos creados por su menor ni canjes (F9-8) | F10 no cambia datos; decidir si se enseñan en otra feature |
 | F10-4 | 🟡 Sin modo claro/oscuro elegible: solo el automático del sistema | Fuera de v1 |

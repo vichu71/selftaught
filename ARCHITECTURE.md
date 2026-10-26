@@ -759,7 +759,7 @@ selftaught/
 - Alternativas descartadas: una versión por pieza (excesivo), no marcar nada (el alumno estudiaría ejercicios que ya no encajan sin saberlo).
 - Revisitar si: se pueden editar ejercicios a mano.
 
-### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; «sigue donde lo dejaste» = la primera lección lista sin hacer del primer curso en marcha
+### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; «sigue donde lo dejaste» = la primera lección lista sin hacer del curso terminado con más avance (sin llegar al 100 %)
 - Motivo: la lista de cursos ya llega ordenada y `StudyOverview` dice qué está hecho; no hace falta endpoint ni migración. Mantener el backend intacto hace que F10 sea reversible y que sus tests no se muevan.
 - Alternativas descartadas: guardar la última lección vista (columna y endpoint nuevos); calcularla en el servidor.
 - Revisitar si: se quiere «lo último que estudié» entre varios cursos (un campo `lastStudiedAt` en la lista de cursos).

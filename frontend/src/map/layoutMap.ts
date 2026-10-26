@@ -62,8 +62,8 @@ export interface NextStop {
 }
 
 const PAD = 60
-const STEP = 110
-const ROW_H = 110
+const STEP = 130
+const ROW_H = 120
 const ROW_NARROW = 72
 const ZONE_HEAD = 44
 const ZONE_GAP = 22
@@ -134,7 +134,7 @@ export function layoutMap(outline: OutlineTopic[], study: StudyOverview | null, 
         const row = narrow ? i : Math.floor(i / perRow)
         const idx = narrow ? 0 : i % perRow
         const col = !narrow && row % 2 === 1 ? perRow - 1 - idx : idx
-        const x = narrow ? PAD + (i % 2) * 40 : PAD + col * STEP
+        const x = narrow ? 44 + (i % 2) * 36 : PAD + col * STEP
         const y = top + ZONE_HEAD + row * rowHeight + rowHeight / 2
         stations.push({
           id: e.piece.id,

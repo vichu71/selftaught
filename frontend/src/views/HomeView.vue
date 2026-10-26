@@ -14,11 +14,13 @@ const stop = ref<NextStop | null>(null)
 const stopCourse = ref('')
 
 /**
- * «Sigue donde lo dejaste» (ADR-67): la siguiente lección lista del primer curso terminado que no está al 100 %.
+ * «Sigue donde lo dejaste» (ADR-67): la siguiente lección lista del curso terminado con más avance que no está al 100 %.
  * Son datos de comodidad: si algo falla, el Inicio funciona igual sin esta tarjeta.
  */
 async function pickContinue(courses: Course[]) {
-  const course = courses.find((c) => c.status === 'READY' && (study.percentByCourse[c.id] ?? 0) < 100)
+  const course = courses
+    .filter((c) => c.status === 'READY' && (study.percentByCourse[c.id] ?? 0) < 100)
+    .sort((a, b) => (study.percentByCourse[b.id] ?? 0) - (study.percentByCourse[a.id] ?? 0))[0]
   if (!course) return
   try {
     const [detail, overview] = await Promise.all([api.getCourse(course.id), api.getStudy(course.id)])

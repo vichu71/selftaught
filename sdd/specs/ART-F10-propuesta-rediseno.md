@@ -107,7 +107,7 @@ Móvil: cabecera mínima, "Estás aquí", mapa vertical (una columna), tarjeta �
 
 ## ART-007 · ADR (se copiarán a `ARCHITECTURE.md` en la FASE 5)
 
-### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; "sigue donde lo dejaste" = la primera lección lista sin hacer del primer curso en marcha
+### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; "sigue donde lo dejaste" = la primera lección lista sin hacer del curso terminado con más avance
 - Motivo: la lista de cursos ya llega ordenada y `StudyOverview` dice qué está hecho; no hace falta endpoint ni migración. Mantener el backend intacto hace que F10 sea reversible y que sus tests no se muevan.
 - Alternativas descartadas: guardar la última lección vista (columna y endpoint nuevos); calcularla en el servidor.
 - Revisitar si: el usuario quiere de verdad "lo último que estudié" entre varios cursos (entonces, un campo `lastStudiedAt` en la lista de cursos).

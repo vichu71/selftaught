@@ -60,11 +60,20 @@ function toggle(topicId: string) {
   collapsed.value = next
 }
 
+// Tramo de metro: recto en la misma fila; al cambiar de fila baja en vertical, cruza y vuelve a bajar (sin diagonales)
+function elbow(a: Station, b: Station): string {
+  if (a.y === b.y || a.x === b.x) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`
+  const mid = (a.y + b.y) / 2
+  // En ancho el nombre cuelga debajo de la parada: el tramo sale primero hacia un lado para no cruzarlo
+  const out = narrow.value ? a.x : a.x + 56
+  return `M ${a.x} ${a.y} H ${out} V ${mid} H ${b.x} V ${b.y}`
+}
+
 const track = computed(() =>
   drawn.value.segments.flatMap((seg) => {
     const a = byId.value.get(seg.from)
     const b = byId.value.get(seg.to)
-    return a && b ? [{ key: `${seg.from}-${seg.to}`, x1: a.x, y1: a.y, x2: b.x, y2: b.y, done: seg.done }] : []
+    return a && b ? [{ key: `${seg.from}-${seg.to}`, d: elbow(a, b), done: seg.done }] : []
   }),
 )
 </script>
@@ -81,11 +90,11 @@ const track = computed(() =>
     >
       <g v-for="zone in drawn.zones" :key="zone.topicId">
         <rect class="map-zone" x="8" :y="zone.y" :width="drawn.width - 16" :height="zone.height" rx="16" />
-        <text class="map-zone-title" x="24" :y="zone.y + 28">{{ zone.title }} · {{ zone.done }}/{{ zone.total }}</text>
+        <text class="map-zone-title" :class="{ 'map-zone-title--end': !narrow }" :x="narrow ? 110 : drawn.width - 24" :y="zone.y + 28">{{ zone.title }} · {{ zone.done }}/{{ zone.total }}</text>
       </g>
-      <line v-for="s in track" :key="`b-${s.key}`" class="map-track" :x1="s.x1" :y1="s.y1" :x2="s.x2" :y2="s.y2" />
-      <line v-for="s in track.filter((t) => t.done)" :key="`d-${s.key}`" class="map-track map-track--done" :x1="s.x1" :y1="s.y1" :x2="s.x2" :y2="s.y2" />
-      <MapStation v-for="s in drawn.stations" :key="s.id" :station="s" />
+      <path v-for="s in track" :key="`b-${s.key}`" class="map-track" :d="s.d" />
+      <path v-for="s in track.filter((t) => t.done)" :key="`d-${s.key}`" class="map-track map-track--done" :d="s.d" />
+      <MapStation v-for="s in drawn.stations" :key="s.id" :station="s" :narrow="narrow" />
     </svg>
 
     <MapLegend />
