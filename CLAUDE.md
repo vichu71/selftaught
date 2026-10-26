@@ -149,7 +149,7 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - La **copia** (`CourseCopier`) crea un curso `READY` con ids nuevos y `origin_id`/`origin_version`, sin documentos, fuentes (se quitan las marcas `[n]`), progreso, intentos, conversaciones, consultas ni uso de IA; el detalle solo enseña `copy.originVersion`, nunca el id del original. Un test cuenta filas y busca ids.
 - Todo lo que cambia datos exige sesión y CSRF; un curso, tema, capítulo, pieza o código ajenos responden 404 igual que uno inexistente; el adulto tutor no edita los cursos de su menor.
 
-## Reglas de F10 (rediseño del frontend «Mapa»)
+## Reglas de F10 (sistema de diseño del frontend; su piel «Mapa» fue sustituida por la de F11)
 - Contrato y criterios de aceptación: `sdd/specs/US-F10-rediseno-frontend.md`; diseño y ADR-67 a 72: `sdd/specs/ART-F10-propuesta-rediseno.md` y `ARCHITECTURE.md`. Prototipos: `sdd/design/F10/`. **F10 es solo de frontend**: sin migraciones, endpoints ni cambios en `backend/`.
 - **Colores, espacios, radios, sombras y tipografías solo en `src/styles/tokens.css`** (un test lo comprueba: ninguna vista ni otro CSS lleva `#hex`, `rgb()` ni `hsl()`). Las vistas se hacen con los componentes de `src/ui/`; los diálogos y pestañas, con Reka UI. Nada de `confirm()` ni `alert()` del navegador.
 - Todo par de color nuevo en `tokens.css` entra en `tests/design/contrast.spec.ts` (AA: 4,5:1 texto y 3:1 elementos, en claro y en oscuro). Un estado nunca se dice solo con color: también con forma, texto o icono.
@@ -159,8 +159,8 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Movimiento solo dentro de `prefers-reduced-motion: no-preference`; objetivos táctiles de al menos 44 px (`--size-tap`); móvil probado a 360–430 px.
 - Lecciones de F10: **Vitest sustituye los `.css` por una cadena vacía** (también con `?raw`): las pruebas de estilos leen los ficheros con `node:fs` desde `process.cwd()`. El diálogo de Reka UI se teletransporta al `body`: se busca en `document.body` y se limpia en `afterEach`; las pestañas de Reka se activan con `mousedown`, no con `click`. Un slot de VTU dado como cadena es una plantilla (usa una función para probar texto). **Nada se da por bueno solo con tests de DOM**: la pasada en el navegador encontró texto invisible, nombres solapados y tramos que cruzaban títulos. El navegador de la app puede estar oculto (viewport 0×0): `resize_window` a un tamaño concreto devuelve capturas.
 
-## Reglas de F11 (piel «Mundo que crece», rama aparte)
-- Contrato y criterios de aceptación: `sdd/specs/US-F11-piel-mundo-que-crece.md`; diseño y ADR-73 a 77: `sdd/specs/ART-F11-propuesta-mundo.md` y `ARCHITECTURE.md`. **Solo frontend**; vive en `feature/F11-piel-mundo-que-crece` y reemplaza a «Mapa» allí. Las reglas de F10 siguen valiendo salvo las de tipografías (ahora Fredoka y Newsreader).
+## Reglas de F11 (piel «Mundo que crece», la definitiva)
+- Contrato y criterios de aceptación: `sdd/specs/US-F11-piel-mundo-que-crece.md`; diseño y ADR-73 a 77: `sdd/specs/ART-F11-propuesta-mundo.md` y `ARCHITECTURE.md`. **Solo frontend**; es la interfaz definitiva (reemplaza a «Mapa»). Las reglas de F10 siguen valiendo salvo las de tipografías (ahora Fredoka y Newsreader).
 - La **fase de una planta** sale solo de `world/plantStage.ts` (0 / 1–39 / 40–99 / 100; sin porcentaje, semilla «Preparándose») y siempre se dice también con texto. Las ilustraciones son plantillas Vue con **clases que leen tokens**: ningún `fill`/`stroke` con color a mano, ni `<image>`, `foreignObject` ni imágenes externas.
 - El camino se dibuja con `map/roadPath.ts` (función pura) sobre las posiciones de `layoutMap`; la lista equivalente, los ids (`map-item-*`, `map-link-*`) y los roles de F10 no cambian. Todo par de color nuevo (cielo, hierba, camino) entra en `tests/design/contrast.spec.ts`.
 

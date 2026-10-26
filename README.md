@@ -9,7 +9,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 ## Stack
 
-- Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx; diseño propio «Mapa» con tokens CSS, Reka UI (primitivas accesibles), Lucide (iconos) y tipografías autoalojadas
+- Frontend: Vue 3 + TypeScript (Vite, Pinia, Vue Router), servido por nginx; diseño propio «Mundo que crece» con tokens CSS, Reka UI (primitivas accesibles), Lucide (iconos) y tipografías autoalojadas
 - Backend: Spring Boot 3 (Java 21), Spring Security, Spring JDBC (JdbcClient), Flyway
 - Base de datos: PostgreSQL + pgvector
 - IA: capa propia con adaptadores para Anthropic, OpenAI y Gemini; proveedor falso en desarrollo y en tests
@@ -181,19 +181,9 @@ En la página de un curso, **Editar curso** abre su editor. Puedes **renombrar, 
   y hay un límite de intentos por usuario.
 - **Menores:** lo que escriben al editar y toda la copia que canjean pasan por el filtro de contenido; si salta, no se guarda ni se crea nada y su adulto tutor lo ve en los avisos de su panel.
 
-## La interfaz «Mapa» (F10)
+## La interfaz «Mundo que crece» (F11)
 
-Cada curso se ve como una **línea de metro**: las lecciones son paradas (círculos), los exámenes de tema son cuadrados, los temas son zonas y **«tú estás aquí»** marca la siguiente lección. Debajo del dibujo siempre hay la misma información como lista (para teclado y lector de pantalla).
-
-- **Inicio:** «Sigue donde lo dejaste», tus cursos con su progreso, crear un curso, «Tengo un código» y, si eres adulto tutor, tus menores con sus avisos.
-- **Navegación:** cabecera en pantalla grande y barra inferior en el móvil (Mapa · Mi material · Resultados). Las pantallas de acceso van sin navegación.
-- **Accesibilidad:** contraste AA comprobado por un test sobre los colores (claro y oscuro), foco visible, objetivos táctiles de 44 px y sin animaciones si el sistema pide menos movimiento.
-- **Para quien toque el código:** los colores, espacios y tipografías están **solo** en `frontend/src/styles/tokens.css`; las vistas usan los componentes de `frontend/src/ui/` y el mapa de `frontend/src/map/`. Los prototipos de referencia están en `sdd/design/F10/`.
-- Las fuentes viajan dentro de la propia aplicación (no se pide nada a terceros).
-
-## La piel «Mundo que crece» (F11, rama `feature/F11-piel-mundo-que-crece`)
-
-Alternativa visual a «Mapa» que se prueba **en su propia rama** (en `main` sigue «Mapa» hasta que se elija). Cada curso del Inicio es una **planta** que crece con tu avance (semilla, brote, árbol, árbol con frutos; la fase siempre se dice también con texto), y el curso es un **camino por un paisaje**: las lecciones son piedras, los exámenes de tema son puertas, los temas son colinas y un personaje marca «tú estás aquí». Mismas funciones y mismas reglas; cambian los tokens (`frontend/src/styles/tokens.css`), las ilustraciones (`frontend/src/world/`) y el trazo del camino (`frontend/src/map/roadPath.ts`). En las lecciones, el tutor es un botón flotante «Pregunta al tutor» que abre un panel (no hace falta ir al final). Para verla: `git checkout feature/F11-piel-mundo-que-crece` y reconstruir el stack como siempre.
+Es la interfaz definitiva (sustituye a «Mapa», de F10, que queda en el historial de Git y en `sdd/design/F10/`). Cada curso del Inicio es una **planta** que crece con tu avance (semilla, brote, árbol, árbol con frutos; la fase siempre se dice también con texto), y el curso es un **camino por un paisaje**: las lecciones son piedras, los exámenes de tema son puertas, los temas son colinas y un personaje marca «tú estás aquí». Mismas funciones y mismas reglas; cambian los tokens (`frontend/src/styles/tokens.css`), las ilustraciones (`frontend/src/world/`) y el trazo del camino (`frontend/src/map/roadPath.ts`). En las lecciones, el tutor es un botón flotante «Pregunta al tutor» que abre un panel (no hace falta ir al final). Los prototipos de referencia están en `sdd/design/F10/` y el contrato en `sdd/specs/US-F11-piel-mundo-que-crece.md`. Accesibilidad: contraste AA comprobado por un test sobre los colores (claro y noche), foco visible, objetivos táctiles de 44 px y sin animaciones si el sistema pide menos movimiento; las fuentes viajan dentro de la propia aplicación.
 
 ## Tests
 

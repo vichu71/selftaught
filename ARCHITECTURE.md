@@ -174,7 +174,7 @@ que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones.
 El curso lleva `version` (sube con cada edición guardada) y, si es una copia, `origin_id` y `origin_version`; el detalle del curso solo enseña `copy.originVersion`, nunca el id del original. Lo nuevo lo genera siempre la cola: ni la edición ni
 el canje llaman al modelo (un test de arquitectura lo exige). Ni el código ni los textos editados van a logs ni a la auditoría.
 
-## Interfaz: sistema de diseño «Mapa» (F10)
+## Interfaz: sistema de diseño (F10; la piel actual es «Mundo», F11)
 
 F10 no toca el backend, la base de datos ni los contratos HTTP: rehace la presentación del frontend y su navegación.
 
@@ -196,7 +196,7 @@ F10 no toca el backend, la base de datos ni los contratos HTTP: rehace la presen
 
 ## Piel «Mundo que crece» (F11)
 
-F11 sustituye la piel «Mapa» por «Mundo» **en su rama** (`feature/F11-piel-mundo-que-crece`); `main` conserva «Mapa» hasta que se decida cuál se queda (ADR-73). Sigue siendo solo frontend: sin migraciones, endpoints ni cambios de contrato.
+F11 sustituye la piel «Mapa» (F10) por «Mundo» y es **la interfaz definitiva** (decisión del usuario, 26-10-2026; fusionada en `main`). «Mapa» queda en el historial de Git y en `sdd/design/F10/` (ADR-73). Sigue siendo solo frontend: sin migraciones, endpoints ni cambios de contrato.
 
 ```
  styles/tokens.css  mismos NOMBRES del contrato de F10 + paisaje (--color-sky, grass, leaf, trunk, soil, sun, fruit, cloud, road); claro y noche      fonts.css: Fredoka + Newsreader (ADR-77)

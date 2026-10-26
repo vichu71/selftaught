@@ -164,7 +164,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 
 | # | Qué | Nota |
 |---|-----|------|
-| F11-1 | 🟡 «Mundo» reemplaza a «Mapa» solo en su rama; no hay selector de piel | ADR-73: decidir cuál se queda en `main` o si conviven (entonces, tokens por tema y pruebas para las dos) |
+| F11-1 | ✅ Decidido (26-10-2026): «Mundo» es la interfaz definitiva y sustituye a «Mapa»; no hay selector de piel | Si algún día conviven, tokens por tema de datos y pruebas para las dos (ADR-73) |
 | F11-2 | 🟡 Las cuatro plantas son genéricas: no hay ilustración por curso ni paisaje personalizable | Fuera de v1 |
 | F11-3 | 🟡 Mascota y personaje sencillos, nombre y logo provisionales | Valorar ilustración profesional si «Mundo» se queda |
 | F11-4 | 🟡 Las pantallas no se prototiparon antes (decisión del usuario); el informe las compara con «Mapa» en el navegador | Riesgo de rehacer ilustraciones |
