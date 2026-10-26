@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) y **F08** (panel del adulto tutor, ADR-59 a 62) terminadas. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -168,6 +168,18 @@ En «Tus alumnos», cada menor (también uno dado de baja) tiene un enlace **Ver
 - **Consumo de IA:** lo que ha gastado el alumno este mes frente a su tope personal y cómo se reparte por tarea (sin tokens).
 - **Transparencia:** cada vez que consultas intentos, conversaciones o avisos de un alumno queda anotado en la auditoría (quién, a quién y qué pantalla, nunca el contenido). El menor ve en su pantalla principal que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones.
 - Solo ves a tus alumnos; cualquier otro responde como si no existiera. Sin variables nuevas ni llamadas a la IA.
+
+## Editar y compartir un curso (F09)
+
+En la página de un curso, **Editar curso** abre su editor. Puedes **renombrar, reordenar (con los botones de subir y bajar), quitar y añadir** temas y capítulos, **editar el texto de una lección** (con vista previa) y **regenerar** una pieza con IA.
+
+- **Lo nuevo lo escribe la IA:** al añadir un tema o un capítulo, el curso vuelve a la cola y se genera **solo lo nuevo**, con las mismas reglas de gasto de siempre. Añadir y regenerar cuentan para un límite de 20 por hora y para tu tope mensual. Mientras el curso se prepara no se puede editar.
+- **Quitar o regenerar borra** el progreso, los intentos y la conversación con el tutor de esas piezas (te lo avisa y pide confirmación). Si editas una lección, sus ejercicios y el examen **se quedan como estaban** y salen marcados «la lección cambió»; tú decides si regenerarlos.
+- **Versión:** cada edición guardada sube el número de versión del curso.
+- **Compartir:** en la misma pantalla creas un **código** (caduca a los 7 días, o entre 1 y 90; hasta 5 activos por curso; vale para varias personas). Se te enseña **una sola vez** (solo se guarda un resumen cifrado) y puedes **revocarlo** cuando quieras. Solo se comparten cursos terminados.
+- **Tengo un código:** quien lo introduce (adulto o menor) recibe **su propia copia**, que puede editar sin afectar al original. La copia **no lleva** tu material subido, ni las fuentes de las lecciones, ni tu progreso, intentos, conversaciones ni ningún dato tuyo. Un código que no vale (mal escrito, caducado o revocado) responde siempre igual,
+  y hay un límite de intentos por usuario.
+- **Menores:** lo que escriben al editar y toda la copia que canjean pasan por el filtro de contenido; si salta, no se guarda ni se crea nada y su adulto tutor lo ve en los avisos de su panel.
 
 ## Tests
 

@@ -83,3 +83,33 @@ describe('CourseStatusView', () => {
     expect(byId(m.wrapper, 'back-home').attributes('href')).toBe('/')
   })
 })
+
+// F09 AC-7, AC-10, AC-16: edición, versión y origen de un curso
+describe('CourseStatusView: edición y copia (F09)', () => {
+  beforeEach(() => {
+    vi.resetAllMocks()
+    vi.mocked(api.getCourse).mockResolvedValue({ ...course, status: 'READY', version: 3 } as never)
+  })
+
+  it('offers to edit the course and shows its version', async () => {
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'edit-link').attributes('href')).toBe('/cursos/c1/editar')
+    expect(byId(m.wrapper, 'course-version').text()).toContain('3')
+  })
+
+  it('says when the course is a copy and of which version, without any id', async () => {
+    vi.mocked(api.getCourse).mockResolvedValue({ ...course, status: 'READY', version: 1, copy: { originVersion: 4 } } as never)
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    const text = byId(m.wrapper, 'copy-notice').text()
+    expect(text.toLowerCase()).toContain('copia')
+    expect(text).toContain('4')
+  })
+
+  it('does not say it is a copy when it is not', async () => {
+    const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
+
+    expect(byId(m.wrapper, 'copy-notice').exists()).toBe(false)
+  })
+})

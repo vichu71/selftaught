@@ -129,3 +129,17 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F8-6 | 🟡 Segunda capa del filtro de menores y otros idiomas (F4-3, F5-5, F7-2) | Sigue pendiente; el panel solo muestra lo que el filtro actual ya detecta |
 | F8-7 | 🟡 Sin límite de frecuencia en las lecturas del panel (un adulto autenticado puede pedirlas en bucle) y el contador de avisos del resumen se acota a 1 000 | Son consultas de solo lectura sobre datos acotados; si se abusa, límite por usuario en la BD como en F04 a F07 |
 | F8-8 | 🟡 Cada intento de un adulto sobre un alumno ajeno añade un `ACCESS_DENIED` a la auditoría (F01): un bucle la haría crecer | Valorar agrupar o limitar esos eventos al desplegar |
+
+## Anotado en F09 (edición y compartir)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F9-1 | 🟡 Los ejercicios y las preguntas de examen solo se regeneran con IA: no se pueden editar a mano | Fuera de v1 |
+| F9-2 | 🟡 Avisar al propietario o a quien copió de que hay una versión nueva del original | Fuera de v1; `origin_id` y `origin_version` ya se guardan |
+| F9-3 | 🟡 El propietario no ve quién ha canjeado su código, solo cuántas veces | Decisión de privacidad |
+| F9-4 | 🟡 Reordenar es con botones (sin arrastrar y soltar) | Mejora de interfaz (F10) |
+| F9-5 | 🟡 Un adulto que pasa una copia a su menor, y borrar un curso entero | Fuera de v1 |
+| F9-6 | 🟡 Sin moderación del contenido compartido: un adulto puede compartir algo que él mismo editó | Fuera de v1; el filtro solo protege a los menores |
+| F9-7 | 🟡 La lista local del filtro de menores es corta y en español: ahora protege también las copias (F4-3, F5-5, F7-2, F8-6) | Segunda capa pendiente |
+| F9-8 | 🟡 El panel del adulto no muestra los códigos que crea su menor ni cuándo alguien canjea uno de sus cursos | Los eventos `COURSE_SHARE_CREATED` y `COURSE_SHARE_REDEEMED` ya están en la auditoría; decidir en F10 si se enseñan |
+| F9-9 | 🟡 Las ediciones que no usan IA (renombrar, reordenar, editar el texto) no tienen límite de frecuencia: son de un usuario autenticado sobre su propio curso y cada una sube la versión | Añadir un límite por usuario si se abusa |

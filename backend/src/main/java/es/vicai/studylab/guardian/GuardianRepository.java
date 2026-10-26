@@ -86,7 +86,7 @@ public class GuardianRepository {
                     FROM course_intake WHERE owner_id = :owner AND status = 'BLOCKED' AND created_at >= :since
                     UNION ALL
                     SELECT action, occurred_at, CAST(NULLIF(details->>'courseId', '') AS uuid), CAST(NULLIF(details->>'pieceId', '') AS uuid), NULL, NULL
-                    FROM audit_event WHERE actor_user_id = :owner AND action IN ('STUDY_ANSWER_BLOCKED', 'COURSE_CONTENT_BLOCKED') AND occurred_at >= :since
+                    FROM audit_event WHERE actor_user_id = :owner AND action IN ('STUDY_ANSWER_BLOCKED', 'COURSE_CONTENT_BLOCKED', 'COURSE_COPY_BLOCKED', 'COURSE_EDIT_BLOCKED') AND occurred_at >= :since
                 ) alerts ORDER BY happened_at DESC, type LIMIT :limit""")
                 .param("owner", studentId).param("since", java.sql.Timestamp.from(since)).param("limit", limit)
                 .query((rs, i) -> new AlertRow(rs.getString("type"), rs.getTimestamp("happened_at").toInstant(), rs.getObject("course_id", UUID.class),

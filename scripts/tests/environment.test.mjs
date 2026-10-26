@@ -375,3 +375,23 @@ test('F08 la migración del panel solo añade el índice de la auditoría por ac
   assert.match(sql, /CREATE INDEX audit_event_actor_idx ON audit_event \(actor_user_id, action, occurred_at\)/i);
   assert.doesNotMatch(sql, /CREATE TABLE|DROP |GRANT/i, 'el panel no crea tablas ni cambia permisos');
 });
+
+test('F09 la edición y compartir no añaden dependencias, variables obligatorias ni plantillas de IA nuevas', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router'], 'F09 no necesita librerías nuevas');
+  const required = Object.entries(base.services.backend.environment ?? {}).filter(([, v]) => /\?/.test(String(v))).map(([k]) => k);
+  assert.ok(!required.some((k) => /SHARE|COURSE_EDIT/.test(k)), 'los límites de F09 son valores de ingeniería, no variables obligatorias');
+  for (const name of ['share', 'course-edit', 'edit']) assert.ok(!existsSync(`${REPO}/backend/src/main/resources/prompts/${name}.txt`), `F09 no llama a la IA por su cuenta: no hay plantilla ${name}`);
+});
+
+test('F09 la migración V9 crea los códigos, el registro de acciones y las columnas del curso, y no borra nada', () => {
+  const file = 'backend/src/main/resources/db/migration/V9__share_edit.sql';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const sql = read(file);
+  assert.match(sql, /CREATE TABLE share_code/i);
+  assert.match(sql, /code_hash/i);
+  assert.match(sql, /CREATE TABLE course_action/i);
+  assert.match(sql, /origin_id/i);
+  assert.match(sql, /outdated/i);
+  assert.doesNotMatch(sql, /DROP TABLE|TRUNCATE/i, 'la migración no borra datos');
+});

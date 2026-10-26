@@ -29,6 +29,7 @@ async function logout() {
     <section class="card">
       <h2>Tu espacio de estudio</h2>
       <p><RouterLink to="/material" data-testid="material-link">Mi material</RouterLink> · sube tus apuntes (PDF, Word o texto).</p>
+      <p><RouterLink to="/codigo" data-testid="redeem-link">Tengo un código</RouterLink> · recibe tu propia copia de un curso que te han compartido.</p>
       <p><RouterLink to="/resultados" data-testid="results-link">Resultados</RouterLink> · {{ auth.user?.kind === 'MINOR' ? 'cómo van tus cursos.' : 'cómo van tus cursos y cuánto se ha gastado.' }}</p>
     </section>
 

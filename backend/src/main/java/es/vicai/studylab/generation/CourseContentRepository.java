@@ -16,7 +16,10 @@ public class CourseContentRepository {
     public record ChapterRow(UUID id, UUID topicId, String title, String objective) {}
 
     /** Una pieza sin su contenido: lo justo para pintar el temario con su estado. */
-    public record PieceStatus(UUID id, String kind, String status, UUID topicId, UUID chapterId) {}
+    public record PieceStatus(UUID id, String kind, String status, UUID topicId, UUID chapterId, boolean outdated) {}
+
+    /** La versión del curso y, si es una copia, la del original en el momento de copiar (nunca su id). */
+    public record VersionInfo(int version, Integer originVersion, boolean copy) {}
 
     /** Una pieza con su contenido; {@code title} es el del capítulo (lección y ejercicios) o el del tema (examen). */
     public record PieceContent(UUID id, String kind, String status, UUID topicId, UUID chapterId, String title, String markdown, String contentJson,
@@ -52,10 +55,16 @@ public class CourseContentRepository {
     }
 
     public List<PieceStatus> pieces(UUID courseId, UUID ownerId) {
-        return jdbc.sql("SELECT id, kind, status, topic_id, chapter_id FROM course_piece WHERE course_id = :course AND owner_id = :owner ORDER BY seq")
+        return jdbc.sql("SELECT id, kind, status, topic_id, chapter_id, outdated FROM course_piece WHERE course_id = :course AND owner_id = :owner ORDER BY seq")
                 .param("course", courseId).param("owner", ownerId)
                 .query((rs, row) -> new PieceStatus(rs.getObject("id", UUID.class), rs.getString("kind"), rs.getString("status"),
-                        rs.getObject("topic_id", UUID.class), rs.getObject("chapter_id", UUID.class))).list();
+                        rs.getObject("topic_id", UUID.class), rs.getObject("chapter_id", UUID.class), rs.getBoolean("outdated"))).list();
+    }
+
+    public VersionInfo versionInfo(UUID courseId, UUID ownerId) {
+        return jdbc.sql("SELECT version, origin_version, (origin_version IS NOT NULL) AS copy FROM course WHERE id = :id AND owner_id = :owner")
+                .param("id", courseId).param("owner", ownerId)
+                .query((rs, row) -> new VersionInfo(rs.getInt("version"), rs.getObject("origin_version", Integer.class), rs.getBoolean("copy"))).single();
     }
 
     public Optional<PieceContent> piece(UUID courseId, UUID pieceId, UUID ownerId) {

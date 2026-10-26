@@ -91,6 +91,8 @@ export type StopReason = 'BUDGET' | 'PROVIDER' | 'CONTENT' | 'TOPIC_NOT_ALLOWED'
 export interface PieceRef {
   id: string
   status: PieceStatus
+  /** La pieza ya no encaja con lo que cambió (F09): el propietario decide si regenerarla. */
+  outdated?: boolean
 }
 
 export interface OutlineChapter {
@@ -117,6 +119,9 @@ export interface CourseDetail extends Course {
   generatedByAi?: boolean
   outline?: OutlineTopic[]
   waitingForOther?: boolean
+  version?: number
+  /** Solo en una copia (F09): la versión del original de la que salió. Nunca su id. */
+  copy?: { originVersion?: number }
 }
 
 /** Un ejercicio antes de responder: la solución llega al enviar la respuesta (F06, ADR-50). */
@@ -172,6 +177,23 @@ export interface TutorThread {
 export interface TutorExchange {
   user: TutorMessage
   tutor: TutorMessage
+}
+
+// ---------- compartir (F09) ----------
+
+export interface ShareCodeInfo {
+  id: string
+  createdAt: string
+  expiresAt: string
+  revokedAt?: string
+  uses: number
+  active: boolean
+}
+
+export interface ShareCodeCreated {
+  id: string
+  code: string
+  expiresAt: string
 }
 
 // ---------- panel del adulto tutor (F08): todo de solo lectura ----------
@@ -293,6 +315,7 @@ async function request<T>(method: string, path: string, body?: unknown): Promise
   return (await response.json().catch(() => undefined)) as T
 }
 
+const coursePath = (courseId: string) => `/api/courses/${encodeURIComponent(courseId)}`
 const studentPath = (studentId: string) => `/api/tutor/students/${encodeURIComponent(studentId)}`
 const piecePath = (courseId: string, pieceId: string) => `/api/courses/${encodeURIComponent(courseId)}/pieces/${encodeURIComponent(pieceId)}`
 
@@ -350,6 +373,22 @@ export const api = {
   getExamAttempt: (courseId: string, pieceId: string, attemptId: string) =>
     request<ExamResult>('GET', `${piecePath(courseId, pieceId)}/exam/attempts/${encodeURIComponent(attemptId)}`),
   getAttempts: (courseId: string, pieceId: string) => request<Attempts>('GET', `${piecePath(courseId, pieceId)}/attempts`),
+  renameTopic: (courseId: string, topicId: string, data: { title: string; summary: string }) => request<CourseDetail>('PUT', `${coursePath(courseId)}/topics/${encodeURIComponent(topicId)}`, data),
+  reorderTopics: (courseId: string, ids: string[]) => request<CourseDetail>('PUT', `${coursePath(courseId)}/topics/order`, { ids }),
+  removeTopic: (courseId: string, topicId: string) => request<CourseDetail>('DELETE', `${coursePath(courseId)}/topics/${encodeURIComponent(topicId)}`),
+  addTopic: (courseId: string, data: { title: string; summary: string; chapter: { title: string; objective: string } }) => request<CourseDetail>('POST', `${coursePath(courseId)}/topics`, data),
+  renameChapter: (courseId: string, chapterId: string, data: { title: string; objective: string }) =>
+    request<CourseDetail>('PUT', `${coursePath(courseId)}/chapters/${encodeURIComponent(chapterId)}`, data),
+  reorderChapters: (courseId: string, topicId: string, ids: string[]) => request<CourseDetail>('PUT', `${coursePath(courseId)}/topics/${encodeURIComponent(topicId)}/chapters/order`, { ids }),
+  removeChapter: (courseId: string, chapterId: string) => request<CourseDetail>('DELETE', `${coursePath(courseId)}/chapters/${encodeURIComponent(chapterId)}`),
+  addChapter: (courseId: string, topicId: string, data: { title: string; objective: string }) =>
+    request<CourseDetail>('POST', `${coursePath(courseId)}/topics/${encodeURIComponent(topicId)}/chapters`, data),
+  editLesson: (courseId: string, pieceId: string, markdown: string) => request<CourseDetail>('PUT', `${piecePath(courseId, pieceId)}/content`, { markdown }),
+  regeneratePiece: (courseId: string, pieceId: string) => request<CourseDetail>('POST', `${piecePath(courseId, pieceId)}/regenerate`),
+  createShareCode: (courseId: string, days?: number) => request<ShareCodeCreated>('POST', `${coursePath(courseId)}/share`, days === undefined ? {} : { days }),
+  listShareCodes: (courseId: string) => request<ShareCodeInfo[]>('GET', `${coursePath(courseId)}/share`),
+  revokeShareCode: (courseId: string, codeId: string) => request<void>('DELETE', `${coursePath(courseId)}/share/${encodeURIComponent(codeId)}`),
+  redeemCode: (code: string) => request<{ id: string; title: string }>('POST', '/api/courses/redeem', { code }),
   getGuardianOverview: (studentId: string) => request<GuardianOverview>('GET', `${studentPath(studentId)}/overview`),
   getGuardianCourse: (studentId: string, courseId: string) => request<GuardianCourse>('GET', `${studentPath(studentId)}/courses/${encodeURIComponent(courseId)}`),
   getGuardianAttempts: (studentId: string, courseId: string) =>

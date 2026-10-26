@@ -215,10 +215,16 @@ public class GuardianService {
         }
         Map<UUID, String> courses = repo.courseTitles(studentId, courseIds);
         Map<UUID, String> lessons = repo.chapterTitles(studentId, pieceIds);
-        List<AlertView> out = rows.stream().map(r -> new AlertView(r.type(), r.at(), r.courseId(), r.courseId() == null ? null : courses.get(r.courseId()), r.pieceId(),
+        List<AlertView> out = rows.stream().map(r -> new AlertView(r.type(), r.at(), ownCourse(r, courses), r.courseId() == null ? null : courses.get(r.courseId()), r.pieceId(),
                 r.pieceId() == null ? null : lessons.get(r.pieceId()), r.topic(), r.category())).toList();
         view(adult, studentId, ip, "ALERTS", null, null);
         return out;
+    }
+
+    /** El aviso de una copia bloqueada apunta al curso de OTRA persona: su id no se enseña. */
+    private static UUID ownCourse(GuardianRepository.AlertRow row, Map<UUID, String> ownCourses) {
+        if ("COURSE_COPY_BLOCKED".equals(row.type()) && row.courseId() != null && !ownCourses.containsKey(row.courseId())) return null;
+        return row.courseId();
     }
 
     // ---------- ayudas ----------

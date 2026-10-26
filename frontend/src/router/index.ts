@@ -1,6 +1,8 @@
 import { createRouter, createWebHistory, type RouterHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import ForgotPasswordView from '@/views/ForgotPasswordView.vue'
+import CourseEditView from '@/views/CourseEditView.vue'
+import RedeemView from '@/views/RedeemView.vue'
 import GuardianCourseView from '@/views/GuardianCourseView.vue'
 import GuardianStudentView from '@/views/GuardianStudentView.vue'
 import GuardianThreadView from '@/views/GuardianThreadView.vue'
@@ -34,6 +36,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
       { path: '/alumnos/:id', name: 'guardian-student', component: GuardianStudentView },
       { path: '/alumnos/:id/cursos/:courseId', name: 'guardian-course', component: GuardianCourseView },
       { path: '/alumnos/:id/cursos/:courseId/lecciones/:pieceId', name: 'guardian-thread', component: GuardianThreadView },
+      { path: '/cursos/:id/editar', name: 'course-edit', component: CourseEditView },
+      { path: '/codigo', name: 'redeem', component: RedeemView },
       { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
       { path: '/register', name: 'register', component: RegisterView, meta: { public: true } },
       { path: '/verify-email', name: 'verify-email', component: VerifyEmailView, meta: { public: true } },
