@@ -193,7 +193,7 @@ Cada curso se ve como una **línea de metro**: las lecciones son paradas (círcu
 
 ## La piel «Mundo que crece» (F11, rama `feature/F11-piel-mundo-que-crece`)
 
-Alternativa visual a «Mapa» que se prueba **en su propia rama** (en `main` sigue «Mapa» hasta que se elija). Cada curso del Inicio es una **planta** que crece con tu avance (semilla, brote, árbol, árbol con frutos; la fase siempre se dice también con texto), y el curso es un **camino por un paisaje**: las lecciones son piedras, los exámenes de tema son puertas, los temas son colinas y un personaje marca «tú estás aquí». Mismas funciones y mismas reglas; cambian los tokens (`frontend/src/styles/tokens.css`), las ilustraciones (`frontend/src/world/`) y el trazo del camino (`frontend/src/map/roadPath.ts`). Para verla: `git checkout feature/F11-piel-mundo-que-crece` y reconstruir el stack como siempre.
+Alternativa visual a «Mapa» que se prueba **en su propia rama** (en `main` sigue «Mapa» hasta que se elija). Cada curso del Inicio es una **planta** que crece con tu avance (semilla, brote, árbol, árbol con frutos; la fase siempre se dice también con texto), y el curso es un **camino por un paisaje**: las lecciones son piedras, los exámenes de tema son puertas, los temas son colinas y un personaje marca «tú estás aquí». Mismas funciones y mismas reglas; cambian los tokens (`frontend/src/styles/tokens.css`), las ilustraciones (`frontend/src/world/`) y el trazo del camino (`frontend/src/map/roadPath.ts`). En las lecciones, el tutor es un botón flotante «Pregunta al tutor» que abre un panel (no hace falta ir al final). Para verla: `git checkout feature/F11-piel-mundo-que-crece` y reconstruir el stack como siempre.
 
 ## Tests
 
