@@ -1,30 +1,41 @@
 /*
- * Tokens de diseño de Study Lab («Mapa», F10). ÚNICO sitio donde viven los colores, espacios, radios,
- * sombras y tipografías: ninguna vista ni otro CSS lleva colores a mano (lo comprueba tests/design).
- * Todo par de color nuevo debe entrar en tests/design/contrast.spec.ts.
+ * Tokens de diseño de Study Lab, piel «Mundo que crece» (F11). ÚNICO sitio donde viven los colores, espacios, radios,
+ * sombras y tipografías: ninguna vista, ilustración ni otro CSS lleva colores a mano (lo comprueba tests/design).
+ * Los NOMBRES son el contrato de F10 (ADR-73) más los del paisaje; todo par nuevo entra en tests/design/contrast.spec.ts.
  */
 :root {
-  /* Superficies y texto */
-  --color-paper: #ede7ff;
+  /* Superficies y texto: el cielo del día */
+  --color-paper: #eaf7ff;
+  --color-sky: #cdeeff;
   --color-surface: #ffffff;
-  --color-ink: #111111;
-  --color-muted: #4a4560;
-  --color-line: #111111;
-  --color-focus: #7a5cff;
-  --color-link: #3a1fb8;
+  --color-ink: #14263a;
+  --color-muted: #43566b;
+  --color-line: #14263a;
+  --color-focus: #0b1623;
+  --color-link: #1d4ed8;
 
   /* Acciones y estados */
-  --color-primary: #111111;
+  --color-primary: #c2410c;
   --color-on-primary: #ffffff;
-  --color-accent: #ffd83d;
-  --color-on-accent: #111111;
-  --color-ok: #6be3a5;
-  --color-on-ok: #111111;
-  --color-now: #ff6fb1;
-  --color-on-now: #111111;
-  --color-danger: #d8195f;
+  --color-accent: #ffd966;
+  --color-on-accent: #14263a;
+  --color-ok: #4cc38a;
+  --color-on-ok: #14263a;
+  --color-now: #ff8a5b;
+  --color-on-now: #14263a;
+  --color-danger: #c81e4b;
   --color-on-danger: #ffffff;
-  --color-danger-text: #b0124a;
+  --color-danger-text: #a3123a;
+
+  /* Paisaje e ilustraciones */
+  --color-grass: #a8e6b0;
+  --color-leaf: #3fae6a;
+  --color-trunk: #9b6b43;
+  --color-soil: #8b6b4a;
+  --color-sun: #ffd84d;
+  --color-fruit: #ff6b5e;
+  --color-cloud: #ffffff;
+  --color-road: #8a5a33;
 
   /* Espacio, forma y relieve */
   --space-1: 0.25rem;
@@ -33,43 +44,53 @@
   --space-4: 1rem;
   --space-5: 1.5rem;
   --space-6: 2.5rem;
-  --radius-1: 0.5rem;
-  --radius-2: 0.9rem;
+  --radius-1: 0.75rem;
+  --radius-2: 1.5rem;
   --radius-pill: 999px;
-  --border-width: 3px;
-  --shadow-hard: 5px 5px 0 var(--color-line);
-  --shadow-soft: 3px 3px 0 var(--color-line);
+  --border-width: 2px;
+  --shadow-hard: 0 6px 0 color-mix(in srgb, var(--color-line) 28%, transparent);
+  --shadow-soft: 0 3px 0 color-mix(in srgb, var(--color-line) 28%, transparent);
   --size-tap: 2.75rem;
   --width-page: 72rem;
   --width-reading: 42rem;
 
   /* Tipografías (autoalojadas, ver fonts.css) */
-  --font-display: 'Bricolage Grotesque', system-ui, sans-serif;
+  --font-display: 'Fredoka', system-ui, sans-serif;
   --font-reading: 'Newsreader', Georgia, serif;
-  --font-mono: 'Space Mono', ui-monospace, Menlo, Consolas, monospace;
-  --font-ui: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --font-ui: 'Fredoka', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* La noche: mismo paisaje, versión oscura */
 @media (prefers-color-scheme: dark) {
   :root {
-    --color-paper: #14111f;
-    --color-surface: #1f1b2e;
-    --color-ink: #f4f1ff;
-    --color-muted: #bdb6d6;
-    --color-line: #a79edb;
+    --color-paper: #0f1b2d;
+    --color-sky: #12233b;
+    --color-surface: #1b2d47;
+    --color-ink: #eaf4ff;
+    --color-muted: #afc2d9;
+    --color-line: #86a3c8;
     --color-focus: #ffffff;
-    --color-link: #b9a8ff;
+    --color-link: #8cb8ff;
 
-    --color-primary: #8b6fff;
-    --color-on-primary: #0e0b1a;
-    --color-accent: #ffd83d;
-    --color-on-accent: #111111;
-    --color-ok: #5bd99b;
-    --color-on-ok: #0e0b1a;
-    --color-now: #ff7db8;
-    --color-on-now: #0e0b1a;
-    --color-danger: #ff5c93;
-    --color-on-danger: #0e0b1a;
-    --color-danger-text: #ff8fb0;
+    --color-primary: #e26a2c;
+    --color-on-primary: #0b1623;
+    --color-accent: #ffd966;
+    --color-on-accent: #14263a;
+    --color-ok: #3fbf84;
+    --color-on-ok: #0b1623;
+    --color-now: #ff8a5b;
+    --color-on-now: #0b1623;
+    --color-danger: #ff5c7c;
+    --color-on-danger: #0b1623;
+    --color-danger-text: #ff8fa8;
+
+    --color-grass: #1f4d3b;
+    --color-leaf: #4cc38a;
+    --color-trunk: #b58355;
+    --color-soil: #6b503a;
+    --color-sun: #ffe08a;
+    --color-fruit: #ff7a6b;
+    --color-cloud: #3a5278;
+    --color-road: #c79a62;
   }
 }

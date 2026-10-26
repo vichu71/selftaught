@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import Wanderer from '@/world/Wanderer.vue'
 import type { Station } from './layoutMap'
 
 const props = defineProps<{ station: Station; narrow?: boolean }>()
@@ -37,13 +38,16 @@ const lines = computed(() => wrap(props.station.label, props.narrow ? 26 : 16, p
     <text v-else class="map-label" :x="station.x" :y="station.y + radius + 18">
       <tspan v-for="(line, i) in lines" :key="i" :x="station.x" :dy="i === 0 ? 0 : 16">{{ line }}</tspan>
     </text>
-    <template v-if="station.state === 'now' && narrow">
-      <rect class="map-here" :x="station.x + radius + 14" :y="station.y + 4" width="132" height="24" rx="7" />
-      <text class="map-here-text" :x="station.x + radius + 80" :y="station.y + 21">TÚ ESTÁS AQUÍ</text>
-    </template>
-    <template v-else-if="station.state === 'now'">
-      <rect class="map-here" :x="station.x - 66" :y="station.y - radius - 40" width="132" height="26" rx="7" />
-      <text class="map-here-text" :x="station.x" :y="station.y - radius - 22">TÚ ESTÁS AQUÍ</text>
+    <template v-if="station.state === 'now'">
+      <Wanderer :x="station.x" :y="narrow ? station.y - radius - 8 : station.y - radius - 52" />
+      <template v-if="narrow">
+        <rect class="map-here" :x="station.x + radius + 14" :y="station.y + 4" width="132" height="24" rx="12" />
+        <text class="map-here-text" :x="station.x + radius + 80" :y="station.y + 21">TÚ ESTÁS AQUÍ</text>
+      </template>
+      <template v-else>
+        <rect class="map-here" :x="station.x - 66" :y="station.y - radius - 40" width="132" height="26" rx="13" />
+        <text class="map-here-text" :x="station.x" :y="station.y - radius - 22">TÚ ESTÁS AQUÍ</text>
+      </template>
     </template>
   </g>
 </template>

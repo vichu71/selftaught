@@ -4,6 +4,7 @@ import type { CourseStatus, OutlineTopic, StudyOverview } from '@/api/client'
 import MapLegend from './MapLegend.vue'
 import MapStation from './MapStation.vue'
 import { defaultCollapsed, layoutMap, type Station } from './layoutMap'
+import { roadPath } from './roadPath'
 import UiTag from '@/ui/UiTag.vue'
 
 const props = defineProps<{ courseId: string; outline: OutlineTopic[]; study?: StudyOverview | null; status?: CourseStatus }>()
@@ -29,7 +30,6 @@ const mode = computed(() => (narrow.value ? 'narrow' : 'wide'))
 const drawn = computed(() => layoutMap(props.outline, study.value, { courseId: props.courseId, mode: mode.value, collapsed: collapsed.value }))
 const full = computed(() => layoutMap(props.outline, study.value, { courseId: props.courseId, mode: mode.value }))
 
-const byId = computed(() => new Map(drawn.value.stations.map((s) => [s.id, s])))
 const lessons = computed(() => full.value.stations.filter((s) => s.kind === 'lesson'))
 const lessonsDone = computed(() => lessons.value.filter((s) => s.state === 'done').length)
 const finished = computed(() => full.value.stations.length > 0 && full.value.stations.every((s) => s.state === 'done'))
@@ -60,22 +60,32 @@ function toggle(topicId: string) {
   collapsed.value = next
 }
 
-// Tramo de metro: recto en la misma fila; al cambiar de fila baja en vertical, cruza y vuelve a bajar (sin diagonales)
-function elbow(a: Station, b: Station): string {
-  if (a.y === b.y || a.x === b.x) return `M ${a.x} ${a.y} L ${b.x} ${b.y}`
-  const mid = (a.y + b.y) / 2
-  // En ancho el nombre cuelga debajo de la parada: el tramo sale primero hacia un lado para no cruzarlo
-  const out = narrow.value ? a.x : a.x + 56
-  return `M ${a.x} ${a.y} H ${out} V ${mid} H ${b.x} V ${b.y}`
+/**
+ * Puntos del camino por las paradas dadas. En la misma fila va recto; al cambiar de fila sale primero hacia un lado (en ancho el
+ * nombre cuelga debajo de la parada), baja hasta el hueco entre filas, cruza y vuelve a bajar. `roadPath` redondea las esquinas.
+ */
+function roadPoints(stops: Station[]): { x: number; y: number }[] {
+  const pts: { x: number; y: number }[] = []
+  stops.forEach((b, i) => {
+    const a = stops[i - 1]
+    if (a && a.y !== b.y && a.x !== b.x) {
+      const mid = (a.y + b.y) / 2
+      const out = narrow.value ? a.x : a.x + 56
+      pts.push({ x: out, y: a.y }, { x: out, y: mid }, { x: b.x, y: mid })
+    }
+    pts.push({ x: b.x, y: b.y })
+  })
+  return pts
 }
 
-const track = computed(() =>
-  drawn.value.segments.flatMap((seg) => {
-    const a = byId.value.get(seg.from)
-    const b = byId.value.get(seg.to)
-    return a && b ? [{ key: `${seg.from}-${seg.to}`, d: elbow(a, b), done: seg.done }] : []
-  }),
-)
+const road = computed(() => roadPath(roadPoints(drawn.value.stations)))
+// Lo recorrido: desde la primera parada mientras los tramos consecutivos estén hechos
+const travelled = computed(() => {
+  const segments = drawn.value.segments
+  let k = 0
+  while (k < segments.length && segments[k].done) k++
+  return k === 0 ? '' : roadPath(roadPoints(drawn.value.stations.slice(0, k + 1)))
+})
 </script>
 
 <template>
@@ -89,17 +99,17 @@ const track = computed(() =>
       xmlns="http://www.w3.org/2000/svg"
     >
       <g v-for="zone in drawn.zones" :key="zone.topicId">
-        <rect class="map-zone" x="8" :y="zone.y" :width="drawn.width - 16" :height="zone.height" rx="16" />
-        <text class="map-zone-title" :class="{ 'map-zone-title--end': !narrow }" :x="narrow ? 110 : drawn.width - 24" :y="zone.y + 28">{{ zone.title }} · {{ zone.done }}/{{ zone.total }}</text>
+        <rect class="map-hill" :data-testid="`map-hill-${zone.topicId}`" x="8" :y="zone.y" :width="drawn.width - 16" :height="zone.height" rx="28" />
+        <text class="map-zone-title" :class="{ 'map-zone-title--end': !narrow }" :x="narrow ? 110 : drawn.width - 28" :y="zone.y + 30">{{ zone.title }} · {{ zone.done }}/{{ zone.total }}</text>
       </g>
-      <path v-for="s in track" :key="`b-${s.key}`" class="map-track" :d="s.d" />
-      <path v-for="s in track.filter((t) => t.done)" :key="`d-${s.key}`" class="map-track map-track--done" :d="s.d" />
+      <path v-if="road" class="map-road" data-testid="map-road" :d="road" />
+      <path v-if="travelled" class="map-road map-road--done" data-testid="map-road-done" :d="travelled" />
       <MapStation v-for="s in drawn.stations" :key="s.id" :station="s" :narrow="narrow" />
     </svg>
 
     <MapLegend />
 
-    <p v-if="finished" class="notice" data-testid="map-finished">¡Has llegado al final de la línea! Repasa cuando quieras.</p>
+    <p v-if="finished" class="notice" data-testid="map-finished">¡Tu árbol está lleno de frutos! Has llegado al final del camino; repasa cuando quieras.</p>
     <p v-else-if="!full.nowId" class="muted" data-testid="map-no-now">
       {{ waiting ? 'La IA está preparando tu curso: en cuanto haya una lección lista, aquí aparecerá tu parada.' : 'Todavía no hay ninguna lección lista para estudiar.' }}
     </p>
