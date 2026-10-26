@@ -115,10 +115,13 @@ const travelled = computed(() => {
     </p>
 
     <ol class="map-list" data-testid="map-list" aria-label="Paradas del curso">
-      <li v-for="zone in full.zones" :key="zone.topicId" class="map-topic">
-        <h3>
-          {{ topicTitle(zone.topicId) }}
-          <span v-if="topicStudy(zone.topicId)" class="muted" :data-testid="`topic-percent-${zone.topicId}`">{{ topicStudy(zone.topicId)?.percent }} %</span>
+      <li v-for="(zone, zi) in full.zones" :key="zone.topicId" class="map-topic">
+        <header class="map-topic-head">
+          <div class="map-topic-title">
+            <p class="map-topic-kicker">Tema {{ zi + 1 }} · {{ zone.done }} de {{ zone.total }}</p>
+            <h3>{{ topicTitle(zone.topicId) }}</h3>
+          </div>
+          <span v-if="topicStudy(zone.topicId)" class="ui-tag" :data-testid="`topic-percent-${zone.topicId}`">{{ topicStudy(zone.topicId)?.percent }} %</span>
           <button
             type="button"
             class="map-fold"
@@ -126,8 +129,8 @@ const travelled = computed(() => {
             :aria-expanded="collapsed.has(zone.topicId) ? 'false' : 'true'"
             @click="toggle(zone.topicId)"
           >{{ collapsed.has(zone.topicId) ? 'Mostrar en el mapa' : 'Plegar en el mapa' }}</button>
-        </h3>
-        <ol>
+        </header>
+        <ol class="map-topic-items">
           <li
             v-for="s in stationsOf(zone.topicId)"
             :key="s.id"
@@ -135,16 +138,20 @@ const travelled = computed(() => {
             :data-testid="`map-item-${s.id}`"
             :aria-current="s.state === 'now' ? 'step' : undefined"
           >
-            <RouterLink v-if="s.route" :to="s.route" :data-testid="`map-link-${s.id}`">{{ s.label }}</RouterLink>
-            <span v-else>{{ s.label }}</span>
-            <UiTag :tone="s.state === 'done' ? 'ok' : s.state === 'now' ? 'now' : 'plain'">{{ stateText(s) }}</UiTag>
-            <span v-if="s.kind === 'exam' && examNote(zone.topicId)" class="muted" :data-testid="`exam-best-${zone.topicId}`">{{ examNote(zone.topicId) }}</span>
-            <RouterLink v-if="s.exercises?.route" :to="s.exercises.route" :data-testid="`piece-link-${s.exercises.id}`">Ejercicios</RouterLink>
-            <span v-else-if="s.exercises" class="muted">Ejercicios en cola</span>
-            <UiTag v-if="s.state === 'todo' && s.route">Lista</UiTag>
-            <UiTag v-if="s.queued" tone="accent">En cola</UiTag>
-            <UiTag v-if="s.failed" tone="accent">Hubo un error</UiTag>
-            <UiTag v-if="s.outdated" tone="accent">La lección cambió</UiTag>
+            <span class="map-item-main">
+              <RouterLink v-if="s.route" :to="s.route" :data-testid="`map-link-${s.id}`">{{ s.label }}</RouterLink>
+              <span v-else>{{ s.label }}</span>
+            </span>
+            <span class="map-item-meta">
+              <UiTag :tone="s.state === 'done' ? 'ok' : s.state === 'now' ? 'now' : 'plain'">{{ stateText(s) }}</UiTag>
+              <span v-if="s.kind === 'exam' && examNote(zone.topicId)" class="muted" :data-testid="`exam-best-${zone.topicId}`">{{ examNote(zone.topicId) }}</span>
+              <RouterLink v-if="s.exercises?.route" :to="s.exercises.route" class="map-exercises" :data-testid="`piece-link-${s.exercises.id}`">Ejercicios</RouterLink>
+              <span v-else-if="s.exercises" class="muted">Ejercicios en cola</span>
+              <UiTag v-if="s.state === 'todo' && s.route">Lista</UiTag>
+              <UiTag v-if="s.queued" tone="accent">En cola</UiTag>
+              <UiTag v-if="s.failed" tone="accent">Hubo un error</UiTag>
+              <UiTag v-if="s.outdated" tone="accent">La lección cambió</UiTag>
+            </span>
           </li>
         </ol>
       </li>
