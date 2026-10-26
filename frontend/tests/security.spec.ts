@@ -39,6 +39,29 @@ describe('frontend source policy', () => {
     expect(offenders.map(([file]) => file)).toEqual([])
   })
 
+  // F10 AC-11: ni plantillas con HTML crudo ni SVG montado como cadena
+  it('never renders raw HTML: no {@html}, no render functions that set innerHTML/domProps, no SVG built from strings', () => {
+    const offenders = Object.entries(sources).filter(([, code]) => /\{@html|domProps|createContextualFragment|DOMParser|new XMLSerializer|document\.write/.test(code))
+    expect(offenders.map(([file]) => file)).toEqual([])
+  })
+
+  // F10 AC-11, ADR-70: nada se pide a terceros desde la aplicación
+  it('loads nothing from third parties: no external URLs in sources or in index.html', () => {
+    const external = /https?:\/\/(?!www\.w3\.org\/(2000\/svg|1999\/xlink))/
+    const offenders = Object.entries(sources).filter(([, code]) => external.test(code)).map(([file]) => file)
+    expect(offenders).toEqual([])
+    expect(indexHtml).not.toMatch(/(src|href)=["']https?:\/\//)
+    expect(indexHtml).not.toMatch(/<script[^>]+src=["']https?:/)
+  })
+
+  // F10 AC-11: la política del servidor web no se relaja para dar cabida al diseño
+  it('keeps the web server policy closed to its own origin', async () => {
+    const nginx = (await import('../nginx.conf?raw')).default
+    expect(nginx).toMatch(/Content-Security-Policy "default-src 'self'/)
+    expect(nginx).not.toMatch(/script-src[^;"]*(unsafe-inline|unsafe-eval|https?:)/)
+    expect(nginx).not.toMatch(/(font|style|img|connect)-src[^;"]*https?:/)
+  })
+
   // Diseño responsive desde el principio (AC-9)
   it('declares the responsive viewport meta tag', () => {
     expect(indexHtml).toMatch(/<meta[^>]+name=["']viewport["'][^>]+width=device-width/)

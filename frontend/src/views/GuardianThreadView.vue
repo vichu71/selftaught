@@ -26,7 +26,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="page wide" data-testid="guardian-thread">
+  <div class="page wide" data-testid="guardian-thread">
     <header class="topbar">
       <h1>Conversación con el tutor</h1>
       <RouterLink :to="`/alumnos/${studentId}`" data-testid="guardian-back">Volver al alumno</RouterLink>
@@ -40,5 +40,5 @@ onMounted(async () => {
       <p v-if="messages.length === 0" class="muted" data-testid="guardian-thread-empty">Todavía no hay mensajes en esta lección.</p>
       <ThreadView v-else :messages="messages" />
     </template>
-  </main>
+  </div>
 </template>

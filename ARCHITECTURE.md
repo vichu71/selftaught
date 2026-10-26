@@ -174,6 +174,26 @@ que su adulto tutor puede ver sus cursos, respuestas, intentos y conversaciones.
 El curso lleva `version` (sube con cada edición guardada) y, si es una copia, `origin_id` y `origin_version`; el detalle del curso solo enseña `copy.originVersion`, nunca el id del original. Lo nuevo lo genera siempre la cola: ni la edición ni
 el canje llaman al modelo (un test de arquitectura lo exige). Ni el código ni los textos editados van a logs ni a la auditoría.
 
+## Interfaz: sistema de diseño «Mapa» (F10)
+
+F10 no toca el backend, la base de datos ni los contratos HTTP: rehace la presentación del frontend y su navegación.
+
+```
+ index.html ─► main.ts ─► styles/ tokens.css (colores, espacios, radios, bordes, sombras, tipografías; claro y oscuro) · fonts.css (@font-face locales) · base.css (foco, lectura) · motion.css (reduced-motion)
+ App.vue ─► según meta de la ruta: layouts/AuthShell (acceso, sin navegación)  |  layouts/AppShell (NavBar + Breadcrumb + <main id="contenido">)
+ ui/       botón · etiqueta · tarjeta · campo · aviso · progreso · estado (carga/vacío/error) · pestañas y diálogo (sobre Reka UI)      solo presentación, sin datos de negocio
+ map/      layoutMap.ts (función pura) ─► CourseMap.vue (SVG con elementos Vue + <ol> equivalente) ─► MapStation.vue · MapLegend.vue
+ views/    las de siempre, vestidas con ui/ y map/ · Inicio = ContinueCard («sigue donde lo dejaste») + líneas con progreso + menores
+```
+
+- **Datos del mapa:** `GET /api/courses`, `/api/study/progress`, `/api/courses/{id}` (temas → capítulos → piezas con `status`, `outdated`) y `/api/courses/{id}/study` (lecciones hechas, exámenes superados). No hay endpoint nuevo (ADR-67).
+- **Estado de una parada:** `done` (lección hecha o examen superado), `now` (la primera lección lista y sin hacer; el examen solo cuando todas las lecciones de su tema están hechas), `todo`; más marcas independientes `queued`, `failed` y `outdated`. Los ejercicios cuelgan de su lección y no son parada.
+- **Colocación:** ancho = una zona por tema apilada en vertical (el ancho nunca desborda, un curso de 150 piezas solo crece en alto; los temas lejanos se pliegan si hay más de 40 paradas); estrecho (< 640 px) = una columna. Cada parada es un círculo (lección) o un cuadrado (examen), y su estado se dice también con texto.
+- **Seguridad del frontend (se mantiene):** nada de `v-html` ni de SVG montado como cadena; el texto de la IA o del usuario es siempre texto Vue; el Markdown solo con `MarkdownContent`; ningún recurso de terceros (fuentes incluidas); la política de nginx sigue siendo `default-src 'self'`.
+- **Dependencias:** `reka-ui`, `lucide-vue-next` y tres paquetes de Fontsource (Bricolage Grotesque, Newsreader, Space Mono), todas con versión exacta; el test de entorno las lista a propósito.
+- Se vio al implementar: el mapa es un SVG con tramos en ángulo recto (salen hacia un lado para no cruzar el nombre de la parada), el nombre se parte en dos líneas en ancho y va a la derecha de la parada en móvil; los ejercicios se abren desde la lista (no son parada); «Lista» distingue una lección preparada y sin estudiar de una en cola; el diálogo de confirmación lo teletransporta Reka UI al `body`.
+- **Piel intercambiable:** colores y formas viven en `tokens.css` y en `ui/`; la variante «Mundo que crece» (prototipo en `sdd/design/F10/MundoC.dc.html`) se podría probar cambiando esa capa sin rehacer las vistas.
+
 ## Modelo de datos
 
 ```
@@ -302,6 +322,8 @@ selftaught/
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
+│  └─ src/{styles,ui,layouts,map}    # F10: tokens y estilos base, componentes base, marco de navegación, mapa del curso
+├─ sdd/design/F10/                   # prototipos de diseño de referencia (Mapa y Mundo)
 ├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
 ├─ scripts/                          # seed y tests de política del entorno
 └─ sdd/                              # PROJECT.md, features/, specs/, reports/, benchmarks/ (informes del benchmark), proceso SDD
@@ -737,3 +759,34 @@ selftaught/
 - Motivo: editar una lección deja intactos sus ejercicios y el examen del tema, pero los marca `outdated` y el propietario decide si regenerarlos (con su coste). Añadir o quitar un capítulo marca el examen del tema. Regenerar limpia la marca. `version` sube una unidad por edición guardada y la copia guarda la del original en ese momento.
 - Alternativas descartadas: una versión por pieza (excesivo), no marcar nada (el alumno estudiaría ejercicios que ya no encajan sin saberlo).
 - Revisitar si: se pueden editar ejercicios a mano.
+
+### ADR-67: El Inicio y el mapa se calculan en el cliente con los datos que ya hay; «sigue donde lo dejaste» = la primera lección lista sin hacer del curso terminado con más avance (sin llegar al 100 %)
+- Motivo: la lista de cursos ya llega ordenada y `StudyOverview` dice qué está hecho; no hace falta endpoint ni migración. Mantener el backend intacto hace que F10 sea reversible y que sus tests no se muevan.
+- Alternativas descartadas: guardar la última lección vista (columna y endpoint nuevos); calcularla en el servidor.
+- Se vio al implementar: con «primer curso de la lista» salía un curso sin avance antes que otro con avance; se cambió a «el de más avance que no llega al 100 %».
+- Revisitar si: se quiere «lo último que estudié» entre varios cursos (un campo `lastStudiedAt` en la lista de cursos).
+
+### ADR-68: El mapa es SVG propio con una función de colocación pura y una lista equivalente debajo
+- Motivo: es una línea con pocas formas; una función pura se prueba sin navegador y el SVG con elementos Vue escapa el texto por construcción. La lista debajo da teclado y lector de pantalla sin trabajo extra.
+- Alternativas descartadas: librería de grafos o de diagramas (peso y superficie de seguridad sin necesidad); canvas (no accesible); componer el SVG como cadena (riesgo de inyección).
+- Revisitar si: aparecen ramas o prerrequisitos entre lecciones (hoy el curso es lineal).
+
+### ADR-69: Tokens CSS en un fichero y componentes base propios; Reka UI solo para lo que lleva comportamiento
+- Motivo: la identidad es nuestra y debe poder cambiar de piel; el foco, el teclado y ARIA de diálogos y pestañas son difíciles de acertar, así que se delegan.
+- Alternativas descartadas: un kit con estilo propio (se nota que es de serie, justo lo que se quería evitar); Tailwind (valores repartidos por las plantillas); todo a mano (accesibilidad de diálogos a medias).
+- Revisitar si: Reka UI deja de mantenerse o pesa demasiado en el empaquetado.
+
+### ADR-70: Fuentes autoalojadas y sin recursos externos
+- Motivo: la política `default-src 'self'` y la privacidad del menor (ninguna petición a terceros desde la app). Se sirven desde el mismo origen con `font-display: swap`, solo latín y los pesos usados.
+- Alternativas descartadas: Google Fonts por enlace (viola la política y filtra la IP); fuentes del sistema (pierde la identidad).
+- Revisitar si: el peso de las fuentes se nota en conexiones lentas (menos pesos o una sola familia variable).
+
+### ADR-71: Contraste AA como prueba automática sobre los tokens, en claro y en oscuro
+- Motivo: el estilo neo-brutalista usa mucho color plano y es fácil dejar pares ilegibles; un test que lee `tokens.css` y calcula las razones impide que un cambio de paleta rompa la accesibilidad sin que nadie lo vea.
+- Alternativas descartadas: revisión manual; herramienta externa en integración continua.
+- Revisitar si: se cambia de piel (el test se reutiliza tal cual).
+
+### ADR-72: Los tests de estructura se actualizan a propósito y los `data-testid` se conservan salvo que su elemento desaparezca
+- Motivo: reducir el diff de pruebas y asegurar que ninguna regla de F01–F09 (aviso al menor, visor Markdown, mensaje sin categoría, códigos que se ven una vez) pierde su prueba al mover el HTML.
+- Alternativas descartadas: reescribir los tests desde cero (riesgo de perder casos borde); congelar la estructura antigua (impide el rediseño).
+- Revisitar si: el número de pruebas que cambian en una vista se dispara (dividir la vista en entregas).

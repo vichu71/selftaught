@@ -26,7 +26,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="page wide" data-testid="guardian-course">
+  <div class="page wide" data-testid="guardian-course">
     <header class="topbar">
       <h1 v-if="course" data-testid="guardian-course-title">{{ course.title }}</h1>
       <h1 v-else>Curso del alumno</h1>
@@ -66,5 +66,5 @@ onMounted(async () => {
 
       <GuardianAttemptsList v-if="attempts" :attempts="attempts" />
     </template>
-  </main>
+  </div>
 </template>

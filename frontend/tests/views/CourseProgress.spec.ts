@@ -40,10 +40,10 @@ describe('CourseStatusView: progreso de la generación', () => {
   it('shows the outline with the state of every piece', async () => {
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'outline').text()).toContain('Presentarse')
-    expect(byId(m.wrapper, 'piece-p1').text().toLowerCase()).toContain('lista')
-    expect(byId(m.wrapper, 'piece-p3').text().toLowerCase()).toContain('en cola')
-    expect(byId(m.wrapper, 'piece-p5').text().toLowerCase()).toContain('examen')
+    expect(byId(m.wrapper, 'map-list').text()).toContain('Presentarse')
+    expect(byId(m.wrapper, 'map-item-p1').text().toLowerCase()).toContain('ahora') // la primera lección lista
+    expect(byId(m.wrapper, 'map-item-p3').text().toLowerCase()).toContain('en cola')
+    expect(byId(m.wrapper, 'map-item-p5').text().toLowerCase()).toContain('examen')
   })
 
   it('shows the progress as done of total', async () => {
@@ -56,8 +56,8 @@ describe('CourseStatusView: progreso de la generación', () => {
   it('only pieces that are done are links, to their own page', async () => {
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'piece-link-p1').attributes('href')).toBe('/cursos/c1/piezas/p1')
-    expect(byId(m.wrapper, 'piece-link-p3').exists()).toBe(false)
+    expect(byId(m.wrapper, 'map-link-p1').attributes('href')).toBe('/cursos/c1/piezas/p1')
+    expect(byId(m.wrapper, 'map-link-p3').exists()).toBe(false)
   })
 
   it('shows a failed piece with a plain explanation, not a raw code', async () => {
@@ -66,7 +66,7 @@ describe('CourseStatusView: progreso de la generación', () => {
     vi.mocked(api.getCourse).mockResolvedValue(detail({ outline: failedOutline, status: 'PAUSED', stopReason: 'CONTENT' }) as never)
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'piece-p3').text().toLowerCase()).toContain('error')
+    expect(byId(m.wrapper, 'map-item-p3').text().toLowerCase()).toContain('error')
     expect(m.wrapper.text()).not.toContain('CONTENT')
   })
 
@@ -76,7 +76,7 @@ describe('CourseStatusView: progreso de la generación', () => {
     vi.mocked(api.getCourse).mockResolvedValue(detail({ outline: hostile }) as never)
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
-    expect(byId(m.wrapper, 'outline').text()).toContain('<img src=x onerror=alert(1)>')
+    expect(byId(m.wrapper, 'map-list').text()).toContain('<img src=x onerror=alert(1)>')
     expect(m.wrapper.find('img').exists()).toBe(false)
   })
 

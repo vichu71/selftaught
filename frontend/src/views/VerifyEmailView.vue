@@ -41,7 +41,7 @@ async function resend() {
 </script>
 
 <template>
-  <main class="page">
+  <div class="page">
     <h1>Confirmar correo</h1>
 
     <section v-if="state === 'loading'" class="card"><p>Comprobando el enlace…</p></section>
@@ -61,5 +61,5 @@ async function resend() {
         <button class="primary" type="button" data-testid="resend-submit" @click="resend">Reenviar enlace</button>
       </template>
     </section>
-  </main>
+  </div>
 </template>

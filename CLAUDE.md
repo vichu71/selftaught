@@ -6,7 +6,7 @@ familiar con base multiusuario. Es un laboratorio, no formación reglada.
 ## Cómo se trabaja aquí
 - El proyecto se construye por features con SDD. Fuente de verdad: `sdd/PROJECT.md` (manda sobre
   cualquier suposición) y `sdd/features/`. Proceso: `sdd/SDD_PROCESS.md`.
-- Para arrancar una feature: `/sdd-feature F01` (o F02...F09).
+- Para arrancar una feature: `/sdd-feature F01` (o F02...F10).
 - No se escribe código antes de tener tests (FASE 4 antes que FASE 6). Si algo no está claro, se pregunta.
 - Stack: Vue 3 + TypeScript, Spring Boot, PostgreSQL + pgvector, Docker Compose, embeddings con Ollama.
 
@@ -148,6 +148,16 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
   Límites por usuario en la BD (`course_action`): 20 ediciones con IA, 10 fallos y 10 copias por hora; nada por IP (D1).
 - La **copia** (`CourseCopier`) crea un curso `READY` con ids nuevos y `origin_id`/`origin_version`, sin documentos, fuentes (se quitan las marcas `[n]`), progreso, intentos, conversaciones, consultas ni uso de IA; el detalle solo enseña `copy.originVersion`, nunca el id del original. Un test cuenta filas y busca ids.
 - Todo lo que cambia datos exige sesión y CSRF; un curso, tema, capítulo, pieza o código ajenos responden 404 igual que uno inexistente; el adulto tutor no edita los cursos de su menor.
+
+## Reglas de F10 (rediseño del frontend «Mapa»)
+- Contrato y criterios de aceptación: `sdd/specs/US-F10-rediseno-frontend.md`; diseño y ADR-67 a 72: `sdd/specs/ART-F10-propuesta-rediseno.md` y `ARCHITECTURE.md`. Prototipos: `sdd/design/F10/`. **F10 es solo de frontend**: sin migraciones, endpoints ni cambios en `backend/`.
+- **Colores, espacios, radios, sombras y tipografías solo en `src/styles/tokens.css`** (un test lo comprueba: ninguna vista ni otro CSS lleva `#hex`, `rgb()` ni `hsl()`). Las vistas se hacen con los componentes de `src/ui/`; los diálogos y pestañas, con Reka UI. Nada de `confirm()` ni `alert()` del navegador.
+- Todo par de color nuevo en `tokens.css` entra en `tests/design/contrast.spec.ts` (AA: 4,5:1 texto y 3:1 elementos, en claro y en oscuro). Un estado nunca se dice solo con color: también con forma, texto o icono.
+- El mapa (`src/map/`) se dibuja con **elementos Vue**, nunca con cadenas ni `v-html`; `layoutMap` es una función pura y debajo del SVG va siempre la lista equivalente. Los ejercicios no son parada. Un título de la IA o del usuario es siempre texto.
+- Ningún recurso de terceros: fuentes e iconos van en el paquete (Fontsource, Lucide) y la política de nginx sigue siendo `default-src 'self'`. Las dependencias del frontend las lista el test de entorno (versión exacta): añadir una exige actualizarlo con el motivo.
+- Se conservan los `data-testid` y las reglas de F01–F09 que viven en la interfaz: el aviso al menor de que su adulto ve respuestas, intentos y conversaciones; el aviso «generado por IA»; el mensaje sin categoría para menores; los códigos de compartir que se ven una sola vez; el visor `MarkdownContent`.
+- Movimiento solo dentro de `prefers-reduced-motion: no-preference`; objetivos táctiles de al menos 44 px (`--size-tap`); móvil probado a 360–430 px.
+- Lecciones de F10: **Vitest sustituye los `.css` por una cadena vacía** (también con `?raw`): las pruebas de estilos leen los ficheros con `node:fs` desde `process.cwd()`. El diálogo de Reka UI se teletransporta al `body`: se busca en `document.body` y se limpia en `afterEach`; las pestañas de Reka se activan con `mousedown`, no con `click`. Un slot de VTU dado como cadena es una plantilla (usa una función para probar texto). **Nada se da por bueno solo con tests de DOM**: la pasada en el navegador encontró texto invisible, nombres solapados y tramos que cruzaban títulos. El navegador de la app puede estar oculto (viewport 0×0): `resize_window` a un tamaño concreto devuelve capturas.
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

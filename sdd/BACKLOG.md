@@ -143,3 +143,19 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F9-7 | 🟡 La lista local del filtro de menores es corta y en español: ahora protege también las copias (F4-3, F5-5, F7-2, F8-6) | Segunda capa pendiente |
 | F9-8 | 🟡 El panel del adulto no muestra los códigos que crea su menor ni cuándo alguien canjea uno de sus cursos | Los eventos `COURSE_SHARE_CREATED` y `COURSE_SHARE_REDEEMED` ya están en la auditoría; decidir en F10 si se enseñan |
 | F9-9 | 🟡 Las ediciones que no usan IA (renombrar, reordenar, editar el texto) no tienen límite de frecuencia: son de un usuario autenticado sobre su propio curso y cada una sube la versión | Añadir un límite por usuario si se abusa |
+
+## Anotado en F10 (rediseño del frontend)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F10-1 | 🟡 «Sigue donde lo dejaste» usa el curso con más avance (sin llegar al 100 %), no el último estudiado de verdad | ADR-67; si molesta, `lastStudiedAt` en la lista de cursos (cambio de backend) |
+| F10-2 | 🟡 Reordenar sigue siendo con botones (sin arrastrar y soltar) | Cierra F9-4 solo en la presentación; arrastrar queda fuera de v1 |
+| F10-3 | 🟡 El panel del adulto sigue sin mostrar códigos creados por su menor ni canjes (F9-8) | F10 no cambia datos; decidir si se enseñan en otra feature |
+| F10-4 | 🟡 Sin modo claro/oscuro elegible: solo el automático del sistema | Fuera de v1 |
+| F10-5 | 🟡 Nombre y logo siguen siendo provisionales; sin mascota ni ilustraciones | La variante «Mundo que crece» (`sdd/design/F10/MundoC.dc.html`) queda en el radar |
+| F10-6 | 🟡 La comprobación visual (móvil, zoom 200 %, teclado) es manual; no hay capturas de referencia automáticas | Valorar pruebas visuales si el diseño crece |
+| F10-7 | 🟡 Mapa lineal: no soporta ramas ni prerrequisitos entre lecciones | ADR-68; revisitar si el curso deja de ser lineal |
+| F10-8 | 🟡 Las vistas siguen con las clases compartidas (`button.primary`, `label`/`input`) en lugar de `UiField`/`UiButton` | Migrarlas una a una cambia muchas pruebas sin cambiar lo que se ve; hacerlo si se cambia de piel |
+| F10-9 | 🟡 La pantalla de edición del curso sigue densa (muchos botones por fila) | Mejora de contenido, no de marco |
+| F10-10 | 🟡 Sin recorrer a mano en el navegador: 360 y 430 px, zoom 200 %, recorrido con teclado de acceso a examen y lector de pantalla | Pasada manual o prueba visual automática |
+| F10-11 | 🟡 El contraste se comprueba sobre los tokens, no con una herramienta de accesibilidad sobre las pantallas | Valorar axe u otra en el navegador |
