@@ -2,12 +2,14 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { useUiStore } from '@/stores/ui'
 import Mascot from '@/world/Mascot.vue'
-import { BookOpenText, LogOut, Map as MapIcon, BarChart3 } from 'lucide-vue-next'
+import { BookOpenText, LogOut, Moon, Map as MapIcon, BarChart3 } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const route = useRoute()
 const router = useRouter()
+const ui = useUiStore()
 
 // «Mapa» agrupa todo lo que cuelga de los cursos; Material y Resultados son secciones propias
 const section = computed<'map' | 'material' | 'results'>(() => {
@@ -15,6 +17,13 @@ const section = computed<'map' | 'material' | 'results'>(() => {
   if (route.path.startsWith('/resultados')) return 'results'
   return 'map'
 })
+
+// «Dejarlo por hoy»: monta de nuevo la vista (cierra paneles, diálogos y formularios abiertos) y vuelve al Inicio sin cerrar la sesión
+async function rest() {
+  ui.rest()
+  ;(document.activeElement as HTMLElement | null)?.blur()
+  await router.push('/')
+}
 
 async function logout() {
   await auth.logout().catch(() => undefined)
@@ -39,6 +48,7 @@ async function logout() {
       </nav>
       <div class="nav-user">
         <span data-testid="nav-user"><span class="nav-user-name">{{ auth.user?.displayName }}</span></span>
+        <button type="button" class="rest-button" data-testid="rest" aria-label="Dejarlo por hoy" @click="rest"><Moon :size="16" aria-hidden="true" /> <span class="rest-text">Dejarlo por hoy</span></button>
         <button type="button" data-testid="logout" @click="logout"><LogOut :size="16" aria-hidden="true" /> Cerrar sesión</button>
       </div>
     </div>
