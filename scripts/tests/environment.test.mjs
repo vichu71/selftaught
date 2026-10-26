@@ -307,9 +307,9 @@ test('F04 el asistente no monta volúmenes ni publica el backend', () => {
 
 // ---------- F05: generación del curso ----------
 
-test('F05 la única dependencia nueva del frontend es el lector de Markdown, con la versión fijada', () => {
+test('F05 el lector de Markdown va con la versión fijada y bloqueada', () => {
   const pkg = JSON.parse(read('frontend/package.json'));
-  assert.deepEqual(Object.keys(pkg.dependencies).sort(), ['marked', 'pinia', 'vue', 'vue-router']);
+  assert.ok('marked' in pkg.dependencies);
   assert.match(pkg.dependencies.marked, /^\d+\.\d+\.\d+$/, 'marked debe llevar una versión exacta, sin ^ ni ~');
   assert.ok(existsSync(`${REPO}/frontend/package-lock.json`), 'falta el fichero de versiones bloqueadas');
   assert.match(read('frontend/package-lock.json'), /"node_modules\/marked"/, 'marked debe estar en el fichero de versiones bloqueadas');
@@ -394,4 +394,41 @@ test('F09 la migración V9 crea los códigos, el registro de acciones y las colu
   assert.match(sql, /origin_id/i);
   assert.match(sql, /outdated/i);
   assert.doesNotMatch(sql, /DROP TABLE|TRUNCATE/i, 'la migración no borra datos');
+});
+
+// ---------- F10: rediseño del frontend ----------
+
+test('F10 las dependencias del frontend son exactamente las acordadas, todas con versión exacta y bloqueadas', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  // F10 amplía a propósito la lista de F05 (marked, pinia, vue, vue-router): primitivas accesibles, iconos y tipografías autoalojadas
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), [
+    '@fontsource-variable/bricolage-grotesque',
+    '@fontsource-variable/newsreader',
+    '@fontsource/space-mono',
+    'lucide-vue-next',
+    'marked',
+    'pinia',
+    'reka-ui',
+    'vue',
+    'vue-router',
+  ]);
+  for (const name of ['@fontsource-variable/bricolage-grotesque', '@fontsource-variable/newsreader', '@fontsource/space-mono', 'lucide-vue-next', 'marked', 'reka-ui']) {
+    assert.match(pkg.dependencies[name], /^\d+\.\d+\.\d+$/, `${name} debe llevar una versión exacta, sin ^ ni ~`);
+    assert.match(read('frontend/package-lock.json'), new RegExp(`"node_modules/${name}"`), `${name} debe estar en el fichero de versiones bloqueadas`);
+  }
+});
+
+test('F10 el diseño no abre la política del servidor web ni pide nada a terceros', () => {
+  const nginx = read('frontend/nginx.conf');
+  assert.match(nginx, /Content-Security-Policy "default-src 'self'/);
+  assert.doesNotMatch(nginx, /(script|font|style|img|connect)-src[^;"]*https?:/, 'ninguna fuente externa en la política');
+  assert.doesNotMatch(read('frontend/index.html'), /fonts\.googleapis|fonts\.gstatic|<script[^>]+src=["']https?:/, 'ni fuentes ni scripts de terceros');
+});
+
+test('F10 es solo de frontend: el backend, el Compose y las variables de entorno no cambian de contrato', () => {
+  for (const file of ['backend/src/main/resources/db/migration']) {
+    assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  }
+  assert.ok(!existsSync(`${REPO}/backend/src/main/resources/db/migration/V10__rediseno.sql`), 'F10 no añade migraciones');
+  assert.ok(!published(base).some((p) => p.name === 'frontend' && ![80, 8080].includes(Number(p.target))), 'el frontend no publica puertos nuevos');
 });
