@@ -169,3 +169,5 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F11-3 | 🟡 Mascota y personaje sencillos, nombre y logo provisionales | Valorar ilustración profesional si «Mundo» se queda |
 | F11-4 | 🟡 Las pantallas no se prototiparon antes (decisión del usuario); el informe las compara con «Mapa» en el navegador | Riesgo de rehacer ilustraciones |
 | F11-5 | 🟡 Heredan los pendientes de F10 (F10-8 a F10-11: migrar vistas a `ui/`, pantalla de edición densa, 360/430 px y zoom a mano, contraste con herramienta en el navegador) | |
+| F11-6 | 🟠 nginx puede dejar que el navegador conserve el `index.html` antiguo tras un despliegue y mostrar la hoja de estilos vieja | Añadir `Cache-Control: no-cache` para `index.html` (y caché larga solo para `/assets/*` con hash); anotar con D1–D6 |
+| F11-7 | 🟡 Las colinas dejan espacio vacío a la derecha con pocas paradas | Decoración (árboles, flores) si se quiere más «paisaje» |

@@ -39,7 +39,7 @@ const lines = computed(() => wrap(props.station.label, props.narrow ? 26 : 16, p
       <tspan v-for="(line, i) in lines" :key="i" :x="station.x" :dy="i === 0 ? 0 : 16">{{ line }}</tspan>
     </text>
     <template v-if="station.state === 'now'">
-      <Wanderer :x="station.x" :y="narrow ? station.y - radius - 8 : station.y - radius - 52" />
+      <Wanderer :x="narrow ? station.x : station.x + radius + 22" :y="narrow ? station.y - radius - 4 : station.y + 8" />
       <template v-if="narrow">
         <rect class="map-here" :x="station.x + radius + 14" :y="station.y + 4" width="132" height="24" rx="12" />
         <text class="map-here-text" :x="station.x + radius + 80" :y="station.y + 21">TÚ ESTÁS AQUÍ</text>
