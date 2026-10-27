@@ -171,7 +171,8 @@ class CourseDeleteTest extends CourseDeleteTestBase {
     @Test
     void ac4_aPausedCourseWithPendingPiecesDoesNotComeBackToTheQueueAfterDeleting() throws Exception {
         String ana = logged("ana@example.com");
-        UUID course = insertCourse(idOf("ana@example.com"), "Pausado", 2, true, List.of());
+        UUID course = ready("ana@example.com");
+        owner.update("UPDATE course_piece SET status = 'PENDING' WHERE id = ?", lessonOf(chapterIds(topicIds(course).get(0)).get(0)));
         setStatus(course, "PAUSED");
         assertThat(count("SELECT count(*) FROM course_piece WHERE course_id = ? AND status = 'PENDING'", course)).isPositive();
 

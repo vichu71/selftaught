@@ -1,13 +1,18 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
-import { exportPath, type CourseStatus, type StopReason } from '@/api/client'
+import { useRoute, useRouter } from 'vue-router'
+import { ApiError, api, exportPath, type CourseStatus, type StopReason } from '@/api/client'
+import DeleteCoursesDialog from '@/components/DeleteCoursesDialog.vue'
+import { useAuthStore } from '@/stores/auth'
+import UiButton from '@/ui/UiButton.vue'
 import CourseMap from '@/map/CourseMap.vue'
 import { useCourseDetailStore } from '@/stores/courseDetail'
 import { useStudyStore } from '@/stores/study'
 import { BLOCKED_TEXT } from '@/stores/course'
 
 const route = useRoute()
+const router = useRouter()
+const auth = useAuthStore()
 const store = useCourseDetailStore()
 const study = useStudyStore()
 
@@ -56,6 +61,27 @@ const blocked = computed(() => course.value?.status === 'FAILED' && course.value
 const failedOther = computed(() => course.value?.status === 'FAILED' && !blocked.value)
 const hasDone = computed(() => (progress.value?.done ?? 0) > 0)
 
+// Borrar el curso (F13): solo adultos; un 404 (ya borrado, p. ej. por un doble clic) cuenta como hecho
+const deleteOpen = ref(false)
+const deleting = ref(false)
+const deleteError = ref('')
+async function confirmDelete() {
+  if (deleting.value || !course.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await api.deleteCourse(course.value.id)
+    await router.push('/')
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) await router.push('/')
+    else deleteError.value = e instanceof ApiError && e.status === 409
+      ? 'Este curso se está generando ahora mismo. Espera a que termine para borrarlo.'
+      : 'No se pudo borrar el curso. Inténtalo de nuevo.'
+  } finally {
+    deleting.value = false
+  }
+}
+
 onMounted(async () => {
   study.reset()
   await store.start(String(route.params.id))
@@ -91,6 +117,10 @@ onBeforeUnmount(() => {
         <p v-if="course.version" class="muted" data-testid="course-version">Versión {{ course.version }}</p>
         <p v-if="course.copy" class="muted" data-testid="copy-notice">Este curso es una copia de otro (versión {{ course.copy.originVersion }} del original).</p>
         <p><RouterLink :to="`/cursos/${course.id}/editar`" data-testid="edit-link">Editar o compartir este curso</RouterLink></p>
+        <p v-if="auth.user?.kind === 'ADULT'">
+          <UiButton variant="danger" data-testid="course-delete-open" @click="deleteOpen = true">Borrar curso</UiButton>
+        </p>
+        <p v-if="deleteError" class="error" role="alert" data-testid="course-delete-error">{{ deleteError }}</p>
         <p v-if="study.overview?.percent !== undefined" data-testid="study-progress">Tu avance: {{ study.overview.percent }} %</p>
         <p v-if="store.polling" class="activity" role="status" data-testid="activity">
           <span class="spinner" aria-hidden="true"></span>
@@ -125,6 +155,7 @@ onBeforeUnmount(() => {
           <li v-if="course.documents.length > 0">Documentos: {{ course.documents.map((d) => d.name).join(', ') }}</li>
         </ul>
       </section>
+      <DeleteCoursesDialog v-model="deleteOpen" :courses="[{ id: course.id, title: course.title }]" :busy="deleting" @confirm="confirmDelete" />
     </template>
   </div>
 </template>

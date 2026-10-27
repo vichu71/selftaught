@@ -1,7 +1,10 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
-import { api, type Course, type CourseStatus } from '@/api/client'
+import { computed, onMounted, ref } from 'vue'
+import { ApiError, api, type Course, type CourseStatus } from '@/api/client'
+import DeleteCoursesDialog from '@/components/DeleteCoursesDialog.vue'
+import { useAuthStore } from '@/stores/auth'
 import { useStudyStore } from '@/stores/study'
+import UiButton from '@/ui/UiButton.vue'
 import UiProgress from '@/ui/UiProgress.vue'
 import PlantIllustration from '@/world/PlantIllustration.vue'
 import { STAGE_LABEL, plantStage } from '@/world/plantStage'
@@ -10,9 +13,57 @@ import UiState from '@/ui/UiState.vue'
 const emit = defineEmits<{ loaded: [courses: Course[]] }>()
 
 const study = useStudyStore()
+const auth = useAuthStore()
 const courses = ref<Course[]>([])
 const listError = ref(false)
 const loading = ref(true)
+
+// Borrar cursos (F13): solo los adultos; el servidor lo comprueba igual
+const selecting = ref(false)
+const selected = ref<string[]>([])
+const dialogOpen = ref(false)
+const deleting = ref(false)
+const deleteError = ref('')
+const canDelete = computed(() => auth.user?.kind === 'ADULT' && courses.value.length > 0)
+const allSelected = computed(() => courses.value.length > 0 && selected.value.length === courses.value.length)
+const toDelete = computed(() => courses.value.filter((c) => selected.value.includes(c.id)).map((c) => ({ id: c.id, title: c.title })))
+
+function toggleSelecting() {
+  selecting.value = !selecting.value
+  selected.value = []
+  deleteError.value = ''
+}
+function toggle(id: string, on: boolean) {
+  selected.value = on ? [...selected.value.filter((x) => x !== id), id] : selected.value.filter((x) => x !== id)
+}
+function toggleAll(on: boolean) {
+  selected.value = on ? courses.value.map((c) => c.id) : []
+}
+async function confirmDelete() {
+  if (deleting.value || selected.value.length === 0) return
+  deleting.value = true
+  deleteError.value = ''
+  let removed = false
+  try {
+    await api.deleteCourses(selected.value)
+    removed = true
+  } catch (e) {
+    if (e instanceof ApiError && e.status === 404) removed = true // ya estaba borrado
+    else deleteError.value = e instanceof ApiError && e.status === 409
+      ? 'Algún curso se está generando ahora mismo. Espera a que termine para borrarlo.'
+      : 'No se pudieron borrar los cursos. Inténtalo de nuevo.'
+  }
+  if (removed) {
+    try {
+      courses.value = (await api.listCourses()) ?? []
+    } catch {
+      listError.value = true
+    }
+    selecting.value = false
+    selected.value = []
+  }
+  deleting.value = false
+}
 
 const labels: Record<CourseStatus, string> = {
   PENDING_GENERATION: 'En cola',
@@ -46,8 +97,30 @@ onMounted(async () => {
     <UiState v-else-if="loading" state="loading" message="Cargando tus cursos…" />
     <p v-else-if="courses.length === 0" class="muted" data-testid="no-courses">Todavía no tienes ningún curso. ¡Crea el primero!</p>
 
+    <div v-if="canDelete" class="select-bar">
+      <UiButton data-testid="courses-select-toggle" @click="toggleSelecting">{{ selecting ? 'Cancelar selección' : 'Seleccionar' }}</UiButton>
+      <template v-if="selecting">
+        <label class="select-all">
+          <input type="checkbox" :checked="allSelected" data-testid="courses-select-all" @change="toggleAll(($event.target as HTMLInputElement).checked)" />
+          Seleccionar todos
+        </label>
+        <span role="status" data-testid="courses-selected-count">{{ selected.length }} seleccionados</span>
+        <UiButton variant="danger" :disabled="selected.length === 0 || deleting" data-testid="courses-delete-open" @click="dialogOpen = true">Borrar ({{ selected.length }})</UiButton>
+      </template>
+    </div>
+    <p v-if="deleteError" class="error" role="alert" data-testid="courses-delete-error">{{ deleteError }}</p>
+
     <ul class="garden">
       <li v-for="c in courses" :key="c.id" class="plant-card" :data-testid="`course-${c.id}`">
+        <input
+          v-if="selecting"
+          type="checkbox"
+          class="select-box"
+          :checked="selected.includes(c.id)"
+          :aria-label="`Seleccionar ${c.title}`"
+          :data-testid="`course-select-${c.id}`"
+          @change="toggle(c.id, ($event.target as HTMLInputElement).checked)"
+        />
         <PlantIllustration
           :stage="stageOf(c.id)"
           :label="`${stageText(c)}: ${c.title}`"
@@ -66,5 +139,6 @@ onMounted(async () => {
     </ul>
 
     <RouterLink to="/nuevo-curso" class="button-link" data-testid="new-course-link">Nuevo curso</RouterLink>
+    <DeleteCoursesDialog v-model="dialogOpen" :courses="toDelete" :busy="deleting" @confirm="confirmDelete" />
   </section>
 </template>
