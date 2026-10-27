@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada; **F14** (panel del propietario, ADR-87 a 91) terminada. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada; **F14** (panel del propietario, ADR-87 a 91) terminada; **F15** (pulido de Resultados y botón «Volver», ADR-92 y 93) en curso. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -122,7 +122,7 @@ Al aceptar el resumen, la IA prepara el curso en segundo plano: primero el **tem
   solo por lo que falta: lo ya generado no se vuelve a pedir ni a pagar. Si una pieza no sale bien dos veces, el curso termina en pausa y «Reanudar» reintenta solo esas.
 - **Menores:** el temario valora de nuevo si el tema es apto para escolares, el material y lo generado pasan por el filtro local y, si algo no es apropiado, se ve «Contenido inapropiado. Consulta con tu adulto.».
 - **Exportar:** `GET /api/courses/{id}/export` devuelve el curso en JSON (sin nombres de documento ni datos personales).
-- **Resultados:** la pantalla «Resultados» (enlace en el inicio) muestra por curso las piezas hechas, con error y pendientes, las llamadas y el coste, y tu gasto del mes frente a tu tope. Un menor ve sus cursos y piezas, sin importes.
+- **Resultados:** la pantalla «Resultados» (enlace en el inicio) te cuenta de un vistazo cuántas veces te ayudó la IA este mes, cuánto llevas gastado y cuántos cursos tienes listos. Un **medidor** compara tu gasto con tu tope y lo dice con palabras («Vas bien», «Cerca del tope», «Tope alcanzado»); un reparto por tarea (lecciones, tutor, ejercicios…) enseña en qué se fue; si eres adulto con menores, ves a cada uno con su medidor; y cada curso es una **tarjeta con su planta**, su barra de piezas hechas, el estado y los errores o pendientes escritos. Un menor ve sus cursos y las veces que la IA le ayudó, **sin importes ni topes**. El enlace «Volver al inicio» es ahora un botón con flecha (en «Nuevo curso» dice «Cancelar»).
 - Todo el contenido lleva el aviso «Generado por IA». Las lecciones se muestran con formato, pero nunca como HTML: enlaces, imágenes y marcado raro salen como texto.
 - Coste orientativo: de 0,1 a 0,5 USD por curso con modelos baratos, 10 a 25 minutos de generación. La calidad con un modelo real solo la puedes medir tú con tus claves.
 

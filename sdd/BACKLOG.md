@@ -211,4 +211,13 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F14-8 | 🟡 Decidir si el aviso al menor de F08 («tu adulto ve tus respuestas, intentos y conversaciones») debe nombrar también que el propietario ve cifras de cuenta y gasto | Hoy solo lo dice el README; el propietario nunca ve contenido |
 | F14-9 | 🟡 Los topes por usuario fijados desde el panel no avisan al usuario del cambio | Solo se enteran al llegar al tope (mensaje de siempre) |
 | F14-10 | 🟡 Un no propietario que envía a `PUT /api/owner/users/{id}/limit` un cuerpo que no es JSON recibe 400 en vez de 404 (Spring lo rechaza antes de llegar a la guardia) | Revela, casi sin valor, que la ruta existe; se arreglaría leyendo el cuerpo como texto dentro del controlador |
-| F14-11 | 🟡 Pulido de la pantalla **Resultados** (medidor del tope, tarjetas de cifras, cursos como tarjetas de jardín, gasto por tarea) y un `BackLink` con flecha en lugar del enlace subrayado «Volver al inicio» de 5 pantallas | Acordado con el usuario el 27-10-2026: se hace después de F14, en rama aparte, reutilizando `StatCard`, `BarList` y los colores de F14 |
+| F14-11 | ✅ **Hecho en F15 (ADR-92 y 93):** pulido de la pantalla **Resultados** (medidor del tope, tarjetas de cifras, cursos como tarjetas de jardín, gasto por tarea) y un `BackLink` con flecha en lugar del enlace subrayado «Volver al inicio» de 5 pantallas | Acordado con el usuario el 27-10-2026: se hace después de F14, en rama aparte, reutilizando `StatCard`, `BarList` y los colores de F14 |
+
+## Anotado en F15 (Resultados y botón «Volver»)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F15-1 | 🟡 El gasto por tarea es solo el del mes en curso | ADR-92; un parámetro de mes validado en el servidor si hace falta ver meses anteriores |
+| F15-2 | 🟡 «Tus peques» no enlaza con el panel del adulto tutor de cada menor (F08) | Un enlace a `/alumnos/{id}` por menor sería barato; queda fuera de v1 |
+| F15-3 | 🟡 Solo se pule Resultados: Inicio, Mi material y el resto de pantallas siguen con su estilo de antes | Se haría pantalla a pantalla con los mismos componentes de `ui/` |
+| F15-4 | 🟡 `LineChart` y `DataTable` siguen en `owner/`; si Resultados necesita una gráfica diaria habría que subirlos | ADR-93 |

@@ -270,6 +270,20 @@ termina sin escribir (el guardado exige la fila `PENDING`, ADR-82) y su coste ya
 - **Reglas de arquitectura** (`OwnerArchitectureTest`): el paquete `owner/` no habla con el modelo ni con el material, solo escriben `OwnerUserRepository` y `OwnerRateLimiter`, ninguna consulta nombra columnas de contenido, el nombre y el correo solo salen en una rama `kind = 'ADULT'`, toda consulta es parametrizada y la ordenación es una lista cerrada.
 - **Frontend:** `OwnerView` (`/propietario`, solo si `me.owner`) con cuatro pestañas (Gasto, Usuarios, Uso, Salud), selector de rango y «Actualizar» (nada se refresca solo). Las gráficas (`LineChart`, `BarList`) son **elementos Vue y SVG** con colores de `tokens.css` y su tabla equivalente debajo; los estados se dicen también con texto (ADR-90).
 
+## Resultados y botón «Volver» (F15)
+
+```
+ Sesión ──► GET /api/results          cursos propios: piezas hechas, con error y pendientes, llamadas e importe (un menor, sin importes)   (F05)
+        ──► GET /api/ai/usage         mes, llamadas, gasto y tope propios; un adulto, también sus menores (contrato fijado por test)       (F02/F08)
+        ──► GET /api/ai/usage/tasks   gasto del mes de quien llama repartido por tarea; un menor, solo {task, calls}                      (F15, ADR-92)
+   ResultsView pide las tres en paralelo y cada una falla por separado: si falta una, su bloque dice «No se pudo cargar» y el resto se ve
+```
+
+- **Backend:** un solo cambio, `GET /api/ai/usage/tasks` en `AiUsageController`, con la consulta que ya existía (`UsageRepository.userMonthByTask`, F08). Sin migración, sin SQL nuevo, sin parámetros (el usuario sale siempre de la sesión) y sin importes para un menor. `/api/ai/usage` no cambia.
+- **Pantalla:** `ResultsView` compone tarjetas de cifras (`StatCard`: veces que la IA ayudó, gasto del mes, cursos listos), el **medidor del tope** (`results/TopeMeter`, sobre `UiProgress`: «Vas bien» < 80 %, «Cerca del tope» 80–99 %, «Tope alcanzado» ≥ 100 %, con icono y palabras), el gasto por tarea (`BarList`), «Tus peques» (un medidor por menor, solo para un adulto con menores) y los cursos como **tarjetas de jardín** (`results/CourseCard`: la planta de F11 según `done/total`, barra de piezas, estado, errores y pendientes escritos). Un **menor no ve ningún importe ni tope** en toda la pantalla.
+- **Botón «Volver»:** `ui/BackLink` (enlace con aspecto de botón secundario, flecha ←, 44 px, sin subrayado) sustituye al enlace «Volver al inicio» de Resultados, Curso, Mi material, Tengo un código y Nuevo curso (que dice «Cancelar»), con los mismos `data-testid` (`back-home`, `cancel-home`).
+- **Componentes compartidos:** `StatCard`, `BarList` y `format.ts` suben de `src/owner/` a `src/ui/` (clases `ui-*`); `LineChart` y `DataTable` siguen siendo del panel (ADR-93).
+
 ## Modelo de datos
 
 ```
@@ -358,6 +372,7 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `GET/POST /api/tutor/students` | adulto | lista y alta de sus menores |
 | `POST /api/tutor/students/{id}/reset-password` · `deactivate` · `reactivate` | adulto tutor de `{id}` | 404 si no es suyo |
 | `GET /api/ai/usage` | autenticado | adulto: su gasto, el estado del tope global y el de sus menores; menor: solo su nº de llamadas |
+| `GET /api/ai/usage/tasks` | autenticado | gasto del mes de quien llama por tarea (F15): `{month, tasks:[{task, calls, spendUsd?}]}` de más a menos; un menor recibe solo `task` y `calls`, nunca importes; 401 sin sesión |
 | `POST /api/material` | autenticado (adulto o menor) | multipart `file`; 202; 400 vacío · 413 grande · 415 tipo · 409 límite o duplicado |
 | `GET /api/material` · `GET /api/material/{id}` | propietario; el tutor ve los de sus menores | `{ own, minors }`; ajeno o inexistente = 404 |
 | `DELETE /api/material/{id}` | solo el propietario | 204; el tutor recibe 403 (auditado); ajeno = 404 |
@@ -413,6 +428,8 @@ selftaught/
 │     src/test/                          # tests de integración (caja negra por HTTP)
 ├─ frontend/                         # Vue 3 + TS: views, components, stores, api, router, tests
 │  ├─ src/{styles,ui,layouts,map}    # F10: tokens y estilos base, componentes base, marco de navegación, mapa del curso
+│  ├─ src/owner · src/results        # F14: gráficas (LineChart, DataTable), lista y acciones del panel · F15: TopeMeter y CourseCard de Resultados
+│                                    # (F15: ui/ gana BackLink, StatCard, BarList y format.ts)
 │  └─ src/world                      # F11 (rama de la piel «Mundo»): fases de planta e ilustraciones SVG; map/ gana roadPath.ts
 ├─ sdd/design/F10/                   # prototipos de diseño de referencia (Mapa y Mundo)
 ├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
@@ -976,3 +993,13 @@ selftaught/
 - Motivo: encaja con «datos mínimos» para menores (F01) y con F08 (el tutor ve el contenido; el propietario, no). La lista enseña de un menor su identificador de acceso, estado, fechas, gasto, tope y tutor; nunca su nombre visible, temas, cursos, respuestas ni conversaciones. Un test de arquitectura impide que `owner/` consulte columnas de contenido y otro recorre el JSON buscando campos prohibidos. El propietario puede desactivar a un menor porque desactivar es reversible (F01); no puede borrar cuentas.
 - Alternativas descartadas: que el propietario vea nombres y temas de menores (innecesario para operar); lista solo agregada (no permitiría actuar sobre una cuenta concreta).
 - Revisitar si: se pide moderación de contenido (sería una feature con filtros y auditoría propias).
+
+### ADR-92: El gasto por tarea del propio usuario es un endpoint aparte
+- Motivo: `GET /api/ai/usage` tiene su contrato de privacidad fijado por test (claves exactas de `you`, también la del menor). Añadirle un campo cambiaría ese contrato y arrastraría sus tests; un endpoint de solo lectura (`/api/ai/usage/tasks`) con la consulta que ya existe desde F08 deja lo anterior intacto, y deja que la pantalla se siga viendo si una de las dos lecturas falla. El usuario sale siempre de la sesión: no hay parámetros ni ids que validar, y un menor nunca recibe importes.
+- Alternativas descartadas: ampliar `you` con `byTask` (rompe el contrato y sus tests); que el cliente pida el panel del tutor (no es suyo y un menor no tiene acceso); calcularlo en el cliente a partir de otro dato (no existe).
+- Revisitar si: hace falta el reparto por tarea de varios meses (entonces un parámetro de mes validado en el servidor).
+
+### ADR-93: Los componentes de cifras (`StatCard`, `BarList`) y el botón «Volver» son de `ui/`
+- Motivo: dos pantallas ya los usan (el panel del propietario y Resultados) y los componentes genéricos viven en `src/ui/` desde F10. Moverlos evita que Resultados dependa de la carpeta del propietario y deja un único sitio con el estilo (clases `ui-*`, tokens). `BackLink` sustituye cinco enlaces subrayados sueltos por un botón único, con `data-testid` y destino iguales, para cambiar su aspecto en un solo lugar. `LineChart` y `DataTable` se quedan en `owner/` porque solo el panel los usa.
+- Alternativas descartadas: importar de `owner/` desde Resultados (acopla pantallas no relacionadas); copiar los componentes (dos sitios que cambian a la vez); una carpeta nueva `charts/` (otra categoría para dos ficheros).
+- Revisitar si: un tercer sitio necesita `LineChart` o `DataTable` (entonces suben también).
