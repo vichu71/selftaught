@@ -29,6 +29,8 @@ public abstract class IllustrationTestBase extends ShareTestBase {
     @org.junit.jupiter.api.BeforeEach
     void noOtherCourseWantsIllustrations() {
         owner.update("UPDATE course SET illustrations = false");
+        owner.update("DELETE FROM course_image"); // y sus filas pendientes: una cola de otro test no debe gastar el cupo de este
+        owner.update("DELETE FROM course_action WHERE kind = 'AI_IMAGE'");
         fake.reset();
     }
 

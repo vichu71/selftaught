@@ -65,7 +65,7 @@ public class ImageRepository {
         jdbc.sql("""
                 UPDATE course_image SET status = 'DONE', content = :content, mime = :mime, size_bytes = :size, alt_text = :alt, error_kind = NULL,
                        attempts = attempts + 1, generated_at = now()
-                WHERE id = :id AND owner_id = :owner""")
+                WHERE id = :id AND owner_id = :owner AND status = 'PENDING'""") // si el propietario la quitó mientras se generaba, no revive
                 .param("content", content).param("mime", mime).param("size", content.length).param("alt", altText).param("id", id).param("owner", ownerId).update();
     }
 
@@ -73,7 +73,7 @@ public class ImageRepository {
     public void saveEnded(UUID id, UUID ownerId, String status, String errorKind) {
         jdbc.sql("""
                 UPDATE course_image SET status = :status, error_kind = :kind, content = NULL, mime = NULL, size_bytes = NULL, attempts = attempts + 1
-                WHERE id = :id AND owner_id = :owner""")
+                WHERE id = :id AND owner_id = :owner AND status = 'PENDING'""")
                 .param("status", status).param("kind", errorKind).param("id", id).param("owner", ownerId).update();
     }
 

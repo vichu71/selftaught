@@ -27,13 +27,14 @@ class IllustrationLimitsTest extends IllustrationTestBase {
     @Test
     void ac6_onlyTheConfiguredNumberOfImagesIsGeneratedPerHourAndTheRestWaitsAsPending() throws Exception {
         UUID course = courseWithIllustrations("luis@example.com");
-        UUID extra = insertTopic(course, idOf("luis@example.com"), 3, "Tema tres");
+        insertTopic(course, idOf("luis@example.com"), 3, "Tema tres");
 
         drain();
 
         assertThat(fake.imageCalls()).hasSize(2);
+        // las tres filas nacen en la misma sentencia (mismo created_at): cuál queda esperando lo decide el id, no la posición
         assertThat(imageCount(course, "DONE")).isEqualTo(2);
-        assertThat(imageStatus(extra)).isEqualTo("PENDING");
+        assertThat(imageCount(course, "PENDING")).isEqualTo(1);
         assertThat(count("SELECT count(*) FROM course_action WHERE kind = 'AI_IMAGE' AND user_id = ?", idOf("luis@example.com"))).isEqualTo(2);
     }
 

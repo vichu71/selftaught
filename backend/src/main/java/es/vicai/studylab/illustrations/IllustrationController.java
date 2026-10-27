@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * Las ilustraciones de un curso (F12). Todos exigen sesión (por defecto en SecurityConfig) y los que cambian algo, CSRF. Un curso, tema o imagen ajenos o inexistentes
- * responden lo mismo (404). La imagen se entrega solo a su propietario, nunca como caché pública, y con {@code nosniff}: es contenido del usuario.
+ * responden lo mismo (404). La imagen se entrega solo a su propietario, nunca como caché pública, y con {@code nosniff} (lo añade Spring Security): es contenido del usuario.
  */
 @RestController
 public class IllustrationController {
@@ -43,7 +43,7 @@ public class IllustrationController {
         ImageRepository.Content image = found.get();
         String etag = "\"" + image.id() + "-" + image.generatedAt().toEpochMilli() + "\"";
         ResponseEntity.BodyBuilder response = ResponseEntity.status(etag.equals(ifNoneMatch) ? HttpStatus.NOT_MODIFIED : HttpStatus.OK)
-                .header(HttpHeaders.CACHE_CONTROL, "private, no-cache").header(HttpHeaders.ETAG, etag).header("X-Content-Type-Options", "nosniff");
+                .header(HttpHeaders.CACHE_CONTROL, "private, no-cache").header(HttpHeaders.ETAG, etag); // X-Content-Type-Options: nosniff lo pone Spring Security (repetirlo lo duplicaba)
         if (etag.equals(ifNoneMatch)) return response.build();
         return response.contentType(MediaType.parseMediaType(image.mime())).body(image.bytes());
     }
