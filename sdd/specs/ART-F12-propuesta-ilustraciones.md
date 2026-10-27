@@ -43,13 +43,13 @@ course_image      id uuid PK
 Todos exigen sesión; los que cambian datos, CSRF. Ajeno o inexistente → 404 igual. Los errores salen por `GlobalExceptionHandler` con mensaje seguro.
 
 ```
-GET    /api/illustrations/offer                          → {available, pricePerImageUsd}  — available = proveedor configurado Y usuario adulto; el menor siempre false
+GET    /api/illustrations/offer                          → {available, pricePerImageUsd, maxTopics}  — available = proveedor configurado Y usuario adulto; el menor siempre false
 POST   /api/courses            {intakeId, answers, illustrations?}   → (existente) illustrations=true solo si available; si no, 400 ILLUSTRATIONS_UNAVAILABLE
 GET    /api/courses/{c}        → (existente) + illustrations y, por tema, image: {status, alt}  (nada si no hay fila o está REMOVED; nunca bytes ni prompt)
 GET    /api/courses/{c}/topics/{t}/image                 → 200 image/jpeg · Cache-Control: private, max-age=3600 · ETag · X-Content-Type-Options: nosniff · inline; sin imagen DONE → 404
 POST   /api/courses/{c}/topics/{t}/image/regenerate      → 202 detalle del curso · el curso no puede estar generándose (409 COURSE_BUSY) · 429 IMAGE_RATE_LIMITED / REGENERATION_LIMIT · cuenta para AI_EDIT (20/h)
 DELETE /api/courses/{c}/topics/{t}/image                 → 200 detalle · idempotente · 409 COURSE_BUSY si se genera · pasa a REMOVED
-GET    /api/courses/{c}/pieces/{p}   → (existente) + topicId, para pintar la cabecera de la lección
+GET    /api/courses/{c}/pieces/{p}   → (existente) + topicId e image {status, alt} del tema, para pintar la cabecera de la lección (solo lecciones)
 ```
 
 Códigos nuevos: `ILLUSTRATIONS_UNAVAILABLE` (400), `IMAGE_RATE_LIMITED` y `REGENERATION_LIMIT` (429, mensaje sin cifras internas). Sin endpoint de «generar ahora»: la cola es el único camino a la llamada de pago.
