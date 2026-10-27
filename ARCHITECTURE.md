@@ -252,6 +252,24 @@ F11 sustituye la piel «Mapa» (F10) por «Mundo» y es **la interfaz definitiva
 Sin IA ni cerrojo de generación (un test de arquitectura lo exige) y sin migración de tablas: `V11` solo da `DELETE` sobre `course` al rol de la aplicación. `ai_usage` no se toca; las copias de otros quedan con `origin_id` nulo y sus códigos dejan de valer. Un trabajador de ilustraciones con una llamada en vuelo
 termina sin escribir (el guardado exige la fila `PENDING`, ADR-82) y su coste ya está contado.
 
+## Panel del propietario (F14)
+
+```
+ Sesión ──► GET /api/owner/{ai,prices,accounts,usage,health,users}   ·   POST …/users/{id}/{deactivate,reactivate,revoke-sessions}   ·   PUT/DELETE …/users/{id}/limit
+   1. OwnerGuard.require(user): adulto con sesión (ACTIVE ⇒ correo verificado) cuyo correo coincide con OWNER_EMAIL (sin mayúsculas ni espacios)  (ADR-87)
+        no propietario con sesión → 404 igual que una ruta inexistente (y ACCESS_DENIED con su id si es adulto); anónimo → 401; sin CSRF → 403
+   2. OwnerRateLimiter: 120 consultas y 60 acciones por hora y propietario, contadas en owner_action (429 OWNER_RATE_LIMIT)                    (ADR-89)
+   3. lectura: SQL agregado con parámetros nombrados, rango fijo 7 | 30 | 90 días (400 si no), solo ai_usage.source = 'APP' (el benchmark aparte)
+   4. acción: una transacción con SELECT … FOR UPDATE del usuario ─► cambio ─► auditoría OWNER_* con ids (nunca correo ni nombre)
+        el propietario no se desactiva ni se revoca a sí mismo (400 CANNOT_TARGET_SELF); tope en user_limit_override (0–500 USD)               (ADR-88)
+```
+
+- **Quién es el propietario:** nadie lo es por defecto. El rol no se guarda ni se pide por API: se calcula en cada petición comparando el correo de la sesión con `OWNER_EMAIL`. Sin la variable, todo el panel responde 404 y la app arranca igual. `AuthUser`, `UserKind` y `SecurityConfig` no cambian; `GET /api/me` añade `owner: true` solo para él (para el enlace del menú; no es un permiso).
+- **Qué ve:** gasto de IA (hoy, mes, proyección, % del tope global, serie diaria, reparto por modelo, proveedor, tarea y usuario, errores, bloqueos, duración media y p95, coste por curso y por usuario activo, precios vigentes con su fecha de verificación), cuentas y conexiones (altas, estados, activos 1/7/30 días, sesiones abiertas, inicios de sesión correctos, fallidos y bloqueados), uso de la app, salud (colas, fallos, errores de IA de 24 h, bloqueos de contenido, tamaño de la BD) y una lista paginada de usuarios. **Nunca** contenido: ni títulos ni temas ni respuestas ni conversaciones ni nombres de documento; de un menor, solo identificador de acceso, estado, fechas, gasto, tope, nº de cursos y tutor (ADR-91).
+- **El tope por usuario** pasa a poder cambiarse sin reiniciar: `BudgetService` lee `user_limit_override` (clave primaria) y si no hay fila usa el de la configuración; sigue **cortando siempre** y lo ven igual el propio usuario, su tutor y el panel.
+- **Reglas de arquitectura** (`OwnerArchitectureTest`): el paquete `owner/` no habla con el modelo ni con el material, solo escriben `OwnerUserRepository` y `OwnerRateLimiter`, ninguna consulta nombra columnas de contenido, el nombre y el correo solo salen en una rama `kind = 'ADULT'`, toda consulta es parametrizada y la ordenación es una lista cerrada.
+- **Frontend:** `OwnerView` (`/propietario`, solo si `me.owner`) con cuatro pestañas (Gasto, Usuarios, Uso, Salud), selector de rango y «Actualizar» (nada se refresca solo). Las gráficas (`LineChart`, `BarList`) son **elementos Vue y SVG** con colores de `tokens.css` y su tabla equivalente debajo; los estados se dicen también con texto (ADR-90).
+
 ## Modelo de datos
 
 ```
@@ -316,6 +334,10 @@ course_piece        + outdated (boolean): «la lección cambió»; se limpia al 
 course_image        F12: id, course_id + owner_id + topic_id (FK compuestas, CASCADE), status (PENDING | DONE | FAILED | BLOCKED | REMOVED), error_kind, attempts, regenerations, alt_text, mime, size_bytes (≤ 300 kB), content bytea · una por tema · course.illustrations (boolean, por defecto false)
 share_code          id, course_id + owner_id (FK compuesta → course, CASCADE), code_hash (SHA-256, único; el código NO se guarda), created_at, expires_at, revoked_at, uses
 -- F13 (migración V11): sin tablas ni columnas nuevas; GRANT DELETE ON course al rol de la aplicación (el resto cae por las FK en cascada; ai_usage.course_id no tiene FK y se conserva)
+-- F14 (migración V12): panel del propietario
+user_limit_override user_id (PK, → app_user), limit_usd (0–500, 2 decimales), set_by (→ app_user), set_at · una fila solo si el propietario fijó un tope; manda sobre la configuración
+owner_action        id, owner_id (→ app_user), kind (QUERY | ACTION), created_at · límite de frecuencia del panel (120 y 60 por hora; se podan las de más de 2 h)
+audit_event         + índice (action, occurred_at) para contar eventos por día · ai_usage y audit_event no cambian de permisos (el panel solo los lee)
 course_action       id, user_id, kind (AI_EDIT | AI_IMAGE | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
 course_topic / course_chapter + permiso DELETE para el rol de la aplicación
 ```
@@ -359,6 +381,10 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `POST/GET /api/courses/{id}/share` · `DELETE …/share/{sid}` | propietario | crear un código (201 `{id, code, expiresAt}`, el código solo esa vez; 409 `COURSE_NOT_READY`, `SHARE_LIMIT`) · ver su estado · revocar (204, idempotente) |
 | `POST /api/courses/redeem` | cualquier usuario con sesión | `{code}` → 201 `{id, title}` (la copia); 404 igual para cualquier código que no valga · 422 `COPY_NOT_ALLOWED` (menor y el filtro salta) · 429 `CODE_RATE_LIMITED` |
 | `DELETE /api/courses/{id}` · `POST /api/courses/delete` | propietario adulto | borrar uno o varios cursos (F13): `{ids}` de 1 a 50, todo o nada; 204 · 400 · 403 `CHILD_CANNOT_DELETE` (menor) · 404 (ajeno, inexistente o mal formado, igual) · 409 `COURSE_BUSY` |
+| `GET /api/owner/ai` · `/accounts` · `/usage` `?range=7|30|90` · `/prices` · `/health` | propietario (`OWNER_EMAIL`) | informes de solo lectura del panel (F14): gasto de IA, cuentas y conexiones, uso, precios vigentes y salud; 400 (rango) · 401 · 404 (no propietario, igual que una ruta inexistente) · 429 `OWNER_RATE_LIMIT` |
+| `GET /api/owner/users?kind=&status=&sort=spend|activity|created&dir=&page=&size=` | propietario | lista paginada (25 por defecto, máximo 100) sin contenido; de un menor solo su identificador de acceso, estado, fechas, gasto, tope, cursos y tutor |
+| `POST /api/owner/users/{id}/deactivate` · `…/reactivate` · `…/revoke-sessions` | propietario | 204 idempotente; 400 `CANNOT_TARGET_SELF` (uno mismo) y para activar una cuenta sin verificar · 404 (id inexistente o mal formado) · 429; auditan `OWNER_USER_DEACTIVATED`, `OWNER_USER_REACTIVATED`, `OWNER_SESSIONS_REVOKED` |
+| `PUT /api/owner/users/{id}/limit` `{limitUsd}` · `DELETE …/limit` | propietario | fijar el tope mensual de IA de un usuario (0,00–500,00, dos decimales; 400 si no) o volver al de por defecto; 204; auditan `OWNER_LIMIT_SET`, `OWNER_LIMIT_CLEARED` |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -379,8 +405,9 @@ selftaught/
 │     src/main/java/es/vicai/studylab/guardian                    # F08: panel del adulto tutor (solo lectura): resumen, intentos, conversaciones, avisos y consumo
 │     src/main/java/es/vicai/studylab/{courseedit,share}          # F09: editar temario y lecciones, regenerar; códigos de compartir, canje y copia
 │     src/main/java/es/vicai/studylab/coursedelete                # F13: borrado de cursos (uno o varios), todo o nada, con auditoría
+│     src/main/java/es/vicai/studylab/owner                       # F14: panel del propietario (guardia, límites, informes agregados, lista y acciones sobre cuentas)
 │     src/main/java/es/vicai/studylab/illustrations                # F12: cola de ilustraciones, saneado del prompt, procesado de la imagen, entrega y edición
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos, V10 ilustraciones, V11 permiso de borrado)
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos, V10 ilustraciones, V11 permiso de borrado, V12 panel del propietario)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -924,3 +951,28 @@ selftaught/
 - Motivo: el adulto tutor ve intentos y conversaciones de su menor (F08) y un clic destruiría esa supervisión; borrar el curso de otro está fuera de lo que F09 permite al tutor. El menor recibe 403 siempre (no un 404), porque su propio curso existe y el motivo no es un secreto.
 - Alternativas descartadas: el menor borra con aviso al tutor (la actividad ya borrada no se puede ver); el tutor borra cursos de su menor (cambia la regla de propiedad de F09).
 - Revisitar si: los cursos de los menores se acumulan en uso real (opción: archivar para el menor, o borrado por el tutor con auditoría).
+
+### ADR-87: Propietario por variable de entorno, calculado en cada petición, con 404 uniforme
+- Motivo: no existe rol global y crear uno en la BD abre la puerta a escalada (un endpoint mal protegido, una inyección o un adulto que se cambie el rol). Un correo en el entorno del servidor solo lo cambia quien controla el despliegue. Se compara el correo de la sesión (ya `ACTIVE`, luego verificado) en cada petición, sin cachés ni columnas. Quien tiene sesión y no es propietario recibe el mismo 404 que una ruta inexistente: no se revela que el panel existe. No hace falta tocar `AuthUser`, `UserKind` ni `SecurityConfig`; un anónimo recibe el 401 y una escritura sin CSRF el 403 que da cualquier otra ruta.
+- Alternativas descartadas: `is_owner` en `app_user` (editable por cualquier bug de escritura sobre la tabla); cuenta aparte con 2FA (fuera de v1, rompe «adulto = alumno + tutor»); `hasRole("OWNER")` en `SecurityConfig` (daría 403, que delata la ruta).
+- Revisitar si: hay más de un propietario o gestión de roles (entonces tabla de roles con auditoría y 2FA).
+
+### ADR-88: El tope de gasto por usuario pasa a la BD como excepción al valor de la configuración
+- Motivo: el propietario debe ajustar un tope sin reiniciar. Una tabla `user_limit_override` con una fila solo cuando hay excepción deja el comportamiento actual intacto (menor 2 USD, adulto 10 USD) y el tope **sigue cortando siempre** (A1/ADR-29). `BudgetService` lo consulta en cada llamada (una lectura por clave primaria); lo ven igual el usuario, su tutor y el panel. Se acota a 0–500 USD para evitar errores de teclado.
+- Alternativas descartadas: guardar todos los topes en la BD (migración de datos y un valor nuevo por usuario creado); cachear el valor (un cambio tardaría en cortar); topes por rol editables (otro modelo de datos).
+- Revisitar si: se quiere un tope por semana o por tarea.
+
+### ADR-89: Estadísticas agregadas en SQL, con rangos fijos, índice por acción y límites en la BD
+- Motivo: el panel es la consulta más pesada de la app; si no se acota, un rango abierto o un refresco en bucle cargarían la BD. Rangos fijos (7/30/90), todo con `GROUP BY` en SQL y parámetros nombrados, sin traer filas; índice nuevo `(action, occurred_at)` en `audit_event`; límites por propietario contados en la BD (120 consultas y 60 acciones por hora, como el resto de límites de la app, nunca por IP: D1). Sin refresco automático. La lista de usuarios calcula gasto y actividad para ordenar sobre todos los usuarios: es válido para una base familiar (cientos de cuentas) y se anota el límite.
+- Alternativas descartadas: vistas materializadas o tablas de resumen (datos que se desfasan y un trabajo más); caché en memoria (se pierde al reiniciar y complica los tests); métricas con Prometheus (fuera de v1).
+- Revisitar si: hay miles de cuentas o el panel tarda más de un segundo; entonces, resumen diario precalculado.
+
+### ADR-90: Gráficas como elementos Vue y SVG, sin librería, siempre con su tabla
+- Motivo: ninguna librería de gráficas está en el paquete y la política de nginx es `default-src 'self'`; añadir una cambia la lista de dependencias exactas del test de entorno y trae superficie nueva. Dos tipos de gráfica (serie diaria y barras de reparto) se dibujan con elementos Vue como el mapa (F10/F11), con colores de `tokens.css`. Cada gráfica lleva debajo su tabla equivalente: es accesible y es lo que prueban los tests de DOM; un estado nunca se dice solo con color.
+- Alternativas descartadas: Chart.js/ECharts (peso, dependencia, canvas inaccesible); `v-html` con SVG generado (prohibido).
+- Revisitar si: hacen falta gráficas interactivas (zoom, comparar periodos).
+
+### ADR-91: El propietario ve cifras de cuenta, no contenido, y de un menor solo lo mínimo
+- Motivo: encaja con «datos mínimos» para menores (F01) y con F08 (el tutor ve el contenido; el propietario, no). La lista enseña de un menor su identificador de acceso, estado, fechas, gasto, tope y tutor; nunca su nombre visible, temas, cursos, respuestas ni conversaciones. Un test de arquitectura impide que `owner/` consulte columnas de contenido y otro recorre el JSON buscando campos prohibidos. El propietario puede desactivar a un menor porque desactivar es reversible (F01); no puede borrar cuentas.
+- Alternativas descartadas: que el propietario vea nombres y temas de menores (innecesario para operar); lista solo agregada (no permitiría actuar sobre una cuenta concreta).
+- Revisitar si: se pide moderación de contenido (sería una feature con filtros y auditoría propias).

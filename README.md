@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada; **F14** (panel del propietario, ADR-87 a 91) en curso. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -189,6 +189,18 @@ En **Tus cursos** (inicio), **Seleccionar** deja marcar varios cursos y **Borrar
 - **Es definitivo** (no hay papelera): se van las lecciones, ejercicios, intentos, conversaciones con el tutor, ilustraciones y códigos de compartir del curso. **Se conserva** tu gasto de IA, tu material subido y las copias que otras personas ya hicieron de tu curso.
 - **No se borra un curso que se está preparando** (en cola o generándose): espera a que termine. Si seleccionas varios y alguno está ocupado, no se borra ninguno.
 - **Solo los adultos borran.** Los menores no ven la opción (su adulto tutor ve su actividad) y el tutor no puede borrar los cursos de su menor.
+
+## Panel del propietario (F14)
+
+Una pantalla de administración, **`/propietario`**, con las estadísticas de la aplicación y algunas acciones sobre las cuentas. Solo la ve el **propietario**: la cuenta de adulto con el correo verificado que coincide con la variable `OWNER_EMAIL` del backend. Sin la variable no hay propietario ni panel (la app funciona igual), y el propietario nunca se elige desde la web ni se guarda en la base de datos: para cambiarlo se cambia la variable y se reinicia el backend. Cualquier otra persona recibe «no encontrado».
+
+- **Gasto de IA:** hoy, mes y rango (7, 30 o 90 días), proyección a fin de mes, % del tope global, coste por día, por modelo, proveedor, tarea y usuario, errores, bloqueos, duración media y p95, coste por curso y por usuario activo, y la tabla de **precios vigentes** con su fecha de verificación (`verified-on` en `ai-pricing.properties`; sin ella, «sin fecha»). Es el coste real pagado a los proveedores; el benchmark sale aparte.
+- **Usuarios y conexiones:** altas por día, adultos y menores, cuentas por estado, activos en 1, 7 y 30 días (con al menos un inicio de sesión), sesiones abiertas, inicios de sesión correctos, fallidos y bloqueados. No se guarda IP útil ni geolocalización, así que no hay mapas.
+- **Uso y salud:** cursos por estado y por día, piezas, lecciones, ejercicios, exámenes, preguntas al tutor, material, ilustraciones, códigos de compartir y cursos borrados; colas, fallos, errores de IA de las últimas 24 horas, bloqueos de contenido y tamaño de la base de datos.
+- **Acciones:** **desactivar** o **reactivar** una cuenta, **revocar sus sesiones** y fijar su **tope mensual de IA** (0 a 500 USD) o volver al de por defecto. Cada acción pide confirmación y queda en la auditoría con ids. El propietario no puede desactivarse ni revocarse a sí mismo.
+- **Privacidad:** el panel **nunca** enseña contenido (cursos, temas, lecciones, respuestas, conversaciones, documentos). De un **menor** solo muestra su identificador de acceso, estado, fechas, gasto, tope y su tutor; puede desactivarlo, pero no ver lo que escribe. Los adultos aparecen con su nombre y correo.
+- **Límites:** 120 consultas y 60 acciones por hora; nada se refresca solo (botón «Actualizar»). Las gráficas son SVG propios, cada una con su tabla debajo.
+- **Activarlo:** pon tu correo en `OWNER_EMAIL` (en tu `.env`, que no se versiona), regístrate y verifica ese correo, y reinicia el backend. Antes de abrir la aplicación a Internet hacen falta HTTPS y la cookie `Secure` (`sdd/BACKLOG.md`, D1–D6 y F14-1): el panel es lo más sensible de la app.
 
 ## Ilustraciones de portada con IA (F12)
 

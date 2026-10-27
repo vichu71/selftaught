@@ -196,3 +196,17 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F13-4 | 🟡 Quien canjeó un código no se entera de que el original desapareció (su copia sigue) | Fuera de v1 |
 | F13-5 | 🟡 La fila de `course_intake` se queda vacía para siempre (cuenta para el límite de consultas) | ADR-85; limpiar al pasar el límite a su propio contador |
 | F13-6 | 🟡 `IllustrationGeneratorTest.ac4_…` falló una vez en una pasada completa del backend y pasó suelto y al repetir | Posible contaminación entre clases por la BD compartida (como las que F12 ya corrigió); vigilar |
+
+## Anotado en F14 (panel del propietario)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F14-1 | 🟠 El panel es el endpoint más sensible de la app: antes de abrirla a Internet hacen falta HTTPS y la cookie `Secure` (D2, D3) y comprobar los puertos (D6) | Mismo trabajo que D1–D6; sin ello, la sesión del propietario viaja en claro |
+| F14-2 | 🟡 Un solo propietario y sin 2FA | ADR-87; varios propietarios o roles intermedios exigirían una tabla de roles con auditoría y 2FA |
+| F14-3 | 🟡 Cambiar `OWNER_EMAIL` exige reiniciar el backend (se lee al arrancar) | Es intencionado: solo quien controla el despliegue decide quién es propietario |
+| F14-4 | 🟡 «Activo» = al menos un inicio de sesión en la ventana: una sesión larga sin volver a entrar no cuenta | D7; si molesta, registrar la última actividad por sesión |
+| F14-5 | 🟡 La lista de usuarios calcula gasto y actividad sobre todas las cuentas para poder ordenar | ADR-89; válido para cientos de cuentas; con miles, resumen diario precalculado |
+| F14-6 | 🟡 Sin métricas del servidor (CPU, memoria, latencia HTTP), alertas por correo o push, exportar a CSV ni comparar periodos | Fuera de v1; las métricas del servidor necesitarían un sistema aparte |
+| F14-7 | 🟡 El propietario no puede borrar cuentas, moderar contenido ni cambiar topes globales o precios desde la pantalla | ADR-91; siguen en la configuración |
+| F14-8 | 🟡 Decidir si el aviso al menor de F08 («tu adulto ve tus respuestas, intentos y conversaciones») debe nombrar también que el propietario ve cifras de cuenta y gasto | Hoy solo lo dice el README; el propietario nunca ve contenido |
+| F14-9 | 🟡 Los topes por usuario fijados desde el panel no avisan al usuario del cambio | Solo se enteran al llegar al tope (mensaje de siempre) |
