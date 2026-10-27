@@ -104,7 +104,7 @@ onMounted(async () => {
           <input type="checkbox" :checked="allSelected" data-testid="courses-select-all" @change="toggleAll(($event.target as HTMLInputElement).checked)" />
           Seleccionar todos
         </label>
-        <span role="status" data-testid="courses-selected-count">{{ selected.length }} seleccionados</span>
+        <span role="status" data-testid="courses-selected-count">{{ selected.length === 1 ? '1 seleccionado' : `${selected.length} seleccionados` }}</span>
         <UiButton variant="danger" :disabled="selected.length === 0 || deleting" data-testid="courses-delete-open" @click="dialogOpen = true">Borrar ({{ selected.length }})</UiButton>
       </template>
     </div>

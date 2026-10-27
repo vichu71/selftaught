@@ -195,3 +195,4 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F13-3 | 🟡 El borrado de cursos no tiene límite de frecuencia | ADR-84: no gasta ni toca la IA |
 | F13-4 | 🟡 Quien canjeó un código no se entera de que el original desapareció (su copia sigue) | Fuera de v1 |
 | F13-5 | 🟡 La fila de `course_intake` se queda vacía para siempre (cuenta para el límite de consultas) | ADR-85; limpiar al pasar el límite a su propio contador |
+| F13-6 | 🟡 `IllustrationGeneratorTest.ac4_…` falló una vez en una pasada completa del backend y pasó suelto y al repetir | Posible contaminación entre clases por la BD compartida (como las que F12 ya corrigió); vigilar |
