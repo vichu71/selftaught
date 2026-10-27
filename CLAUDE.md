@@ -6,7 +6,7 @@ familiar con base multiusuario. Es un laboratorio, no formación reglada.
 ## Cómo se trabaja aquí
 - El proyecto se construye por features con SDD. Fuente de verdad: `sdd/PROJECT.md` (manda sobre
   cualquier suposición) y `sdd/features/`. Proceso: `sdd/SDD_PROCESS.md`.
-- Para arrancar una feature: `/sdd-feature F01` (o F02...F10).
+- Para arrancar una feature: `/sdd-feature F01` (o F02...F12).
 - No se escribe código antes de tener tests (FASE 4 antes que FASE 6). Si algo no está claro, se pregunta.
 - Stack: Vue 3 + TypeScript, Spring Boot, PostgreSQL + pgvector, Docker Compose, embeddings con Ollama.
 
@@ -165,6 +165,14 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - El camino se dibuja con `map/roadPath.ts` (función pura) sobre las posiciones de `layoutMap`; la lista equivalente, los ids (`map-item-*`, `map-link-*`) y los roles de F10 no cambian. Todo par de color nuevo (cielo, hierba, camino) entra en `tests/design/contrast.spec.ts`.
 
 - Lecciones de F11: un `width`/`height` genérico en una clase de ilustración (`.plant`) pisa el tamaño que cada sitio le da; se fija el tamaño en el contexto (`.continue-plant`, `.plant-card .plant`). Tras reconstruir el stack hay que **recargar** el navegador (conserva el `index.html` antiguo). El contraste del foco exige un color que se distinga a la vez del fondo claro y del botón primario: en claro, un azul casi negro; en noche, blanco con el primario más oscuro.
+
+## Reglas de F12 (ilustraciones de portada generadas por IA)
+- Contrato y criterios de aceptación: `sdd/specs/US-F12-ilustraciones-ia.md`; diseño y ADR-78 a 83: `sdd/specs/ART-F12-propuesta-ilustraciones.md` y `ARCHITECTURE.md`. Una imagen por **tema**; la imagen **ambienta, no enseña hechos** y siempre va rotulada «Ilustración generada por IA» con su texto alternativo.
+- La imagen es la tarea **`IMAGE`** de `AiGateway` (`generateImage`); el precio es **por imagen** (`image-pricing`, con la fecha en que se verificó) y sin proveedor configurado las ilustraciones quedan desactivadas y la app arranca igual. Nadie fuera de `ai/` importa un adaptador ni escribe un modelo o un host (`ImageArchitectureTest`).
+- El paquete `illustrations/` vive **fuera de `course_piece`** (no cuenta para las 150 piezas ni para el progreso) y **nunca cambia `course.status`**: un fallo, un tope o una pausa de imágenes no pausa un curso. La cola la gobierna su propio hilo (`app.illustrations.worker.enabled=false` en los tests; `IllustrationGenerator.processPending()` es síncrono) con el `GenerationLock` del usuario. **Toda** consulta sobre `course_image` lleva `owner_id` (salvo el reclamo con SKIP LOCKED).
+- **La imagen del proveedor es entrada no fiable:** se valida por contenido, se acota antes de decodificar, se reduce y se re-codifica a JPEG sin metadatos con `javax.imageio` (sin dependencias). El prompt es la plantilla `prompts/illustration.txt` (sin marcadores) más el motivo saneado y entre comillas; el texto alternativo es determinista.
+- **Menores:** no generan ni reciben ilustraciones (el servidor lo rechaza y su copia de un curso compartido no lleva imágenes). La copia de un adulto lleva las `DONE` pero nace con `illustrations = false`: **nunca se cobra una generación a quien canjea sin pedirla**. `FAILED` y `BLOCKED` no se reintentan solos (cada intento cuesta).
+- Ni logs, ni auditoría, ni uso de IA llevan el prompt, el título del tema, la imagen ni mensajes del proveedor (solo ids y el tipo de error). Los tests no llaman a ninguna API de pago: el proveedor falso devuelve una imagen generada en memoria. El benchmark de imágenes (`make benchmark-images`) solo lo lanza el usuario, con sus claves y su tope.
 
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio

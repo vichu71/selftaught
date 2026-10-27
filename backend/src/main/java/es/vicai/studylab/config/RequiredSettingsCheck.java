@@ -1,5 +1,6 @@
 package es.vicai.studylab.config;
 
+import es.vicai.studylab.ai.AiImageProperties;
 import es.vicai.studylab.ai.AiProperties;
 import es.vicai.studylab.ai.AiSettingsValidator;
 import java.util.ArrayList;
@@ -40,8 +41,9 @@ public class RequiredSettingsCheck implements ApplicationListener<ApplicationPre
                 .orElseGet(() -> new AiProperties(null, null, null, new AiProperties.Budget(null, 80, AiProperties.BudgetMode.WARN, new java.math.BigDecimal("2.00"), new java.math.BigDecimal("10.00")),
                         16000, 60000, new AiProperties.Retry(2, java.time.Duration.ofSeconds(1)), java.time.Duration.ofMinutes(20),
                         new AiProperties.Embedding(768), new AiProperties.Benchmark(true, null, new java.math.BigDecimal("5.00"), "/out")));
-        missing.addAll(AiSettingsValidator.validate(ai, env.acceptsProfiles(Profiles.of("prod")),
-                env.acceptsProfiles(Profiles.of("benchmark"))));
+        AiImageProperties aiImage = Binder.get(env).bind("app.ai", Bindable.of(AiImageProperties.class)).orElseGet(AiImageProperties::defaults);
+        missing.addAll(AiSettingsValidator.validate(ai, aiImage, env.acceptsProfiles(Profiles.of("prod")),
+                env.acceptsProfiles(Profiles.of("benchmark")) || env.acceptsProfiles(Profiles.of("benchmark-images"))));
 
         // F03: los límites del material tienen que ser positivos (si no, nada se podría subir o se subiría sin límite)
         es.vicai.studylab.material.MaterialProperties material = Binder.get(env)

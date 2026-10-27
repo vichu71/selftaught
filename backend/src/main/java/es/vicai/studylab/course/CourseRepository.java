@@ -82,12 +82,12 @@ public class CourseRepository {
     // ---------- cursos ----------
 
     /** Crea el curso de una consulta; {@code false} si esa consulta ya tenía el suyo (doble «Aceptar»). */
-    public boolean insertCourse(UUID id, UUID ownerId, UUID intakeId, String title, String sheetJson) {
+    public boolean insertCourse(UUID id, UUID ownerId, UUID intakeId, String title, String sheetJson, boolean illustrations) {
         return jdbc.sql("""
-                INSERT INTO course (id, owner_id, intake_id, title, status, sheet)
-                VALUES (:id, :owner, :intake, :title, 'PENDING_GENERATION', CAST(:sheet AS jsonb))
+                INSERT INTO course (id, owner_id, intake_id, title, status, sheet, illustrations)
+                VALUES (:id, :owner, :intake, :title, 'PENDING_GENERATION', CAST(:sheet AS jsonb), :illustrations)
                 ON CONFLICT (intake_id) DO NOTHING""")
-                .param("id", id).param("owner", ownerId).param("intake", intakeId).param("title", title).param("sheet", sheetJson)
+                .param("id", id).param("owner", ownerId).param("intake", intakeId).param("title", title).param("sheet", sheetJson).param("illustrations", illustrations)
                 .update() > 0;
     }
 

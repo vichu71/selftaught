@@ -103,12 +103,26 @@ export interface OutlineChapter {
   exercises?: PieceRef | null
 }
 
+/** La ilustración de un tema (F12): el texto alternativo solo llega cuando está hecha. REMOVED nunca llega: el servidor no la devuelve. */
+export interface TopicImage {
+  status: 'PENDING' | 'DONE' | 'FAILED' | 'BLOCKED'
+  alt?: string
+}
+
+/** Lo que el asistente enseña junto al interruptor «Con ilustraciones» (F12). */
+export interface IllustrationOffer {
+  available: boolean
+  pricePerImageUsd: number
+  maxTopics: number
+}
+
 export interface OutlineTopic {
   id: string
   title: string
   summary: string
   chapters: OutlineChapter[]
   exam?: PieceRef | null
+  image?: TopicImage | null
 }
 
 /** El curso con su temario y progreso (F05). Un curso que aún espera en la cola llega sin temario. */
@@ -122,6 +136,8 @@ export interface CourseDetail extends Course {
   version?: number
   /** Solo en una copia (F09): la versión del original de la que salió. Nunca su id. */
   copy?: { originVersion?: number }
+  /** El curso se creó con las ilustraciones activadas (F12). */
+  illustrations?: boolean
 }
 
 /** Un ejercicio antes de responder: la solución llega al enviar la respuesta (F06, ADR-50). */
@@ -149,6 +165,9 @@ export interface Piece {
   sources: { n: number; page?: number | null }[]
   done?: boolean
   navigation?: { previous?: string; next?: string }
+  /** El tema de la pieza y su ilustración, si la tiene (F12). */
+  topicId?: string
+  image?: TopicImage | null
 }
 
 export interface MaterialList {
@@ -350,8 +369,11 @@ export const api = {
   deleteMaterial: (id: string) => request<void>('DELETE', `/api/material/${encodeURIComponent(id)}`),
 
   startIntake: (topic: string, documentIds: string[]) => request<IntakeResult>('POST', '/api/courses/intake', { topic, documentIds }),
-  createCourse: (intakeId: string, answers: { questionId: string; optionId: string }[]) =>
-    request<Course>('POST', '/api/courses', { intakeId, answers }),
+  createCourse: (intakeId: string, answers: { questionId: string; optionId: string }[], illustrations?: boolean) =>
+    request<Course>('POST', '/api/courses', illustrations === undefined ? { intakeId, answers } : { intakeId, answers, illustrations }),
+  getIllustrationOffer: () => request<IllustrationOffer>('GET', '/api/illustrations/offer'),
+  regenerateTopicImage: (courseId: string, topicId: string) => request<CourseDetail>('POST', `${topicImagePath(courseId, topicId)}/regenerate`),
+  removeTopicImage: (courseId: string, topicId: string) => request<CourseDetail>('DELETE', topicImagePath(courseId, topicId)),
   listCourses: () => request<Course[]>('GET', '/api/courses'),
   getCourse: (id: string) => request<CourseDetail>('GET', `/api/courses/${encodeURIComponent(id)}`),
   getPiece: (courseId: string, pieceId: string) =>
@@ -402,6 +424,11 @@ export const api = {
   clearTutor: (courseId: string, pieceId: string) => request<void>('DELETE', `${piecePath(courseId, pieceId)}/tutor`),
   getResults: () => request<Results>('GET', '/api/results'),
   getUsage: () => request<Usage>('GET', '/api/ai/usage'),
+}
+
+/** Dirección de la ilustración de un tema (F12): siempre del propio origen y con los identificadores codificados; se pinta con un `<img>`, no con `fetch`. */
+export function topicImagePath(courseId: string, topicId: string): string {
+  return `/api/courses/${encodeURIComponent(courseId)}/topics/${encodeURIComponent(topicId)}/image`
 }
 
 /** Dirección de la exportación del curso (se abre como descarga; no es una llamada de la API). */

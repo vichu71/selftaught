@@ -57,6 +57,39 @@ public class GeminiProvider extends HttpProvider {
                 finish(candidate.path("finishReason").asText("")));
     }
 
+    /**
+     * Imágenes (F12): generateContent con responseModalities ["IMAGE"] y la imagen en candidates[0].content.parts[].inlineData (base64). Una petición o una respuesta bloqueadas
+     * por seguridad (promptFeedback.blockReason, finishReason IMAGE_SAFETY, SAFETY o PROHIBITED_CONTENT) son una negativa por moderación. Formato por confirmar con el benchmark.
+     */
+    @Override
+    public ImageResult image(ImageCall call) {
+        if (!MODEL.matcher(call.model()).matches()) throw new ProviderException(ProviderErrorKind.BAD_REQUEST, "Modelo no válido");
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", call.prompt())))));
+        body.put("generationConfig", Map.of("responseModalities", List.of("IMAGE"), "imageConfig", Map.of("aspectRatio", "1:1")));
+
+        Raw raw = post("/v1beta/models/{model}:generateContent", Map.of("x-goog-api-key", apiKey), body, call.model());
+        if (!raw.ok()) throw classify(raw);
+
+        JsonNode root = parse(raw);
+        if (root.path("promptFeedback").has("blockReason")) throw new ProviderException(ProviderErrorKind.MODERATION, "El proveedor rechazó la petición");
+        JsonNode candidate = root.path("candidates").path(0);
+        String finish = candidate.path("finishReason").asText("");
+        if (containsAny(finish, "SAFETY", "PROHIBITED_CONTENT", "BLOCKLIST")) throw new ProviderException(ProviderErrorKind.MODERATION, "El proveedor rechazó la imagen");
+        for (JsonNode part : candidate.path("content").path("parts")) {
+            JsonNode inline = part.has("inlineData") ? part.get("inlineData") : part.path("inline_data");
+            String data = inline.path("data").asText("");
+            if (data.isBlank()) continue;
+            try {
+                return new ImageResult(java.util.Base64.getMimeDecoder().decode(data), inline.path("mimeType").asText(inline.path("mime_type").asText("image/png")));
+            } catch (IllegalArgumentException e) {
+                throw invalid();
+            }
+        }
+        throw invalid();
+    }
+
     private static FinishReason finish(String reason) {
         return switch (reason) {
             case "STOP" -> FinishReason.STOP;

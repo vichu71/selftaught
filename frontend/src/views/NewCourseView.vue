@@ -1,12 +1,27 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { api, type IllustrationOffer } from '@/api/client'
+import IllustrationToggle from '@/components/IllustrationToggle.vue'
+import { useAuthStore } from '@/stores/auth'
 import { BLOCKED_TEXT, MAX_DOCUMENTS, useCourseStore } from '@/stores/course'
 import { useMaterialStore } from '@/stores/material'
 
 const course = useCourseStore()
 const material = useMaterialStore()
+const auth = useAuthStore()
 const router = useRouter()
+
+// «Con ilustraciones» (F12): un menor nunca lo ve; si la oferta no se puede cargar, el asistente funciona como siempre, sin el interruptor
+const offer = ref<IllustrationOffer | null>(null)
+onMounted(async () => {
+  if (auth.user?.kind === 'MINOR') return
+  try {
+    offer.value = await api.getIllustrationOffer()
+  } catch {
+    offer.value = null
+  }
+})
 
 const statusLabels = { UPLOADED: 'subido', PROCESSING: 'procesando…', READY: 'listo', ERROR: 'con error' } as const
 
@@ -121,6 +136,7 @@ function restart() {
         Con {{ course.documentIds.length }} {{ course.documentIds.length === 1 ? 'documento tuyo' : 'documentos tuyos' }}.
       </p>
       <p class="muted">Generado por IA.</p>
+      <IllustrationToggle v-if="auth.user?.kind !== 'MINOR'" v-model="course.illustrations" :offer="offer" />
 
       <p v-if="course.createError" class="error" role="alert" data-testid="create-error">{{ course.createError }}</p>
       <button v-if="course.expired" type="button" data-testid="restart" @click="restart">Empezar de nuevo</button>

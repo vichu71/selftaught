@@ -9,6 +9,7 @@ import es.vicai.studylab.audit.AuditService;
 import es.vicai.studylab.course.CourseRepository;
 import es.vicai.studylab.course.CourseService;
 import es.vicai.studylab.course.CourseSheet;
+import es.vicai.studylab.illustrations.IllustrationQuery;
 import es.vicai.studylab.security.AuthUser;
 import es.vicai.studylab.web.ApiException;
 import java.math.BigDecimal;
@@ -44,13 +45,13 @@ public class CourseContentService {
     public record ChapterView(UUID id, String title, String objective, PieceRef lesson, PieceRef exercises) {}
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    public record TopicView(UUID id, String title, String summary, List<ChapterView> chapters, PieceRef exam) {}
+    public record TopicView(UUID id, String title, String summary, List<ChapterView> chapters, PieceRef exam, IllustrationQuery.TopicImage image) {}
 
     /** El curso de F04 más lo que añade F05; {@code stopReason} solo aparece si el curso está parado. */
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record CourseDetailView(UUID id, String title, String status, CourseSheet sheet, List<CourseRepository.DocumentRef> documents,
                                    Instant createdAt, String stopReason, Progress progress, BigDecimal costUsd, boolean generatedByAi, Boolean waitingForOther,
-                                   int version, Copy copy, List<TopicView> outline) {}
+                                   int version, Copy copy, boolean illustrations, List<TopicView> outline) {}
 
     public record SourceView(int n, Integer page) {}
 
@@ -65,20 +66,23 @@ public class CourseContentService {
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record PieceView(UUID id, String kind, String status, String title, boolean generatedByAi, String markdown,
-                            List<ExerciseView> exercises, List<QuestionView> questions, List<SourceView> sources, Boolean done, Navigation navigation) {}
+                            List<ExerciseView> exercises, List<QuestionView> questions, List<SourceView> sources, Boolean done, Navigation navigation,
+                            UUID topicId, IllustrationQuery.TopicImage image) {}
 
     private final CourseService courses;
     private final CourseContentRepository content;
     private final GenerationProperties props;
     private final AuditService audit;
+    private final IllustrationQuery illustrations;
     private final ObjectMapper json;
 
     public CourseContentService(CourseService courses, CourseContentRepository content, GenerationProperties props, AuditService audit,
-                                ObjectMapper json) {
+                                IllustrationQuery illustrations, ObjectMapper json) {
         this.courses = courses;
         this.content = content;
         this.props = props;
         this.audit = audit;
+        this.illustrations = illustrations;
         this.json = json;
     }
 
@@ -110,15 +114,17 @@ public class CourseContentService {
             chaptersByTopic.computeIfAbsent(chapter.topicId(), k -> new ArrayList<>())
                     .add(new ChapterView(chapter.id(), chapter.title(), chapter.objective(), ref(lessons.get(chapter.id())), ref(exercises.get(chapter.id()))));
         }
+        Map<UUID, IllustrationQuery.TopicImage> images = illustrations.byTopic(base.id(), owner);
         List<TopicView> outline = new ArrayList<>();
         for (CourseContentRepository.TopicRow topic : content.topics(base.id(), owner)) {
-            outline.add(new TopicView(topic.id(), topic.title(), topic.summary(), chaptersByTopic.getOrDefault(topic.id(), List.of()), ref(exams.get(topic.id()))));
+            outline.add(new TopicView(topic.id(), topic.title(), topic.summary(), chaptersByTopic.getOrDefault(topic.id(), List.of()), ref(exams.get(topic.id())),
+                    images.get(topic.id())));
         }
         CourseContentRepository.VersionInfo info = content.versionInfo(base.id(), owner);
         return new CourseDetailView(base.id(), base.title(), base.status(), base.sheet(), base.documents(), base.createdAt(),
                 content.stopReason(base.id(), owner).orElse(null), new Progress(done, pieces.size()), content.cost(base.id(), owner), true,
                 "PENDING_GENERATION".equals(base.status()) && content.otherGenerating(base.id(), owner) ? Boolean.TRUE : null, info.version(),
-                info.copy() ? new Copy(info.originVersion()) : null, outline);
+                info.copy() ? new Copy(info.originVersion()) : null, illustrations.enabled(base.id(), owner), outline);
     }
 
     private static PieceRef ref(CourseContentRepository.PieceStatus piece) {
@@ -141,7 +147,8 @@ public class CourseContentService {
                 lesson ? sources(piece) : List.of(),
                 lesson ? content.lessonDone(piece.id(), user.id()) : null,
                 lesson ? new Navigation(content.neighbourLesson(courseId, user.id(), piece.seq(), true).orElse(null),
-                        content.neighbourLesson(courseId, user.id(), piece.seq(), false).orElse(null)) : null);
+                        content.neighbourLesson(courseId, user.id(), piece.seq(), false).orElse(null)) : null,
+                piece.topicId(), illustrations.byTopic(courseId, user.id()).get(piece.topicId()));
     }
 
     private List<ExercisesParser.Item> exercises(CourseContentRepository.PieceContent piece) {

@@ -7,6 +7,7 @@ import ExamTake from '@/components/ExamTake.vue'
 import ExercisePractice from '@/components/ExercisePractice.vue'
 import LessonControls from '@/components/LessonControls.vue'
 import MarkdownContent from '@/components/MarkdownContent.vue'
+import TopicCover from '@/components/TopicCover.vue'
 import TutorChat from '@/components/TutorChat.vue'
 import TutorLauncher from '@/components/TutorLauncher.vue'
 
@@ -51,6 +52,9 @@ watch(() => route.params.pieceId, (id, old) => {
     <p v-else-if="failed" class="error" role="alert" data-testid="piece-error">No se pudo cargar. Inténtalo más tarde.</p>
 
     <template v-if="piece">
+      <div v-if="piece.kind === 'LESSON' && piece.topicId && piece.image?.status === 'DONE'" class="piece-cover" data-testid="piece-cover">
+        <TopicCover :course-id="courseId" :topic-id="piece.topicId" :image="piece.image" />
+      </div>
       <p v-if="piece.status === 'PENDING'" class="card" data-testid="piece-pending">Esta parte del curso se está preparando. Vuelve en un rato.</p>
       <p v-else-if="piece.status === 'FAILED'" class="card" data-testid="piece-failed">Esta parte del curso no se pudo preparar.</p>
 

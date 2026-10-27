@@ -42,7 +42,8 @@ public class CourseService {
 
     public record AnswerRequest(String questionId, String optionId) {}
 
-    public record CreateRequest(String intakeId, List<AnswerRequest> answers) {}
+    /** {@code illustrations}: el interruptor «Con ilustraciones» (F12); apagado si no viene. */
+    public record CreateRequest(String intakeId, List<AnswerRequest> answers, Boolean illustrations) {}
 
     public record OptionView(String id, String label, @JsonProperty("isDefault") boolean isDefault) {}
 
@@ -135,6 +136,9 @@ public class CourseService {
         if ("CONSUMED".equals(intake.status())) return new Created(existing(intakeId, user.id()), false);
         if (intake.expired()) throw CourseException.intakeExpired();
         if (courses.pendingCourses(user.id()) >= props.maxPending()) throw CourseException.courseLimitReached(props.maxPending());
+        // Las ilustraciones solo existen para un adulto y con proveedor de imagen configurado (F12); pedirlas sin eso es un error, no se ignora
+        boolean illustrations = Boolean.TRUE.equals(request.illustrations());
+        if (illustrations && (user.kind() == UserKind.MINOR || !gateway.imageEnabled())) throw es.vicai.studylab.illustrations.IllustrationException.unavailable();
 
         List<IntakeParser.Question> questions = read(intake.questionsJson(), new TypeReference<List<IntakeParser.Question>>() {});
         List<UUID> documents = read(intake.documentIdsJson(), new TypeReference<List<String>>() {}).stream().map(UUID::fromString).toList();
@@ -155,7 +159,7 @@ public class CourseService {
 
         UUID courseId = UUID.randomUUID();
         Boolean inserted = transaction.execute(status -> {
-            if (!courses.insertCourse(courseId, user.id(), intakeId, intake.topic(), write(sheet))) return false; // otro «Aceptar» se adelantó
+            if (!courses.insertCourse(courseId, user.id(), intakeId, intake.topic(), write(sheet), illustrations)) return false; // otro «Aceptar» se adelantó
             for (UUID doc : documents) courses.linkDocument(courseId, doc, user.id());
             courses.consumeIntake(intakeId, user.id());
             audit.record("COURSE_CREATED", AuditService.OK, user.id(), user.id(), ip, Map.of("courseId", courseId.toString()));

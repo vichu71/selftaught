@@ -4,7 +4,7 @@ COMPOSE = docker compose $(if $(ENV_FILE),--env-file $(ENV_FILE),)
 DEV     = $(COMPOSE) -f compose.yaml -f compose.dev.yaml --profile dev
 TEST    = $(COMPOSE) -f compose.yaml --profile test
 
-.PHONY: up down logs health test-backend test-frontend test-env seed reset-dev-db pull-embedding-model benchmark
+.PHONY: up down logs health test-backend test-frontend test-env seed reset-dev-db pull-embedding-model benchmark benchmark-images
 
 up:
 	$(DEV) up -d --build --wait
@@ -48,3 +48,9 @@ pull-embedding-model:
 benchmark:
 	@printf "Esto llama a APIs de pago con tus claves (tope del run: APP_AI_BENCHMARK_BUDGET_USD, 5 USD por defecto). Escribe 'si' para continuar: " && read answer && [ "$$answer" = "si" ]
 	$(COMPOSE) -f compose.yaml --profile benchmark run --rm --build benchmark
+
+# GASTA DINERO REAL (F12): pide una imagen por tema a cada modelo de APP_AI_BENCHMARK_IMAGE_MODELS con tus claves, hasta el tope del run.
+# El informe y la página para compararlas quedan en sdd/benchmarks/imagenes/. Pide confirmación.
+benchmark-images:
+	@printf "Esto llama a APIs de pago con tus claves (tope del run: APP_AI_BENCHMARK_IMAGE_BUDGET_USD, 2 USD por defecto). Escribe 'si' para continuar: " && read answer && [ "$$answer" = "si" ]
+	$(COMPOSE) -f compose.yaml --profile benchmark-images run --rm --build benchmark-images

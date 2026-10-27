@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import type { CourseStatus, OutlineTopic, StudyOverview } from '@/api/client'
+import TopicCover from '@/components/TopicCover.vue'
 import MapLegend from './MapLegend.vue'
 import MapStation from './MapStation.vue'
 import { defaultCollapsed, layoutMap, type Station } from './layoutMap'
@@ -38,6 +39,9 @@ const summary = computed(() => `Mapa del curso: ${lessonsDone.value} de ${lesson
 
 const stationsOf = (topicId: string): Station[] => full.value.stations.filter((s) => s.topicId === topicId)
 const topicTitle = (id: string) => props.outline.find((t) => t.id === id)?.title ?? ''
+// La portada (F12) se dibuja en todos los temas si alguno tiene ilustración (los demás, con la planta); un curso sin ellas se ve igual que antes
+const imageOf = (id: string) => props.outline.find((t) => t.id === id)?.image ?? null
+const withCovers = computed(() => props.outline.some((t) => t.image))
 
 function stateText(s: Station): string {
   if (s.state === 'done') return s.kind === 'exam' ? 'Tema superado' : 'Hecha'
@@ -117,6 +121,10 @@ const travelled = computed(() => {
     <ol class="map-list" data-testid="map-list" aria-label="Paradas del curso">
       <li v-for="(zone, zi) in full.zones" :key="zone.topicId" class="map-topic">
         <header class="map-topic-head">
+          <TopicCover
+            v-if="withCovers" :data-testid="`topic-cover-${zone.topicId}`" class="map-topic-cover"
+            :course-id="courseId" :topic-id="zone.topicId" :title="topicTitle(zone.topicId)" :image="imageOf(zone.topicId)"
+          />
           <div class="map-topic-title">
             <p class="map-topic-kicker">Tema {{ zi + 1 }} · {{ zone.done }} de {{ zone.total }}</p>
             <h3>{{ topicTitle(zone.topicId) }}</h3>

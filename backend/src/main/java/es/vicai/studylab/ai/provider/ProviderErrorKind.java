@@ -11,7 +11,9 @@ public enum ProviderErrorKind {
     AUTH(false),
     BAD_REQUEST(false),
     MODEL_NOT_FOUND(false),
-    INVALID_RESPONSE(false);
+    INVALID_RESPONSE(false),
+    /** El proveedor rechaza la petición de imagen por su moderación: reintentar no sirve (F12). */
+    MODERATION(false);
 
     private final boolean retryable;
 

@@ -49,6 +49,7 @@ Otros comandos:
 | `make reset-dev-db` | Borra y recrea la BD de **desarrollo** (pide confirmación) |
 | `make pull-embedding-model` | Descarga en el contenedor de Ollama el modelo de embeddings (una vez) |
 | `make benchmark` | Benchmark de modelos (con claves reales; gasta dinero). Ver "IA y control de gasto" |
+| `make benchmark-images` | Benchmark de imágenes (con claves reales; gasta dinero). Ver "Ilustraciones de portada con IA (F12)" |
 
 El `Makefile` es un envoltorio fino de `docker compose`: si no tienes `make` (p. ej. en Windows),
 ejecuta el comando `docker compose` equivalente que aparece en cada objetivo.
@@ -180,6 +181,17 @@ En la página de un curso, **Editar curso** abre su editor. Puedes **renombrar, 
 - **Tengo un código:** quien lo introduce (adulto o menor) recibe **su propia copia**, que puede editar sin afectar al original. La copia **no lleva** tu material subido, ni las fuentes de las lecciones, ni tu progreso, intentos, conversaciones ni ningún dato tuyo. Un código que no vale (mal escrito, caducado o revocado) responde siempre igual,
   y hay un límite de intentos por usuario.
 - **Menores:** lo que escriben al editar y toda la copia que canjean pasan por el filtro de contenido; si salta, no se guarda ni se crea nada y su adulto tutor lo ve en los avisos de su panel.
+
+## Ilustraciones de portada con IA (F12)
+
+Al crear un curso, un adulto puede activar **«Con ilustraciones»** (apagado por defecto): cada **tema** recibe una ilustración de portada generada por IA, que sale en su tarjeta del curso y en la cabecera de sus lecciones con el rótulo «Ilustración generada por IA» y su texto alternativo. Es para **ambientar, no para enseñar hechos** (las imágenes por IA inventan detalles): contrástalo siempre con tu material.
+
+- **Coste:** el asistente enseña el precio por imagen y el máximo posible (precio × máximo de temas) antes de aceptar; es una estimación y cuenta para tu tope mensual de IA. Con calidad baja o media suele ser de céntimos por curso.
+- **Segundo plano:** el curso se puede estudiar sin esperar; las imágenes llegan después, una a una. Si una falla o el proveedor la rechaza, se ve la planta de siempre y no pasa nada.
+- **Editar:** en la edición del curso, por tema, puedes **quitar** la ilustración o **volver a generarla** (cuenta para tu gasto y tiene límites).
+- **Compartir:** la copia por código lleva las ilustraciones ya hechas, pero no genera nuevas ni cobra a quien canjea. Los **menores no** generan ni reciben ilustraciones.
+- **Activarlo:** hace falta un proveedor de imagen de pago: define `APP_AI_TASKS_IMAGE_PROVIDER` y `APP_AI_TASKS_IMAGE_MODEL` (OpenAI o Google) con su clave y su precio por imagen en `ai-pricing.properties`. Sin ello, las ilustraciones quedan desactivadas y la app funciona igual.
+- **Elegir modelo:** `make benchmark-images` pide una imagen por tema a los modelos de `APP_AI_BENCHMARK_IMAGE_MODELS` y deja en `sdd/benchmarks/` un informe y una página para compararlas. **Gasta dinero real** (tope `APP_AI_BENCHMARK_IMAGE_BUDGET_USD`): solo lo lanzas tú.
 
 ## La interfaz «Mundo que crece» (F11)
 

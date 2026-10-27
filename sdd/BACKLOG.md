@@ -171,3 +171,17 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F11-5 | 🟡 Heredan los pendientes de F10 (F10-8 a F10-11: migrar vistas a `ui/`, pantalla de edición densa, 360/430 px y zoom a mano, contraste con herramienta en el navegador) | |
 | F11-6 | 🟠 nginx puede dejar que el navegador conserve el `index.html` antiguo tras un despliegue y mostrar la hoja de estilos vieja | Añadir `Cache-Control: no-cache` para `index.html` (y caché larga solo para `/assets/*` con hash); anotar con D1–D6 |
 | F11-7 | 🟡 Las colinas dejan espacio vacío a la derecha con pocas paradas | Decoración (árboles, flores) si se quiere más «paisaje» |
+
+## Anotado en F12 (ilustraciones de portada con IA)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F12-1 | 🟠 El modelo de imagen por defecto no está medido: hasta que el usuario lance `make benchmark-images` con sus claves no hay un modelo recomendado ni un coste real por curso | Lo decide el benchmark (ADR-83); anotar el resultado y su fecha en `ai-pricing.properties` |
+| F12-2 | 🟡 Los formatos de las llamadas de imagen (OpenAI y Google) se prueban solo **según la documentación**, no contra el servicio real | Se confirman con el benchmark de imágenes |
+| F12-3 | 🟡 Una imagen por tema; ni por lección, ni varias, ni diagramas SVG o Mermaid, ni imágenes reales de Wikimedia | Fuera de v1; el análisis previo recomienda diagramas para ciencias y matemáticas |
+| F12-4 | 🟡 Los menores no ven ilustraciones y su copia de un curso compartido no las lleva: una imagen no se puede filtrar con `ContentGuard` | Se abre si hay moderación de imágenes propia (ADR-82) |
+| F12-5 | 🟡 El texto alternativo es genérico («Ilustración generada por IA sobre «título»») porque el modelo de texto no ve la imagen | Un modelo con visión podría describirla (ADR-81) |
+| F12-6 | 🟡 La estimación de coste usa el máximo de temas posible, no el número real (lo decide el servidor al crear la ficha) | Mostrarlo exacto exigiría conocer la ficha antes de aceptar |
+| F12-7 | 🟡 La exportación JSON no incluye las ilustraciones | Binario; fuera de v1 |
+| F12-8 | 🟡 Una instrucción maliciosa dentro del título de un tema no se detecta; la defensa es la estructura del prompt y la moderación del proveedor | ADR-81 |
+| F12-9 | 🟡 Quien canjea una copia no puede activar las ilustraciones para los temas que no las tengan | Sería una opción nueva con su coste a la vista |

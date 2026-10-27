@@ -20,5 +20,7 @@ public enum AiErrorKind {
     USER_NOT_ALLOWED,
     /** Ya hay una generación en curso para este usuario. */
     GENERATION_BUSY,
+    /** El proveedor rechaza la imagen por su moderación: no es un error técnico y no se reintenta (F12). */
+    MODERATED,
     CONFIG
 }

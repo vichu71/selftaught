@@ -447,3 +447,77 @@ test('F11 las tipografías de Mapa se retiran y la nueva va autoalojada, sin toc
   assert.ok(!existsSync(`${REPO}/backend/src/main/resources/db/migration/V10__rediseno.sql`), 'F11 no añade migraciones');
   assert.doesNotMatch(read('frontend/index.html'), /fonts\.googleapis|fonts\.gstatic/, 'las fuentes no vienen de terceros');
 });
+
+// ---------- F12: ilustraciones de portada generadas por IA ----------
+
+test('F12 el proveedor de imagen es opcional: el entorno del backend no exige ninguna variable nueva y las claves no llevan valor escrito', () => {
+  const env = base.services.backend.environment ?? {};
+  const imageVars = Object.entries(env).filter(([k]) => /IMAGE/.test(k));
+  assert.ok(imageVars.length >= 2, 'el backend recibe APP_AI_TASKS_IMAGE_PROVIDER y APP_AI_TASKS_IMAGE_MODEL');
+  for (const [k, v] of imageVars) {
+    assert.doesNotMatch(String(v), /\?/, `${k} es opcional (sin :?)`);
+    assert.doesNotMatch(String(v), /sk-|AIza/, `${k} no lleva ningún valor escrito`);
+  }
+  const template = read('.env.example');
+  for (const name of ['APP_AI_TASKS_IMAGE_PROVIDER', 'APP_AI_TASKS_IMAGE_MODEL', 'APP_AI_BENCHMARK_IMAGE_MODELS', 'APP_AI_BENCHMARK_IMAGE_BUDGET_USD']) {
+    assert.match(template, new RegExp(name), `la plantilla de variables documenta ${name}`);
+  }
+});
+
+test('F12 la plantilla de la imagen está en el código, con el estilo común y sin marcadores para el texto del usuario', () => {
+  const file = 'backend/src/main/resources/prompts/illustration.txt';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const text = read(file);
+  assert.doesNotMatch(text, /\{\{|\$\{/, 'la plantilla no lleva marcadores para el texto del usuario');
+  assert.match(text.toLowerCase(), /sin texto/);
+  assert.match(text.toLowerCase(), /personas reales/);
+});
+
+test('F12 el benchmark de imágenes es un servicio de un solo uso en su propio perfil, sin puertos y con su informe en el repositorio', () => {
+  const compose = read('compose.yaml');
+  assert.match(compose, /^ {2}benchmark-images:/m, 'falta el servicio benchmark-images');
+  const block = compose.slice(compose.indexOf('  benchmark-images:'));
+  assert.match(block, /profiles: \["benchmark-images"\]/);
+  assert.match(block, /SPRING_PROFILES_ACTIVE: benchmark-images/);
+  assert.match(block, /studylab\.runner: "true"/);
+  assert.doesNotMatch(block.split(/\n {2}\w[\w-]*:\n/)[0], /\n\s+ports:/, 'el benchmark de imágenes no publica puertos');
+  assert.match(block, /\.\/sdd\/benchmarks/);
+  for (const [name, s] of services(base)) {
+    if (name !== 'benchmark-images') assert.ok(!(s.profiles ?? []).includes('benchmark-images'), `${name} no debe estar en el perfil benchmark-images`);
+  }
+});
+
+test('F12 `make benchmark-images` pide confirmación antes de gastar dinero y no se lanza desde ningún otro objetivo', () => {
+  const makefile = read('Makefile');
+  assert.match(makefile, /^benchmark-images:/m);
+  const target = makefile.slice(makefile.indexOf('benchmark-images:'), makefile.indexOf('benchmark-images:') + 600);
+  assert.match(target, /read answer/);
+  assert.match(target, /--profile benchmark-images/);
+  for (const line of makefile.split('\n')) {
+    if (/^(up|test-backend|test-frontend|test-env|seed):/.test(line)) assert.doesNotMatch(line, /benchmark-images/);
+  }
+});
+
+test('F12 los temas del benchmark de imágenes están fijados y los precios por imagen están documentados', () => {
+  assert.ok(existsSync(`${REPO}/backend/src/main/resources/benchmark/image-topics.properties`), 'faltan los temas del benchmark de imágenes');
+  const pricing = read('backend/src/main/resources/ai-pricing.properties');
+  assert.match(pricing, /image-pricing/, 'el fichero de precios documenta image-pricing');
+  assert.match(pricing, /per-image/);
+});
+
+test('F12 la migración de las ilustraciones es la siguiente y no destruye datos', () => {
+  const file = 'backend/src/main/resources/db/migration/V10__illustrations.sql';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const sql = read(file);
+  assert.match(sql, /CREATE TABLE course_image/i);
+  assert.match(sql, /illustrations\s+boolean/i);
+  assert.match(sql, /'IMAGE'/);
+  assert.match(sql, /'AI_IMAGE'/);
+  assert.doesNotMatch(sql, /DROP TABLE|TRUNCATE/i, 'la migración no borra datos');
+});
+
+test('F12 no añade dependencias al frontend ni cambia la política del servidor web', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F12 no añade librerías al frontend');
+  assert.match(read('frontend/nginx.conf'), /Content-Security-Policy "default-src 'self'/);
+});

@@ -213,6 +213,31 @@ F11 sustituye la piel «Mapa» (F10) por «Mundo» y es **la interfaz definitiva
 - **«Dejarlo por hoy»:** botón de la barra de navegación (`NavBar.vue`) que sube `restKey` en el store `ui` y navega a `/`; `App.vue` usa esa clave en el `RouterView`, así que la vista se monta de nuevo (también si ya estás en el Inicio) y se cierra todo lo abierto en ella (panel del tutor, diálogo de Reka, formularios de edición). No cierra la sesión ni borra nada del servidor; lo escrito y sin enviar se pierde. En el móvil solo se ve el icono (con nombre accesible).
 - **Dependencias:** `@fontsource-variable/fredoka` entra con versión exacta; salen `@fontsource-variable/bricolage-grotesque` y `@fontsource/space-mono`. El test de entorno se actualiza a propósito.
 
+## Ilustraciones de portada generadas por IA (F12)
+
+```
+ Asistente (adulto, con proveedor de imagen) ──► «Con ilustraciones» (apagado; coste estimado con tope: precio por imagen × máx. de temas)     GET /api/illustrations/offer
+ POST /api/courses {…, illustrations: true} ──► course.illustrations (el menor o sin proveedor: 400 ILLUSTRATIONS_UNAVAILABLE) · course.sheet NO cambia (ADR-79)
+ IllustrationWorkerLoop ─► IllustrationGenerator.processPending()                                                                           AC-4..8
+    1. enqueueMissing: una fila PENDING por tema de cada curso READY con illustrations=true que no la tenga (no recrea REMOVED, ni reintenta FAILED/BLOCKED)
+    2. reclama la siguiente (SKIP LOCKED) · adulto activo · GenerationLock del usuario (renovado antes de llamar) · límites por hora y tope mensual ANTES de llamar
+    3. ImagePromptBuilder: plantilla prompts/illustration.txt + motivo saneado y entre comillas (ADR-81); si no pasa → BLOCKED sin llamada
+    4. AiGateway.generateImage → AiProvider.image (OpenAI/Google; el falso en tests) · reintento transitorio acotado · MODERATION → BLOCKED sin reintento · coste por imagen en ai_usage (tarea IMAGE)
+    5. ImageProcessor (ADR-80): tipo por contenido, bytes y píxeles acotados, ≥ 64 px, ≤ 768 px, JPEG sin metadatos, ≤ 300 kB → course_image.content (bytea) · si no pasa → FAILED
+ GET /api/courses/{c}/topics/{t}/image ─► image/jpeg · Cache-Control: private · ETag · nosniff · ajeno/inexistente/sin imagen: 404 igual
+ POST …/image/regenerate · DELETE …/image ─► COURSE_BUSY si el curso se genera · REMOVED conserva la fila · límites (20 ediciones con IA/h, 3 regeneraciones/tema, imágenes/h)
+ Copia por código (F09) ─► CourseCopier copia las imágenes DONE (ids nuevos) si quien canjea es adulto; la copia nace con illustrations=false; un menor no recibe imágenes (ADR-82)
+```
+
+- **Una imagen por tema, fuera de `course_piece`:** tabla `course_image` (V10) con propietario y clave compuesta; no cuenta para las 150 piezas ni para el progreso, y un fallo, un tope o una pausa de imágenes **nunca** cambia `course.status`. El hilo descubre lo que falta (ADR-79), así que los temas añadidos con IA en F09 se cubren solos.
+- **Estados:** `PENDING`, `DONE`, `FAILED` (no se reintenta solo: cada intento cuesta), `BLOCKED` (negativa del proveedor o tema que no pasa el saneado) y `REMOVED`. El detalle del curso enseña `image: {status, alt}` por tema (nada si no hay fila o está `REMOVED`), y la pieza gana `topicId` e `image` para pintar la cabecera de la lección. Nunca bytes, prompt ni mensajes del proveedor.
+- **Texto alternativo:** determinista («Ilustración generada por IA sobre «título»»): el modelo de texto no ve la imagen y no puede describirla de verdad (ADR-81).
+- **Gasto:** el precio por imagen vive en `ai-pricing.properties` (`image-pricing[proveedor/modelo].per-image`, con la fecha en que se verificó). Una tarea `IMAGE` sin proveedor deja las ilustraciones desactivadas y la app arranca igual; con proveedor pero sin precio o sin clave, no arranca. Cuenta para el tope mensual del usuario y los avisos al 80 % y al 100 %; una llamada cobrada se contabiliza aunque la imagen venga vacía o inválida.
+- **Menores:** no generan ilustraciones (el interruptor no se ofrece y el servidor lo rechaza) y su copia de un curso compartido no lleva imágenes: una imagen no se puede filtrar con `ContentGuard`.
+- **Interfaz:** `TopicCover.vue` pinta la imagen con su rótulo «Ilustración generada por IA» y su alt, y la planta de F11 si está pendiente, falló, se bloqueó, no hay o no carga; `IllustrationToggle.vue` es el interruptor del asistente; la edición del curso gana «Quitar» y «Volver a generar» con confirmación que dice que cuenta para el gasto.
+- **Benchmark de imágenes:** `make benchmark-images` (perfil `benchmark-images`, un solo uso, con tope en USD y confirmación) pide una imagen por tema y modelo a los modelos de `APP_AI_BENCHMARK_IMAGE_MODELS` y deja en `sdd/benchmarks/` un informe y una página HTML estática para compararlas. Lo lanza solo el usuario con sus claves.
+- **Reglas de arquitectura:** `ImageArchitectureTest` exige que `illustrations/` solo hable con `AiGateway`, el cerrojo y sus registros, que no use el sistema de ficheros ni construya HTML, que toda consulta sobre `course_image` lleve `owner_id` (salvo la de la cola) y que `ai/` no conozca `illustrations/`.
+
 ## Modelo de datos
 
 ```
@@ -274,8 +299,9 @@ audit_event         + índice audit_event_actor_idx (actor_user_id, action, occu
 -- F09 (migración V9)
 course              + version (int, 1), origin_id (→ course, ON DELETE SET NULL), origin_version
 course_piece        + outdated (boolean): «la lección cambió»; se limpia al regenerar
+course_image        F12: id, course_id + owner_id + topic_id (FK compuestas, CASCADE), status (PENDING | DONE | FAILED | BLOCKED | REMOVED), error_kind, attempts, regenerations, alt_text, mime, size_bytes (≤ 300 kB), content bytea · una por tema · course.illustrations (boolean, por defecto false)
 share_code          id, course_id + owner_id (FK compuesta → course, CASCADE), code_hash (SHA-256, único; el código NO se guarda), created_at, expires_at, revoked_at, uses
-course_action       id, user_id, kind (AI_EDIT | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
+course_action       id, user_id, kind (AI_EDIT | AI_IMAGE | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
 course_topic / course_chapter + permiso DELETE para el rol de la aplicación
 ```
 
@@ -336,6 +362,7 @@ selftaught/
 │     src/main/java/es/vicai/studylab/tutor                       # F07: hilo por lección, contexto, límites, filtro de menores y llamada al modelo
 │     src/main/java/es/vicai/studylab/guardian                    # F08: panel del adulto tutor (solo lectura): resumen, intentos, conversaciones, avisos y consumo
 │     src/main/java/es/vicai/studylab/{courseedit,share}          # F09: editar temario y lecciones, regenerar; códigos de compartir, canje y copia
+│     src/main/java/es/vicai/studylab/illustrations                # F12: cola de ilustraciones, saneado del prompt, procesado de la imagen, entrega y edición
 │     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
@@ -835,3 +862,33 @@ selftaught/
 - Motivo: identidad redondeada sin perder la lectura cómoda; menos peso total (se quitan tres ficheros de fuente y se añade uno).
 - Alternativas descartadas: una sola familia redondeada también para leer (cansa en lecciones largas); mantener las tres de F10 (peso y dos identidades mezcladas).
 - Revisitar si: la lectura de lecciones se queja de la tipografía (probar otra de lectura redondeada).
+
+### ADR-78: La imagen es una tercera modalidad de `AiProvider`/`AiGateway`, con precio por imagen en un mapa propio
+- Motivo: el gateway ya da tope de gasto, avisos, registro, reintentos acotados y cerrojo; una imagen cobra por unidad y no por token, así que `image-pricing` (por `proveedor/modelo`) evita tocar el registro `Price` que usan todos los demás. Una llamada que el proveedor cobra se contabiliza siempre.
+- Alternativas descartadas: un cliente de imágenes aparte (duplica presupuesto y registro); meter el precio por imagen en `Price` (rompe construcciones y pruebas existentes).
+- Revisitar si: un proveedor de imagen cobra por tokens (entonces, mismo mecanismo que el texto).
+
+### ADR-79: Las ilustraciones viven fuera de `course_piece`, con su tabla y su hilo, y el curso no las espera
+- Motivo: no son contenido que estudiar; así no tocan el tope de 150, el progreso (ADR-49) ni `course.status`, y un fallo, un tope o una pausa de imágenes nunca pausa un curso. El hilo **descubre** lo que falta (`enqueueMissing`) en vez de que `generation/` lo encole: cubre cursos nuevos y temas añadidos con IA (F09) sin acoplar paquetes. `REMOVED` conserva la fila para que no se vuelva a encolar. El interruptor es una columna del curso, no un campo de la ficha: `course.sheet` (contrato con F05) no cambia.
+- Alternativas descartadas: una pieza `IMAGE` en la cola de F05 (contaminaría contadores, estados y pausas); generar durante la creación del curso (bloquea y encarece los fallos); el interruptor en la ficha (obligaría a subir su `schemaVersion`).
+- Revisitar si: se quieren imágenes por lección o varias por tema.
+
+### ADR-80: La imagen del proveedor es entrada no fiable y se re-codifica
+- Motivo: viene de un tercero y se guarda y se sirve a un navegador. Se decide su tipo por contenido, se acotan bytes y píxeles antes de decodificar (bombas de descompresión), se descartan las imágenes diminutas y las cabeceras mentirosas, se reduce a 768 px y se re-codifica a JPEG sin metadatos (quita EXIF y C2PA; la etiqueta «generada por IA» es de la interfaz). Sin dependencias: `javax.imageio`. WebP no se admite (el JDK no lo lee) y se pide PNG.
+- Alternativas descartadas: guardar los bytes tal cual (metadatos y ficheros hostiles); una librería de imágenes (superficie nueva).
+- Revisitar si: un proveedor solo ofrece WebP.
+
+### ADR-81: El prompt es plantilla + motivo saneado, y el texto alternativo es determinista
+- Motivo: las APIs de imagen no separan instrucciones y datos; el único dato es el motivo (título y resumen del tema), así que se sanea (sin caracteres de control, marcas ni comillas), se acota y se rodea de una plantilla fija con el estilo común, y si no pasa, no hay llamada. El modelo de texto no ve la imagen, por lo que un alt «descriptivo» sería inventado: se usa «Ilustración generada por IA sobre «título»». Una instrucción dentro del título no se puede detectar de forma fiable: la defensa es la estructura (va después de la plantilla y entre comillas) y la moderación del proveedor.
+- Alternativas descartadas: dejar al modelo de texto escribir el prompt (superficie de inyección y un coste más); alt text generado.
+- Revisitar si: se usa un modelo con visión para describir la imagen.
+
+### ADR-82: Cinco estados, límites en la BD y copia pasiva
+- Motivo: `PENDING`, `DONE`, `FAILED`, `BLOCKED` (negativa del proveedor, sin reintento) y `REMOVED`. Ni `FAILED` ni `BLOCKED` se reintentan solos (coste); regenerar es explícito, limitado (20 ediciones con IA por hora de F09, 3 regeneraciones por tema, imágenes por hora) y contado en la BD. La **copia** por código lleva las imágenes `DONE` pero nace con `illustrations = false`: así nunca se cobra una generación al que canjea sin pedirla. Un menor no genera ni recibe imágenes (no se pueden filtrar con `ContentGuard`). Detalle surgido en la verificación (FASE 7): el guardado del resultado solo escribe sobre filas `PENDING`, así que una imagen quitada mientras se generaba no revive (el coste de esa llamada ya está contado).
+- Alternativas descartadas: reintentos automáticos (gasto imprevisible); copiar el interruptor (cobraría al canjeador).
+- Revisitar si: se filtran imágenes (moderación propia) y se abre a menores.
+
+### ADR-83: El benchmark de imágenes es un perfil aparte que solo lanza el usuario
+- Motivo: gasta dinero real y necesita claves; como el de texto (ADR-24), vive en un servicio de Compose de un solo uso (`make benchmark-images`) con tope en USD, 3 temas fijos y los modelos que indique `APP_AI_BENCHMARK_IMAGE_MODELS`; deja el informe y un `index.html` estático con las imágenes lado a lado y su coste real para compararlas a ojo. Nunca se ejecuta desde un test ni en el arranque.
+- Alternativas descartadas: ampliar el benchmark de texto (otro formato y otro coste); medir la calidad automáticamente (no es fiable para imágenes).
+- Revisitar si: se quiere puntuar con un modelo con visión.

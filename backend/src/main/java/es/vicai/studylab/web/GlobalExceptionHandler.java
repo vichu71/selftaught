@@ -34,7 +34,7 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case INPUT_TOO_LARGE -> HttpStatus.PAYLOAD_TOO_LARGE;
             case USER_NOT_ALLOWED -> HttpStatus.FORBIDDEN;
             case PROVIDER_QUOTA, PROVIDER_UNAVAILABLE -> HttpStatus.SERVICE_UNAVAILABLE;
-            case PROVIDER_AUTH, PROVIDER_REJECTED, INVALID_RESPONSE, CONFIG -> HttpStatus.BAD_GATEWAY;
+            case PROVIDER_AUTH, PROVIDER_REJECTED, INVALID_RESPONSE, MODERATED, CONFIG -> HttpStatus.BAD_GATEWAY;
         };
         return ResponseEntity.status(status).body(Map.of("code", "AI_" + e.kind().name(), "message", e.getMessage()));
     }

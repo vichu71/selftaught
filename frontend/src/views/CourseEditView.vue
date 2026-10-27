@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
-import { ApiError, api, type CourseDetail, type OutlineChapter, type OutlineTopic, type PieceRef } from '@/api/client'
+import { ApiError, api, type CourseDetail, type OutlineChapter, type OutlineTopic, type PieceRef, type TopicImage } from '@/api/client'
 import Breadcrumb from '@/layouts/Breadcrumb.vue'
 import LessonEditor from '@/components/LessonEditor.vue'
 import ShareCodes from '@/components/ShareCodes.vue'
@@ -35,6 +35,8 @@ const errorMessages: Record<string, string> = {
   EDIT_RATE_LIMITED: 'Has pedido muchas cosas a la IA seguidas. Espera un rato e inténtalo de nuevo.',
   COURSE_TOO_BIG: 'El curso tendría demasiadas partes. Quita alguna antes de añadir más.',
   EDIT_NOT_ALLOWED: BLOCKED_TEXT,
+  REGENERATION_LIMIT: 'Esta ilustración ya se ha vuelto a dibujar muchas veces. Déjala como está.',
+  IMAGE_RATE_LIMITED: 'Has pedido muchas cosas a la IA seguidas. Espera un rato e inténtalo de nuevo.',
 }
 
 async function load() {
@@ -46,11 +48,12 @@ async function load() {
   }
 }
 
-// Mientras la IA prepara lo nuevo se vuelve a mirar el curso cada pocos segundos hasta que acabe
+// Mientras la IA prepara lo nuevo (o una ilustración) se vuelve a mirar el curso cada pocos segundos hasta que acabe
+const waiting = computed(() => busy.value || outline.value.some((t) => t.image?.status === 'PENDING'))
 let timer: ReturnType<typeof setInterval> | undefined
-watch(busy, (isBusy) => {
+watch(waiting, (isWaiting) => {
   if (timer !== undefined) clearInterval(timer)
-  timer = isBusy ? setInterval(() => void load(), 4000) : undefined
+  timer = isWaiting ? setInterval(() => void load(), 4000) : undefined
 })
 onMounted(load)
 onBeforeUnmount(() => timer !== undefined && clearInterval(timer))
@@ -144,6 +147,20 @@ function ask(message: string, change: () => Promise<CourseDetail>) {
 const REMOVE = 'Se borrarán sus lecciones, ejercicios y examen, y también tu progreso, tus intentos y tus conversaciones con el tutor de esas partes. No se puede deshacer.'
 const REGENERATE = 'Se volverá a generar con IA (cuenta para tu límite y tu gasto) y se borrarán los intentos, el progreso y las conversaciones que dependían de esta parte.'
 
+const IMAGE_REMOVE = 'Se quitará la ilustración de este tema. Podrás volver a dibujarla cuando quieras.'
+const IMAGE_REGENERATE = 'Se volverá a dibujar con IA (cuenta para tu límite de peticiones y para tu gasto del mes). La ilustración actual se sustituirá cuando esté lista.'
+
+const removeImage = (topicId: string) => ask(IMAGE_REMOVE, () => api.removeTopicImage(courseId.value, topicId))
+const regenerateImage = (topicId: string) => ask(IMAGE_REGENERATE, () => api.regenerateTopicImage(courseId.value, topicId))
+
+/** Lo que se dice de la ilustración de un tema: nunca el estado interno ni un error técnico. */
+function imageText(image?: TopicImage | null): string {
+  if (image?.status === 'DONE') return 'lista'
+  if (image?.status === 'PENDING') return 'preparándose…'
+  if (image?.status === 'FAILED' || image?.status === 'BLOCKED') return 'no se pudo dibujar'
+  return 'sin ilustración'
+}
+
 const removeTopic = (id: string) => ask(REMOVE, () => api.removeTopic(courseId.value, id))
 const removeChapter = (id: string) => ask(REMOVE, () => api.removeChapter(courseId.value, id))
 const regenerate = (id: string) => ask(REGENERATE, () => api.regeneratePiece(courseId.value, id))
@@ -233,6 +250,13 @@ const pieces = (chapter: OutlineChapter): { label: string; piece: PieceRef }[] =
               <button type="button" :data-testid="`edit-topic-rename-${topic.id}`" :disabled="locked" @click="open('rename-topic', topic.id, topic)">Renombrar</button>
               <button type="button" :data-testid="`edit-topic-remove-${topic.id}`" :disabled="locked || outline.length === 1" @click="removeTopic(topic.id)">Quitar</button>
               <button type="button" :data-testid="`edit-chapter-add-${topic.id}`" :disabled="locked" @click="open('add-chapter', topic.id)">Añadir capítulo</button>
+            </p>
+            <p v-if="course.illustrations" class="actions" :data-testid="`edit-image-${topic.id}`">
+              <span class="muted">Ilustración: {{ imageText(topic.image) }}</span>
+              <button v-if="topic.image?.status === 'DONE'" type="button" :data-testid="`edit-image-remove-${topic.id}`" :disabled="locked" @click="removeImage(topic.id)">Quitar ilustración</button>
+              <button v-if="topic.image?.status !== 'PENDING'" type="button" :data-testid="`edit-image-regenerate-${topic.id}`" :disabled="locked" @click="regenerateImage(topic.id)">
+                {{ topic.image?.status === 'DONE' ? 'Volver a dibujar con IA' : 'Dibujar con IA' }}
+              </button>
             </p>
             <p v-if="topic.exam" class="muted">
               Examen del tema
