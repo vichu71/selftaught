@@ -102,7 +102,7 @@ const priceRows = computed(() => [
 ])
 const priceColumns = [{ key: 'model', label: 'Modelo' }, { key: 'price', label: 'Precio' }, { key: 'verified', label: 'Verificado' }, { key: 'notice', label: 'Aviso' }]
 
-const loginRows = computed(() => (accounts.value?.logins ?? []).map((l) => ({ day: l.day, ok: num(l.ok), failed: num(l.failed), locked: num(l.locked) })))
+const loginRows = computed(() => (accounts.value?.logins ?? []).filter((l) => l.ok + l.failed + l.locked > 0).reverse().map((l) => ({ day: l.day, ok: num(l.ok), failed: num(l.failed), locked: num(l.locked) })))
 const loginColumns = [{ key: 'day', label: 'Día' }, { key: 'ok', label: 'Correctos' }, { key: 'failed', label: 'Fallidos' }, { key: 'locked', label: 'Bloqueos' }]
 
 const statusLabel: Record<string, string> = {
@@ -116,7 +116,7 @@ const tone = (n: number): 'ok' | 'bad' => (n > 0 ? 'bad' : 'ok')
 </script>
 
 <template>
-  <section class="owner" data-testid="owner-view">
+  <section class="page wide owner" data-testid="owner-view">
     <h1>Panel del propietario</h1>
     <p class="muted">Solo cifras: aquí nunca se ve el contenido de nadie.</p>
 
@@ -172,7 +172,8 @@ const tone = (n: number): 'ok' | 'bad' => (n > 0 ? 'bad' : 'ok')
           </div>
           <BarList :items="labelled(accounts.byStatus)" title="Cuentas por estado" />
           <LineChart :points="accounts.signupsDaily.map((d) => ({ label: d.day, value: d.count }))" title="Altas por día" unit="altas" />
-          <DataTable :columns="loginColumns" :rows="loginRows" caption="Inicios de sesión por día" />
+          <DataTable v-if="loginRows.length" :columns="loginColumns" :rows="loginRows" caption="Inicios de sesión por día (solo los días con actividad)" />
+          <p v-else class="muted" data-testid="owner-logins-empty">Sin inicios de sesión en este rango.</p>
         </div>
         <UserList ref="list" />
       </template>

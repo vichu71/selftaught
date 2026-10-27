@@ -360,7 +360,7 @@ a.button-link {
 .owner-warning { color: var(--color-stat-warn); font-weight: 600; }
 .owner-chart { margin: 0; min-width: 0; }
 .owner-chart h3, .owner-bars h3 { margin: 0 0 var(--space-2); font-size: 1.05rem; }
-.owner-line-svg { display: block; width: 100%; height: auto; max-height: 12rem; background: var(--color-surface); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); }
+.owner-line-svg { display: block; width: 100%; height: auto; max-height: 12rem; }
 .owner-line { fill: none; stroke: var(--color-series-1); stroke-width: 2.5; stroke-linejoin: round; stroke-linecap: round; vector-effect: non-scaling-stroke; }
 .owner-dot { fill: var(--color-series-1); }
 .owner-axis { stroke: var(--color-line); stroke-width: 1; vector-effect: non-scaling-stroke; }
@@ -396,3 +396,18 @@ a.button-link {
 @media (prefers-reduced-motion: no-preference) {
   .owner-bar-fill { transition: width 0.4s ease; }
 }
+/* Cada bloque del panel es una tarjeta sobre el paisaje (así las tablas y las gráficas no se mezclan con las colinas) */
+.owner-chart, .owner-bars, .owner-table-scroll { background: var(--color-surface); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); padding: var(--space-3) var(--space-4); box-shadow: var(--shadow-soft); }
+.owner-table-scroll { padding-block: 0; }
+.owner-user-list, .owner-filters, .owner-pager { position: relative; }
+/* Móvil: con el enlace «Propietario» la barra inferior tiene cuatro enlaces; reparten el ancho y apilan icono y texto para no desbordar */
+@media (max-width: 47.99rem) {
+  .nav-links { gap: var(--space-1); }
+  .nav-link { flex: 1 1 0; min-width: 0; justify-content: center; padding: 0 var(--space-1); }
+}
+@media (max-width: 29.99rem) {
+  .nav-link { flex-direction: column; gap: 0; font-size: 0.72rem; line-height: 1.1; }
+}
+.owner .ui-tabs-list { flex-wrap: wrap; max-width: 100%; border-radius: var(--radius-2); }
+/* La barra de navegación fija de abajo (móvil) quedaba tapada por el contenido, que se pintaba encima con el mismo z-index: la barra pasa por delante */
+.shell > .nav-bar:not(.landscape):not(.skip-link) { z-index: 5; }
