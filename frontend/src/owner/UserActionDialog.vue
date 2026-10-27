@@ -2,7 +2,7 @@
 import { computed, ref, watch } from 'vue'
 import type { OwnerUser } from '@/api/client'
 import UiDialog from '@/ui/UiDialog.vue'
-import { usd } from './format'
+import { usd } from '@/ui/format'
 import type { OwnerAction } from './types'
 
 

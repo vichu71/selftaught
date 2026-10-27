@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError, api } from '@/api/client'
@@ -36,7 +37,7 @@ async function send() {
   <div class="page" data-testid="redeem-view">
     <header class="topbar">
       <h1>Tengo un código</h1>
-      <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
+      <BackLink data-testid="back-home" />
     </header>
 
     <section class="card">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, type IllustrationOffer } from '@/api/client'
@@ -52,7 +53,7 @@ function restart() {
   <div class="page" data-testid="new-course-view">
     <header class="topbar">
       <h1>Nuevo curso</h1>
-      <RouterLink to="/" data-testid="cancel-home">Volver al inicio</RouterLink>
+      <BackLink data-testid="cancel-home" label="Cancelar" aria-label="Cancelar y volver al inicio" />
     </header>
 
     <!-- Paso 1: el tema -->

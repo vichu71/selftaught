@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { withUnit } from './format'
+import { withUnit } from '@/ui/format'
 
 // Serie diaria dibujada con elementos SVG (sin librería ni colores a mano: todo por clases que leen tokens) y, debajo, la misma serie como tabla.
 const props = defineProps<{ points: { label: string; value: number }[]; title: string; unit?: string }>()

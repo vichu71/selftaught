@@ -27,6 +27,12 @@ public class AiUsageController {
 
     public record Minor(UUID id, String displayName, long calls, BigDecimal spendUsd, BigDecimal limitUsd, boolean limitReached) {}
 
+    /** Una tarea con las veces que se usó este mes; el importe solo lo ve un adulto (un menor nunca recibe importes). */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record TaskUse(String task, long calls, BigDecimal spendUsd) {}
+
+    public record UsageTasks(String month, List<TaskUse> tasks) {}
+
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record UsageResponse(String month, You you, Budget budget, List<Minor> minors) {}
 
@@ -36,6 +42,18 @@ public class AiUsageController {
     public AiUsageController(UsageRepository usage, BudgetService budget) {
         this.usage = usage;
         this.budget = budget;
+    }
+
+    /**
+     * Gasto del mes de QUIEN LLAMA repartido por tarea, de más a menos (F15, ADR-92). Sin parámetros: el usuario sale siempre de la sesión.
+     * Un menor recibe solo la tarea y las veces, nunca importes.
+     */
+    @GetMapping("/api/ai/usage/tasks")
+    UsageTasks tasks(@AuthenticationPrincipal AuthUser user) {
+        boolean minor = user.kind() == UserKind.MINOR;
+        List<TaskUse> tasks = usage.userMonthByTask(user.id()).stream()
+                .map(t -> new TaskUse(t.task(), t.calls(), minor ? null : t.spendUsd())).toList();
+        return new UsageTasks(usage.currentMonth(), tasks);
     }
 
     @GetMapping("/api/ai/usage")

@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth'
 import UiButton from '@/ui/UiButton.vue'
 import UiState from '@/ui/UiState.vue'
 import UiTag from '@/ui/UiTag.vue'
-import { dateTimeOf, usd } from './format'
+import { dateTimeOf, usd } from '@/ui/format'
 import type { OwnerAction } from './types'
 import UserActionDialog from './UserActionDialog.vue'
 

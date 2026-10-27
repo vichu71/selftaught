@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ApiError, api, exportPath, type CourseStatus, type StopReason } from '@/api/client'
@@ -105,7 +106,7 @@ onBeforeUnmount(() => {
     <header class="topbar">
       <h1 v-if="course" data-testid="course-title">{{ course.title }}</h1>
       <h1 v-else>Tu curso</h1>
-      <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
+      <BackLink data-testid="back-home" />
     </header>
 
     <p v-if="store.notFound" class="error" role="alert" data-testid="course-not-found">No encontramos este curso.</p>

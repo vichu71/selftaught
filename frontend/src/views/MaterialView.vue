@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { onBeforeUnmount, onMounted, ref } from 'vue'
 import MaterialList from '@/components/MaterialList.vue'
 import { useAuthStore } from '@/stores/auth'
@@ -24,7 +25,7 @@ async function onChoose(event: Event) {
   <div class="page wide" data-testid="material-view">
     <header class="topbar">
       <h1>Mi material</h1>
-      <RouterLink to="/" data-testid="back-home">Volver al inicio</RouterLink>
+      <BackLink data-testid="back-home" />
     </header>
 
     <p v-if="auth.user?.kind === 'MINOR'" class="notice" data-testid="material-minor-notice">

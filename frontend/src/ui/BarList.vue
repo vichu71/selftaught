@@ -10,14 +10,14 @@ const width = (value: number) => (biggest.value > 0 && Number.isFinite(value) ? 
 </script>
 
 <template>
-  <section class="owner-bars">
+  <section class="ui-bars">
     <h3>{{ title }}</h3>
     <p v-if="items.length === 0" class="muted" data-testid="chart-empty">Sin datos en este rango.</p>
     <ul v-else>
       <li v-for="(item, i) in items" :key="i" data-testid="bar-item">
-        <span class="owner-bar-label">{{ item.label }}</span>
-        <span class="owner-bar-track" aria-hidden="true"><span class="owner-bar-fill" :class="`owner-series-${(i % 4) + 1}`" data-testid="bar-fill" :style="{ width: `${width(item.value)}%` }"></span></span>
-        <span class="owner-bar-value">{{ withUnit(item.value, unit) }}</span>
+        <span class="ui-bar-label">{{ item.label }}</span>
+        <span class="ui-bar-track" aria-hidden="true"><span class="ui-bar-fill" :class="`ui-series-${(i % 4) + 1}`" data-testid="bar-fill" :style="{ width: `${width(item.value)}%` }"></span></span>
+        <span class="ui-bar-value">{{ withUnit(item.value, unit) }}</span>
       </li>
     </ul>
   </section>

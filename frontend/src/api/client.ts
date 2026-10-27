@@ -512,6 +512,7 @@ export const api = {
   clearTutor: (courseId: string, pieceId: string) => request<void>('DELETE', `${piecePath(courseId, pieceId)}/tutor`),
   getResults: () => request<Results>('GET', '/api/results'),
   getUsage: () => request<Usage>('GET', '/api/ai/usage'),
+  getUsageTasks: () => request<UsageTasks>('GET', '/api/ai/usage/tasks'),
 }
 
 /** Dirección de la ilustración de un tema (F12): siempre del propio origen y con los identificadores codificados; se pinta con un `<img>`, no con `fetch`. */
@@ -547,7 +548,15 @@ export interface Results {
 export interface Usage {
   month: string
   you: { calls: number; spendUsd?: number; limitUsd?: number; limitReached: boolean }
+  /** Solo para un adulto: el uso de cada uno de sus menores. */
+  minors?: { id: string; displayName: string; calls: number; spendUsd: number; limitUsd: number; limitReached: boolean }[]
   budget?: { percent: number; level: string }
+}
+
+/** Gasto del mes de quien llama por tarea (F15): un menor recibe solo la tarea y las veces, sin importes. */
+export interface UsageTasks {
+  month: string
+  tasks: { task: string; calls: number; spendUsd?: number }[]
 }
 
 // ---------- Estudio (F06) ----------
