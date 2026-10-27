@@ -241,6 +241,7 @@ class OwnerActionsTest extends OwnerTestBase {
 
     @Test
     void ac9_logsNeverContainEmailsNamesOrLimitsOfThePeopleTheOwnerTouches() throws Exception {
+        Family f = family(); // el alta de la familia (registro, correo) ya se registra: solo se vigila lo que hace el panel
         Logger root = (Logger) LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME);
         ListAppender<ILoggingEvent> appender = new ListAppender<>();
         appender.start();
@@ -248,7 +249,6 @@ class OwnerActionsTest extends OwnerTestBase {
         Level previous = root.getLevel();
         root.setLevel(Level.DEBUG);
         try {
-            Family f = family();
             postAs(f.ana(), userPath(f.luisId(), "/deactivate"), null).andReturn();
             putJson(f.ana(), userPath(f.luisId(), "/limit"), Map.of("limitUsd", 4.5)).andReturn();
             ownerGet(f.ana(), "/api/owner/users").andReturn();

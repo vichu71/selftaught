@@ -12,6 +12,7 @@ import MaterialView from '@/views/MaterialView.vue'
 import NewCourseView from '@/views/NewCourseView.vue'
 import CourseStatusView from '@/views/CourseStatusView.vue'
 import PieceView from '@/views/PieceView.vue'
+import OwnerView from '@/views/OwnerView.vue'
 import ResultsView from '@/views/ResultsView.vue'
 import AttemptsView from '@/views/AttemptsView.vue'
 import RegisterView from '@/views/RegisterView.vue'
@@ -31,6 +32,8 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
       { path: '/nuevo-curso', name: 'new-course', component: NewCourseView },
       { path: '/cursos/:id', name: 'course', component: CourseStatusView },
       { path: '/resultados', name: 'results', component: ResultsView },
+      // F14: solo el propietario (el servidor lo comprueba en cada llamada; aquí un no propietario vuelve al inicio como ante una página desconocida)
+      { path: '/propietario', name: 'owner', component: OwnerView, meta: { ownerOnly: true } },
       { path: '/cursos/:id/piezas/:pieceId', name: 'piece', component: PieceView },
       { path: '/cursos/:id/piezas/:pieceId/intentos', name: 'attempts', component: AttemptsView },
       { path: '/alumnos/:id', name: 'guardian-student', component: GuardianStudentView },
@@ -52,6 +55,7 @@ export function createAppRouter(history: RouterHistory = createWebHistory()) {
     if (!auth.ready) await auth.loadMe()
 
     if (!to.meta.public && !auth.isAuthenticated) return { name: 'login' }
+    if (to.meta.ownerOnly && !auth.user?.owner) return { name: 'home' }
     if ((to.name === 'login' || to.name === 'register') && auth.isAuthenticated) return { name: 'home' }
     return true
   })

@@ -117,7 +117,7 @@ public class GuardianService {
 
         int recentAlerts = repo.alerts(studentId, Instant.now().minus(RECENT_ALERTS), 1000).size();
         UsageRepository.UserUsage month = usage.userMonth(studentId);
-        BudgetService.UserLimit limit = budget.userLimit(usage.isMinor(studentId), month.spendUsd());
+        BudgetService.UserLimit limit = budget.userLimit(studentId, usage.isMinor(studentId), month.spendUsd());
         List<TaskSpend> byTask = usage.userMonthByTask(studentId).stream().map(t -> new TaskSpend(t.task(), t.spendUsd(), t.calls())).toList();
         return new Overview(new StudentView(studentId, student.displayName(), student.active()), repo.lastActivity(studentId).orElse(null), new AlertCount(recentAlerts),
                 new UsageView(usage.currentMonth(), month.spendUsd(), limit.limitUsd(), limit.reached(), byTask), courses);

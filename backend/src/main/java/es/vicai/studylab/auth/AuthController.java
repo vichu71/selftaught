@@ -8,6 +8,7 @@ import es.vicai.studylab.auth.AuthDtos.ResetRequest;
 import es.vicai.studylab.auth.AuthDtos.VerifyRequest;
 import es.vicai.studylab.security.AuthUser;
 import es.vicai.studylab.security.SessionAuthenticationFilter;
+import es.vicai.studylab.owner.OwnerPolicy;
 import es.vicai.studylab.user.MeResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -32,11 +33,13 @@ public class AuthController {
     private final AuthService auth;
     private final SessionService sessions;
     private final CsrfTokenRepository csrfRepository;
+    private final OwnerPolicy ownerPolicy;
 
-    public AuthController(AuthService auth, SessionService sessions, CsrfTokenRepository csrfRepository) {
+    public AuthController(AuthService auth, SessionService sessions, CsrfTokenRepository csrfRepository, OwnerPolicy ownerPolicy) {
         this.auth = auth;
         this.sessions = sessions;
         this.csrfRepository = csrfRepository;
+        this.ownerPolicy = ownerPolicy;
     }
 
     @PostMapping("/register")
@@ -84,7 +87,7 @@ public class AuthController {
         // El frontend lee esta cookie y la reenvía en X-XSRF-TOKEN en las peticiones que modifican datos
         CsrfToken csrf = csrfRepository.generateToken(request);
         csrfRepository.saveToken(csrf, request, response);
-        return MeResponse.of(result.user());
+        return MeResponse.of(result.user()).withOwner(ownerPolicy.isOwner(result.user().kind(), result.user().email()));
     }
 
     @PostMapping("/logout")

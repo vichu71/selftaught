@@ -14,6 +14,10 @@ import org.junit.jupiter.api.Test;
 /** AC-1, AC-2, AC-12 (ADR-87): quién es el propietario y quién puede llamar al panel. Ana es la propietaria (variable escrita con mayúsculas y espacios). */
 class OwnerAccessTest extends OwnerTestBase {
 
+    private static String withoutPath(String body, String path) {
+        return body.replace(path, "RUTA").replace(path.substring(1), "RUTA");
+    }
+
     private List<String> allGets(UUID someUser) {
         List<String> paths = new ArrayList<>(REPORTS);
         paths.add("/api/owner/users");
@@ -32,11 +36,12 @@ class OwnerAccessTest extends OwnerTestBase {
     @Test
     void ac2_anAdultWhoIsNotTheOwnerGetsTheSame404AsAnUnknownRouteOnEveryEndpoint() throws Exception {
         Family f = family();
-        String unknown = getAs(f.luis(), NOT_FOUND_PROBE).andExpect(status().isNotFound()).andReturn().getResponse().getContentAsString();
+        // la respuesta de Spring a una ruta inexistente repite la ruta pedida: se compara sin ella
+        String unknown = withoutPath(getAs(f.luis(), NOT_FOUND_PROBE).andExpect(status().isNotFound()).andReturn().getResponse().getContentAsString(), NOT_FOUND_PROBE);
 
         for (String path : REPORTS) {
             String body = ownerGet(f.luis(), path).andExpect(status().isNotFound()).andReturn().getResponse().getContentAsString();
-            assertThat(body).as(path).isEqualTo(unknown);
+            assertThat(withoutPath(body, path)).as(path).isEqualTo(unknown);
         }
         ownerGet(f.luis(), "/api/owner/users").andExpect(status().isNotFound());
         for (Action action : actions()) perform(f.luis(), f.anaId(), action).andExpect(status().isNotFound());

@@ -13,10 +13,13 @@ withDefaults(
     cancelLabel?: string
     tone?: 'primary' | 'danger'
     busy?: boolean
+    /** F14: el diálogo no se cierra al confirmar (lo cierra quien lo usa cuando la acción termina bien) y puede enseñar un error dentro. */
+    keepOpen?: boolean
+    confirmDisabled?: boolean
     confirmTestid?: string
     cancelTestid?: string
   }>(),
-  { description: '', confirmLabel: 'Aceptar', cancelLabel: 'Cancelar', tone: 'primary', busy: false, confirmTestid: 'dialog-confirm', cancelTestid: 'dialog-cancel' },
+  { description: '', confirmLabel: 'Aceptar', cancelLabel: 'Cancelar', tone: 'primary', busy: false, keepOpen: false, confirmDisabled: false, confirmTestid: 'dialog-confirm', cancelTestid: 'dialog-cancel' },
 )
 const emit = defineEmits<{ 'update:modelValue': [open: boolean]; confirm: [] }>()
 </script>
@@ -31,7 +34,7 @@ const emit = defineEmits<{ 'update:modelValue': [open: boolean]; confirm: [] }>(
         <slot />
         <div class="ui-dialog-actions">
           <UiButton :data-testid="cancelTestid" :disabled="busy" @click="emit('update:modelValue', false)">{{ cancelLabel }}</UiButton>
-          <UiButton :data-testid="confirmTestid" :variant="tone" :disabled="busy" @click="emit('confirm'); emit('update:modelValue', false)">{{ confirmLabel }}</UiButton>
+          <UiButton :data-testid="confirmTestid" :variant="tone" :disabled="busy || confirmDisabled" @click="emit('confirm'); if (!keepOpen) emit('update:modelValue', false)">{{ confirmLabel }}</UiButton>
         </div>
       </DialogContent>
     </DialogPortal>

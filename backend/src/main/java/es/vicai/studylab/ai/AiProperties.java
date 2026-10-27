@@ -48,7 +48,8 @@ public record AiProperties(
         }
     }
 
-    public record Price(BigDecimal inputPerMillion, BigDecimal outputPerMillion) {}
+    /** {@code verifiedOn} (clave opcional {@code verified-on}) es la fecha en que se comprobó el precio; el panel del propietario la enseña (F14). */
+    public record Price(BigDecimal inputPerMillion, BigDecimal outputPerMillion, java.time.LocalDate verifiedOn) {}
 
     public enum BudgetMode { WARN, BLOCK }
 

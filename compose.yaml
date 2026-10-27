@@ -70,6 +70,8 @@ services:
       AI_BUDGET_MODE: ${AI_BUDGET_MODE:-WARN}
       AI_USER_LIMIT_MINOR_USD: ${AI_USER_LIMIT_MINOR_USD:-2.00}
       AI_USER_LIMIT_ADULT_USD: ${AI_USER_LIMIT_ADULT_USD:-10.00}
+      # F14: correo del propietario (panel /api/owner). Opcional y sin valor por defecto: vacío = no hay propietario ni panel
+      OWNER_EMAIL: ${OWNER_EMAIL:-}
       # F03: límites del material propio
       MATERIAL_MAX_FILE_MB: ${MATERIAL_MAX_FILE_MB:-10}
       MATERIAL_MAX_DOCUMENTS: ${MATERIAL_MAX_DOCUMENTS:-20}

@@ -12,8 +12,8 @@ import org.springframework.test.context.TestPropertySource;
 @TestPropertySource(properties = {
         "app.owner.email=  ANA@Example.com ",
         "app.ai.pricing[fake/fake-1].verified-on=2020-01-01",
-        "app.ai.pricing[fake/fake-undated].input-per-million=3",
-        "app.ai.pricing[fake/fake-undated].output-per-million=4"})
+        "app.ai.pricing[fake/fake-undated].input-per-million=3.00",
+        "app.ai.pricing[fake/fake-undated].output-per-million=4.00"})
 public abstract class OwnerTestBase extends OwnerFamilyBase {
 
     protected static final String NOT_FOUND_PROBE = "/api/zzz-no-existe";

@@ -28,11 +28,11 @@ const ai = (over: Record<string, unknown> = {}) => ({
   benchmark: { calls: 1, usd: 2 }, ...over,
 })
 const prices = () => ({
-  text: [
+  models: [
     { provider: 'anthropic', model: 'claude-haiku-5-5', inputPerMillion: 0.1, outputPerMillion: 0.5, verifiedOn: '2026-10-25', stale: false },
     { provider: 'fake', model: 'fake-undated', inputPerMillion: 3, outputPerMillion: 4, verifiedOn: null, stale: true },
   ],
-  image: [{ provider: 'openai', model: 'gpt-image-1-mini', perImage: 0.01, verifiedOn: '2026-10-27', stale: false }],
+  images: [{ provider: 'openai', model: 'gpt-image-1-mini', perImage: 0.01, verifiedOn: '2026-10-27', stale: false }],
 })
 const row = (over: Record<string, unknown> = {}) => ({
   id: 'u-luis', kind: 'ADULT', status: 'ACTIVE', displayName: 'Luis', email: 'luis@example.com', createdAt: '2026-10-01T10:00:00Z', lastActivityAt: '2026-10-27T09:00:00Z',

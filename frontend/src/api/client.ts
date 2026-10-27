@@ -10,6 +10,8 @@ export interface User {
   roles: string[]
   email?: string
   loginId?: string
+  /** F14: solo el propietario lo trae. Sirve para mostrar el enlace del panel; el permiso real lo da el servidor en cada llamada. */
+  owner?: boolean
 }
 
 export interface Student {
@@ -297,6 +299,78 @@ export interface GuardianAlert {
   category?: string
 }
 
+// ---------- Panel del propietario (F14): solo cifras, nunca contenido ----------
+
+export type OwnerRange = 7 | 30 | 90
+
+export interface OwnerDay { day: string; usd: number; calls: number }
+export interface OwnerCount { day: string; count: number }
+export interface OwnerModelRow {
+  provider: string; model: string; usd: number; calls: number; errorPercent: number; blockedPercent: number
+  avgMs: number; p95Ms: number; inputTokens: number; outputTokens: number
+}
+export interface OwnerAi {
+  range: number; todayUsd: number; monthUsd: number; rangeUsd: number
+  projection: { usd: number; reliable: boolean }
+  globalLimit: { limitUsd: number; percent: number }
+  daily: OwnerDay[]
+  byModel: OwnerModelRow[]
+  byProvider: { provider: string; usd: number; calls: number }[]
+  byTask: { task: string; usd: number; calls: number }[]
+  byUser: { userId: string; kind: 'ADULT' | 'MINOR'; label?: string; usd: number }[]
+  totals: { calls: number; errorPercent: number; blockedPercent: number; inputTokens: number; outputTokens: number; avgMs: number }
+  costPerCourse: number; costPerActiveUser: number
+  benchmark: { calls: number; usd: number }
+}
+export interface OwnerPrices {
+  models: { provider: string; model: string; inputPerMillion: number; outputPerMillion: number; verifiedOn: string | null; stale: boolean }[]
+  images: { provider: string; model: string; perImage: number; verifiedOn: string | null; stale: boolean }[]
+}
+export interface OwnerAccounts {
+  range: number; signupsDaily: OwnerCount[]; adults: number; minors: number
+  byStatus: Record<string, number>
+  active: { d1: number; d7: number; d30: number }
+  openSessions: number
+  logins: { day: string; ok: number; failed: number; locked: number }[]
+}
+export interface OwnerUsage {
+  range: number
+  courses: { byStatus: Record<string, number>; createdDaily: OwnerCount[] }
+  pieces: { done: number; failed: number; pending: number }
+  study: { lessonsDone: number; exerciseAttempts: number; examAttempts: number; examsPassed: number }
+  tutor: { questions: number; blocked: number; filtered: number }
+  documents: { byStatus: Record<string, number> }
+  illustrations: { byStatus: Record<string, number> }
+  sharing: { created: number; redeemed: number; revoked: number }
+  coursesDeleted: number
+}
+export interface OwnerHealth {
+  courses: { pendingGeneration: number; generating: number }
+  pieces: { pending: number; failed: number }
+  documents: { pending: number; failed: number }
+  illustrations: { pending: number; failed: number }
+  aiErrors: { provider: string; errorKind: string; count: number }[]
+  contentBlocks24h: number
+  databaseBytes: number
+  tables: { name: string; rows: number }[]
+}
+export interface OwnerUser {
+  id: string; kind: 'ADULT' | 'MINOR'; status: 'ACTIVE' | 'PENDING_VERIFICATION' | 'DEACTIVATED'
+  displayName?: string; email?: string; loginId?: string; tutorId?: string
+  createdAt: string; lastActivityAt: string | null
+  monthSpendUsd: number; limitUsd: number; limitIsCustom: boolean; courses: number
+}
+export interface OwnerUsersPage { items: OwnerUser[]; total: number; page: number; size: number }
+export interface OwnerUsersQuery { kind?: string; status?: string; sort?: string; dir?: string; page?: number; size?: number }
+
+function ownerQuery(params: Record<string, string | number | undefined>): string {
+  const query = new URLSearchParams()
+  for (const [key, value] of Object.entries(params)) if (value !== undefined && value !== '') query.set(key, String(value))
+  const text = query.toString()
+  return text ? `?${text}` : ''
+}
+const ownerUserPath = (id: string) => `/api/owner/users/${encodeURIComponent(id)}`
+
 export class ApiError extends Error {
   constructor(
     public readonly status: number,
@@ -399,6 +473,18 @@ export const api = {
   reorderTopics: (courseId: string, ids: string[]) => request<CourseDetail>('PUT', `${coursePath(courseId)}/topics/order`, { ids }),
   deleteCourse: (courseId: string) => request<void>('DELETE', coursePath(courseId)),
   deleteCourses: (ids: string[]) => request<void>('POST', '/api/courses/delete', { ids }),
+
+  ownerAi: (range: OwnerRange) => request<OwnerAi>('GET', `/api/owner/ai${ownerQuery({ range })}`),
+  ownerPrices: () => request<OwnerPrices>('GET', '/api/owner/prices'),
+  ownerAccounts: (range: OwnerRange) => request<OwnerAccounts>('GET', `/api/owner/accounts${ownerQuery({ range })}`),
+  ownerUsage: (range: OwnerRange) => request<OwnerUsage>('GET', `/api/owner/usage${ownerQuery({ range })}`),
+  ownerHealth: () => request<OwnerHealth>('GET', '/api/owner/health'),
+  ownerUsers: (query: OwnerUsersQuery) => request<OwnerUsersPage>('GET', `/api/owner/users${ownerQuery({ ...query })}`),
+  ownerDeactivate: (id: string) => request<void>('POST', `${ownerUserPath(id)}/deactivate`),
+  ownerReactivate: (id: string) => request<void>('POST', `${ownerUserPath(id)}/reactivate`),
+  ownerRevoke: (id: string) => request<void>('POST', `${ownerUserPath(id)}/revoke-sessions`),
+  ownerSetLimit: (id: string, limitUsd: number) => request<void>('PUT', `${ownerUserPath(id)}/limit`, { limitUsd }),
+  ownerClearLimit: (id: string) => request<void>('DELETE', `${ownerUserPath(id)}/limit`),
   removeTopic: (courseId: string, topicId: string) => request<CourseDetail>('DELETE', `${coursePath(courseId)}/topics/${encodeURIComponent(topicId)}`),
   addTopic: (courseId: string, data: { title: string; summary: string; chapter: { title: string; objective: string } }) => request<CourseDetail>('POST', `${coursePath(courseId)}/topics`, data),
   renameChapter: (courseId: string, chapterId: string, data: { title: string; objective: string }) =>

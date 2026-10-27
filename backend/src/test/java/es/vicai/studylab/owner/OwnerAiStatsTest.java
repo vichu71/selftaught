@@ -30,9 +30,15 @@ class OwnerAiStatsTest extends OwnerTestBase {
         return f;
     }
 
+    /** El día es en UTC; el mes es el natural de Madrid, el mismo de los topes (ADR-19). */
+    private double sql(String since, boolean onlyApp) {
+        String zone = "day".equals(since) ? "utc" : "Europe/Madrid";
+        return owner.queryForObject("SELECT coalesce(sum(cost_usd), 0) FROM ai_usage WHERE " + (onlyApp ? "source = 'APP' AND " : "")
+                + "occurred_at >= date_trunc('" + since + "', now() AT TIME ZONE '" + zone + "') AT TIME ZONE '" + zone + "'", Double.class);
+    }
+
     private double sql(String since) {
-        return owner.queryForObject("SELECT coalesce(sum(cost_usd), 0) FROM ai_usage WHERE source = 'APP' AND occurred_at >= date_trunc('" + since + "', now() AT TIME ZONE 'utc') AT TIME ZONE 'utc'",
-                Double.class);
+        return sql(since, true);
     }
 
     @Test
@@ -167,7 +173,10 @@ class OwnerAiStatsTest extends OwnerTestBase {
                 .andExpect(jsonPath("$.projection.usd").value(org.hamcrest.Matchers.greaterThanOrEqualTo(1.0)));
 
         // una llamada al principio del mes y otra ahora: la proyección es fiable si han pasado 3 días o más entre ellas
-        owner.update("UPDATE ai_usage SET occurred_at = date_trunc('month', now() AT TIME ZONE 'utc') AT TIME ZONE 'utc' + interval '1 second'");
+        // ai_usage es de solo añadir: se vacía y se vuelve a sembrar
+        String sinceMonthStart = owner.queryForObject("SELECT (now() - (date_trunc('month', now() AT TIME ZONE 'utc') AT TIME ZONE 'utc' + interval '1 second'))::text", String.class);
+        owner.execute("TRUNCATE ai_usage, ai_budget_alert RESTART IDENTITY");
+        aiCall(f.anaId(), "anthropic", "m1", "LESSON", "OK", "1.00", 1, 1, 1, sinceMonthStart);
         aiCall(f.anaId(), "anthropic", "m1", "LESSON", "OK", "1.00", 1, 1, 1, "1 minute");
         boolean expected = owner.queryForObject("SELECT now() - min(occurred_at) >= interval '3 days' FROM ai_usage WHERE source = 'APP'", Boolean.class);
         ownerGet(f.ana(), "/api/owner/ai").andExpect(jsonPath("$.projection.reliable").value(expected));
@@ -178,7 +187,7 @@ class OwnerAiStatsTest extends OwnerTestBase {
         Family f = seeded();
 
         ownerGet(f.ana(), "/api/owner/ai").andExpect(jsonPath("$.globalLimit.limitUsd").value(10.0))
-                .andExpect(jsonPath("$.globalLimit.percent").value(closeTo(sql("month") * 10, 0.1)));
+                .andExpect(jsonPath("$.globalLimit.percent").value(closeTo(sql("month", false) * 10, 0.1))); // el tope global cuenta también el benchmark
     }
 
     @Test
@@ -226,12 +235,12 @@ class OwnerAiStatsTest extends OwnerTestBase {
         Family f = quietFamily();
 
         ownerGet(f.ana(), "/api/owner/prices").andExpect(status().isOk())
-                .andExpect(jsonPath("$.text[?(@.model=='fake-1')].provider").value(hasItem("fake")))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-1')].inputPerMillion").value(hasItem(1.0)))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-1')].outputPerMillion").value(hasItem(2.0)))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-1')].verifiedOn").value(hasItem("2020-01-01")))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-1')].stale").value(hasItem(true)))
-                .andExpect(jsonPath("$.image").isArray());
+                .andExpect(jsonPath("$.models[?(@.model=='fake-1')].provider").value(hasItem("fake")))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-1')].inputPerMillion").value(hasItem(1.0)))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-1')].outputPerMillion").value(hasItem(2.0)))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-1')].verifiedOn").value(hasItem("2020-01-01")))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-1')].stale").value(hasItem(true)))
+                .andExpect(jsonPath("$.images").isArray());
     }
 
     @Test
@@ -239,10 +248,10 @@ class OwnerAiStatsTest extends OwnerTestBase {
         Family f = quietFamily();
 
         ownerGet(f.ana(), "/api/owner/prices")
-                .andExpect(jsonPath("$.text[?(@.model=='fake-undated')].verifiedOn").value(hasItem(nullValue())))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-undated')].stale").value(hasItem(true)))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-undated')].inputPerMillion").value(hasItem(3.0)))
-                .andExpect(jsonPath("$.text[?(@.model=='fake-undated')].outputPerMillion").value(hasItem(not(nullValue()))));
+                .andExpect(jsonPath("$.models[?(@.model=='fake-undated')].verifiedOn").value(hasItem(nullValue())))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-undated')].stale").value(hasItem(true)))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-undated')].inputPerMillion").value(hasItem(3.0)))
+                .andExpect(jsonPath("$.models[?(@.model=='fake-undated')].outputPerMillion").value(hasItem(not(nullValue()))));
     }
 
     @Test

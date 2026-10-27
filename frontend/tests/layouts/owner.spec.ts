@@ -13,7 +13,7 @@ describe('panel del propietario: menú y ruta', () => {
   beforeEach(() => {
     vi.resetAllMocks()
     vi.mocked(api.ownerAi).mockResolvedValue({} as never)
-    vi.mocked(api.ownerPrices).mockResolvedValue({ text: [], image: [] } as never)
+    vi.mocked(api.ownerPrices).mockResolvedValue({ models: [], images: [] } as never)
   })
 
   it('shows the «Propietario» link, pointing to /propietario, only to the owner', async () => {

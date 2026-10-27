@@ -43,13 +43,13 @@ public class AiUsageController {
         String month = usage.currentMonth();
         UsageRepository.UserUsage mine = usage.userMonth(user.id());
         if (user.kind() == UserKind.MINOR) {
-            BudgetService.UserLimit limit = budget.userLimit(true, mine.spendUsd());
+            BudgetService.UserLimit limit = budget.userLimit(user.id(), true, mine.spendUsd());
             return new UsageResponse(month, new You(mine.calls(), null, null, limit.reached()), null, null);
         }
         BudgetService.Status status = budget.status();
-        BudgetService.UserLimit limit = budget.userLimit(false, mine.spendUsd());
+        BudgetService.UserLimit limit = budget.userLimit(user.id(), false, mine.spendUsd());
         List<Minor> minors = usage.minorsMonth(user.id()).stream().map(m -> {
-            BudgetService.UserLimit minorLimit = budget.userLimit(true, m.spendUsd());
+            BudgetService.UserLimit minorLimit = budget.userLimit(m.id(), true, m.spendUsd());
             return new Minor(m.id(), m.displayName(), m.calls(), m.spendUsd(), minorLimit.limitUsd(), minorLimit.reached());
         }).toList();
         return new UsageResponse(month, new You(mine.calls(), mine.spendUsd(), limit.limitUsd(), limit.reached()),

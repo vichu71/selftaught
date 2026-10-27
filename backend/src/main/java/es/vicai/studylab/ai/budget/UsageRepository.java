@@ -3,6 +3,7 @@ package es.vicai.studylab.ai.budget;
 import es.vicai.studylab.ai.AiTask;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.stereotype.Repository;
@@ -68,6 +69,11 @@ public class UsageRepository {
     public BigDecimal userMonthSpend(UUID userId) {
         return jdbc.sql("SELECT COALESCE(SUM(cost_usd), 0) FROM ai_usage WHERE user_id = :user AND " + IN_MONTH)
                 .param("user", userId).query(BigDecimal.class).single();
+    }
+
+    /** Tope personal fijado por el propietario (F14, ADR-88); vacío si no hay excepción y manda el de la configuración. */
+    public Optional<BigDecimal> userLimitOverride(UUID userId) {
+        return jdbc.sql("SELECT limit_usd FROM user_limit_override WHERE user_id = :user").param("user", userId).query(BigDecimal.class).optional();
     }
 
     /** True si el usuario es un menor; un usuario inexistente se trata como menor (el tope más estricto). */

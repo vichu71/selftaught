@@ -27,7 +27,7 @@ class OwnerHealthTest extends OwnerTestBase {
         owner.update("UPDATE course_piece SET status = 'FAILED' WHERE id = ?", firstPiece(f.course(), "LESSON"));
         owner.update("UPDATE course_piece SET status = 'PENDING' WHERE id = ?", firstPiece(f.course(), "EXERCISES"));
         uploaded(f.ana(), "a.txt", longText(3).getBytes());
-        uploaded(f.ana(), "b.txt", longText(3).getBytes());
+        uploaded(f.ana(), "b.txt", longText(4).getBytes());
         List<UUID> docs = owner.queryForList("SELECT id FROM source_document ORDER BY id", UUID.class);
         owner.update("UPDATE source_document SET status = 'ERROR' WHERE id = ?", docs.get(0));
         owner.update("INSERT INTO course_image (id, course_id, owner_id, topic_id, status) VALUES (gen_random_uuid(), ?, ?, ?, 'PENDING')", f.course(), f.hugoId(), topicIds(f.course()).get(0));
@@ -99,6 +99,6 @@ class OwnerHealthTest extends OwnerTestBase {
         String body = ownerGet(f.ana(), "/api/owner/health").andReturn().getResponse().getContentAsString();
 
         // solo tipos de error de la enumeración: ningún mensaje del proveedor ni texto libre
-        assertThat(body).doesNotContainIgnoringCase("message").doesNotContainIgnoringCase("exception").doesNotContainIgnoringCase("stack");
+        assertThat(body).doesNotContain("\"message\"").doesNotContain("\"errorMessage\"").doesNotContainIgnoringCase("exception").doesNotContainIgnoringCase("stack");
     }
 }

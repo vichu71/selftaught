@@ -45,7 +45,7 @@ public class BudgetService {
     public void checkBeforeCall(UUID userId, BigDecimal worstCaseUsd) {
         if (worstCaseUsd.signum() == 0) return;
         BigDecimal userSpent = usage.userMonthSpend(userId);
-        if (userSpent.add(worstCaseUsd).compareTo(props.budget().userLimit(usage.isMinor(userId))) > 0) {
+        if (userSpent.add(worstCaseUsd).compareTo(effectiveUserLimit(userId)) > 0) {
             audit.record("AI_USER_LIMIT_REACHED", AuditService.DENIED, userId, userId, null, Map.of("month", usage.currentMonth()));
             log.warn("Llamada de IA rechazada: tope mensual personal alcanzado");
             throw AiException.of(AiErrorKind.USER_LIMIT);
@@ -62,9 +62,14 @@ public class BudgetService {
     /** Tope personal de un usuario y si ya lo alcanzó este mes. */
     public record UserLimit(BigDecimal limitUsd, boolean reached) {}
 
-    public UserLimit userLimit(boolean minor, BigDecimal spentUsd) {
-        BigDecimal limit = props.budget().userLimit(minor);
+    public UserLimit userLimit(UUID userId, boolean minor, BigDecimal spentUsd) {
+        BigDecimal limit = usage.userLimitOverride(userId).orElseGet(() -> props.budget().userLimit(minor));
         return new UserLimit(limit, spentUsd.compareTo(limit) >= 0);
+    }
+
+    /** El tope personal que vale hoy: la excepción que fijó el propietario (F14) o, si no hay, el de la configuración según sea menor o adulto. */
+    private BigDecimal effectiveUserLimit(UUID userId) {
+        return usage.userLimitOverride(userId).orElseGet(() -> props.budget().userLimit(usage.isMinor(userId)));
     }
 
     /** Tras una llamada con coste: avisa una vez por mes al llegar al umbral y al 100 %. */

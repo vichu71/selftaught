@@ -82,7 +82,7 @@ class OwnerArchitectureTest extends OwnerTestBase {
     void ac2_theGuardComparesTheSessionEmailWithTheConfigurationOnEveryRequestAndNeverReadsARoleFromTheDatabase() throws IOException {
         String guard = Files.readString(OWNER.resolve("OwnerGuard.java")) + Files.readString(OWNER.resolve("OwnerPolicy.java"));
 
-        assertThat(guard).contains("ConfigurationProperties").containsIgnoringCase("equalsIgnoreCase").contains("ADULT").contains("notFound").contains("ACCESS_DENIED");
+        assertThat(guard).contains("ConfigurationProperties").containsIgnoringCase("equalsIgnoreCase").contains("ADULT").contains("NoResourceFoundException").contains("ACCESS_DENIED");
         assertThat(guard).doesNotContainIgnoringCase("SELECT").doesNotContainIgnoringCase("is_owner").doesNotContain("static volatile").doesNotContain("@Cacheable");
     }
 
@@ -170,7 +170,7 @@ class OwnerArchitectureTest extends OwnerTestBase {
     }
 
     @Test
-    void theRestOfTheApplicationOnlyDependsOnTheOwnerPackageThroughTheMeEndpoint() throws IOException {
+    void theRestOfTheApplicationOnlyDependsOnTheOwnerPackageThroughMeAndLogin() throws IOException {
         List<String> importers = new ArrayList<>();
         try (Stream<Path> files = Files.walk(MAIN)) {
             for (Path file : files.filter(p -> p.toString().endsWith(".java")).toList()) {
@@ -179,7 +179,7 @@ class OwnerArchitectureTest extends OwnerTestBase {
             }
         }
 
-        assertThat(importers).isSubsetOf("MeController.java", "MeResponse.java");
+        assertThat(importers).isSubsetOf("MeController.java", "MeResponse.java", "AuthController.java");
     }
 
     @Test

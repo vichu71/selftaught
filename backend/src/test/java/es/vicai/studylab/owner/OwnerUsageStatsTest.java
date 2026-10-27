@@ -22,6 +22,9 @@ class OwnerUsageStatsTest extends OwnerTestBase {
         Family f = family();
         UUID anaCourse = ready("ana@example.com");
         giveDependents(f.ana(), f.anaId(), anaCourse, chapterIds(topicIds(anaCourse).get(0)).get(0), topicIds(anaCourse).get(0));
+        // se comparte y se canjea con el curso entero y sano: después se estropean piezas e imágenes (la copia exige un curso en orden)
+        redeemed(f.luis(), createCode(f.ana(), anaCourse));
+        createCode(f.ana(), anaCourse);
         UUID paused = insertCourse(f.anaId(), "En pausa", 1, false, List.of());
         UUID failed = insertCourse(f.anaId(), "Fallado", 1, false, List.of());
         UUID queued = insertCourse(f.anaId(), "En cola", 1, false, List.of());
@@ -35,7 +38,8 @@ class OwnerUsageStatsTest extends OwnerTestBase {
         owner.update("UPDATE course_piece SET status = 'FAILED' WHERE id = ?", lesson);
         hugoAsks(f, firstPiece(f.course(), "LESSON"), BLOCKED_QUESTION);
 
-        for (String name : List.of("a.txt", "b.txt", "c.txt")) uploaded(f.ana(), name, longText(3).getBytes());
+        int size = 3;
+        for (String name : List.of("a.txt", "b.txt", "c.txt")) uploaded(f.ana(), name, longText(size++).getBytes());
         List<UUID> docs = owner.queryForList("SELECT id FROM source_document ORDER BY id", UUID.class);
         owner.update("UPDATE source_document SET status = 'READY' WHERE id = ?", docs.get(0));
         owner.update("UPDATE source_document SET status = 'ERROR' WHERE id = ?", docs.get(1));
@@ -44,8 +48,6 @@ class OwnerUsageStatsTest extends OwnerTestBase {
         owner.update("INSERT INTO course_image (id, course_id, owner_id, topic_id, status) VALUES (gen_random_uuid(), ?, ?, ?, 'FAILED')", anaCourse, f.anaId(), topicIds(anaCourse).get(1));
         owner.update("INSERT INTO course_image (id, course_id, owner_id, topic_id, status) VALUES (gen_random_uuid(), ?, ?, ?, 'PENDING')", f.course(), f.hugoId(), topicIds(f.course()).get(0));
 
-        redeemed(f.luis(), createCode(f.ana(), anaCourse));
-        createCode(f.ana(), anaCourse);
         auditAt("COURSE_SHARE_REVOKED", f.anaId(), "1 hour");
         auditAt("COURSE_SHARE_REVOKED", f.anaId(), "40 days");
         auditAt("COURSE_DELETED", f.anaId(), "1 day");

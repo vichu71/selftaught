@@ -4,7 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 import { useUiStore } from '@/stores/ui'
 import Mascot from '@/world/Mascot.vue'
-import { BookOpenText, LogOut, Moon, Map as MapIcon, BarChart3 } from 'lucide-vue-next'
+import { BookOpenText, LogOut, Moon, Map as MapIcon, BarChart3, ShieldCheck } from 'lucide-vue-next'
 
 const auth = useAuthStore()
 const route = useRoute()
@@ -12,7 +12,8 @@ const router = useRouter()
 const ui = useUiStore()
 
 // «Mapa» agrupa todo lo que cuelga de los cursos; Material y Resultados son secciones propias
-const section = computed<'map' | 'material' | 'results'>(() => {
+const section = computed<'map' | 'material' | 'results' | 'owner'>(() => {
+  if (route.path.startsWith('/propietario')) return 'owner'
   if (route.path.startsWith('/material')) return 'material'
   if (route.path.startsWith('/resultados')) return 'results'
   return 'map'
@@ -44,6 +45,9 @@ async function logout() {
         </RouterLink>
         <RouterLink to="/resultados" class="nav-link" :class="{ 'is-active': section === 'results' }" :aria-current="section === 'results' ? 'page' : undefined" data-testid="nav-results">
           <BarChart3 :size="18" aria-hidden="true" />&nbsp;Resultados
+        </RouterLink>
+        <RouterLink v-if="auth.user?.owner" to="/propietario" class="nav-link" :class="{ 'is-active': section === 'owner' }" :aria-current="section === 'owner' ? 'page' : undefined" data-testid="nav-owner">
+          <ShieldCheck :size="18" aria-hidden="true" />&nbsp;Propietario
         </RouterLink>
       </nav>
       <div class="nav-user">

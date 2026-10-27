@@ -22,7 +22,7 @@ public record AiImageProperties(
         imagePricing = imagePricing == null ? Map.of() : Map.copyOf(imagePricing);
     }
 
-    public record ImagePrice(BigDecimal perImage) {}
+    public record ImagePrice(BigDecimal perImage, java.time.LocalDate verifiedOn) {}
 
     /** Parámetros del run del benchmark de imágenes (solo con el perfil `benchmark-images`). */
     public record ImageBenchmark(String models, @DefaultValue("2.00") BigDecimal budgetUsd, @DefaultValue("/out") String outDir) {}
