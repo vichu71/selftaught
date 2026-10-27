@@ -33,7 +33,7 @@ export const minor: TestUser = {
 
 export async function mountApp(
   component: Component,
-  opts: { route?: string; user?: TestUser | null } = {},
+  opts: { route?: string; user?: TestUser | null; props?: Record<string, unknown> } = {},
 ) {
   const pinia = createPinia()
   setActivePinia(pinia)
@@ -43,7 +43,7 @@ export async function mountApp(
   auth.ready = true // la sesión ya se ha consultado: los tests de vistas no pasan por /api/me
   await router.push(opts.route ?? '/')
   await router.isReady()
-  const wrapper = mount(component, { global: { plugins: [pinia, router] } })
+  const wrapper = mount(component, { props: opts.props, global: { plugins: [pinia, router] } })
   await flushPromises()
   return { wrapper, router, auth }
 }

@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 import { mount } from '@vue/test-utils'
-import BarList from '@/owner/BarList.vue'
+import BarList from '@/ui/BarList.vue'
 import DataTable from '@/owner/DataTable.vue'
 import LineChart from '@/owner/LineChart.vue'
-import StatCard from '@/owner/StatCard.vue'
+import StatCard from '@/ui/StatCard.vue'
 
 const HOSTILE = '<img src=x onerror=alert(1)>'
 const days = (n: number) => Array.from({ length: n }, (_, i) => ({ label: `2026-10-${String(i + 1).padStart(2, '0')}`, value: i % 3 }))
