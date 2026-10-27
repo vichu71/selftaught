@@ -884,7 +884,7 @@ selftaught/
 - Revisitar si: se usa un modelo con visión para describir la imagen.
 
 ### ADR-82: Cinco estados, límites en la BD y copia pasiva
-- Motivo: `PENDING`, `DONE`, `FAILED`, `BLOCKED` (negativa del proveedor, sin reintento) y `REMOVED`. Ni `FAILED` ni `BLOCKED` se reintentan solos (coste); regenerar es explícito, limitado (20 ediciones con IA por hora de F09, 3 regeneraciones por tema, imágenes por hora) y contado en la BD. La **copia** por código lleva las imágenes `DONE` pero nace con `illustrations = false`: así nunca se cobra una generación al que canjea sin pedirla. Un menor no genera ni recibe imágenes (no se pueden filtrar con `ContentGuard`).
+- Motivo: `PENDING`, `DONE`, `FAILED`, `BLOCKED` (negativa del proveedor, sin reintento) y `REMOVED`. Ni `FAILED` ni `BLOCKED` se reintentan solos (coste); regenerar es explícito, limitado (20 ediciones con IA por hora de F09, 3 regeneraciones por tema, imágenes por hora) y contado en la BD. La **copia** por código lleva las imágenes `DONE` pero nace con `illustrations = false`: así nunca se cobra una generación al que canjea sin pedirla. Un menor no genera ni recibe imágenes (no se pueden filtrar con `ContentGuard`). Detalle surgido en la verificación (FASE 7): el guardado del resultado solo escribe sobre filas `PENDING`, así que una imagen quitada mientras se generaba no revive (el coste de esa llamada ya está contado).
 - Alternativas descartadas: reintentos automáticos (gasto imprevisible); copiar el interruptor (cobraría al canjeador).
 - Revisitar si: se filtran imágenes (moderación propia) y se abre a menores.
 
