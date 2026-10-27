@@ -19,11 +19,14 @@ export interface TestUser {
   roles: string[]
   email?: string
   loginId?: string
+  /** F14: solo el propietario lo trae (el servidor lo calcula; el enlace del menú depende de él, el permiso no). */
+  owner?: boolean
 }
 
 export const adult: TestUser = {
   id: 'u-ana', displayName: 'Ana', kind: 'ADULT', roles: ['STUDENT', 'TUTOR'], email: 'ana@example.com',
 }
+export const ownerUser: TestUser = { ...adult, owner: true }
 export const minor: TestUser = {
   id: 'u-hugo', displayName: 'Hugo', kind: 'MINOR', roles: ['STUDENT'], loginId: 'hugo',
 }

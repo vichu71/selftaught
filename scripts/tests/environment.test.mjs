@@ -521,3 +521,29 @@ test('F12 no añade dependencias al frontend ni cambia la política del servidor
   assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F12 no añade librerías al frontend');
   assert.match(read('frontend/nginx.conf'), /Content-Security-Policy "default-src 'self'/);
 });
+
+// ---------- F14: panel del propietario ----------
+
+test('F14 OWNER_EMAIL es opcional, no lleva valor por defecto y llega al backend con la variable vacía si falta', () => {
+  const env = base.services.backend.environment ?? {};
+  assert.ok('OWNER_EMAIL' in env, 'el backend recibe OWNER_EMAIL');
+  assert.ok(env.OWNER_EMAIL === '' || env.OWNER_EMAIL == null, `sin la variable el valor es vacío (no un correo por defecto): «${env.OWNER_EMAIL}»`);
+  assert.match(read('compose.yaml'), /OWNER_EMAIL:\s*\$\{OWNER_EMAIL:-\}/, 'sin :? (opcional) y sin correo por defecto');
+  assert.match(read('.env.example'), /^#?\s*OWNER_EMAIL=\s*$/m, 'la plantilla de variables documenta OWNER_EMAIL sin valor');
+});
+
+test('F14 la migración del panel es la siguiente, crea las tablas y el índice y no destruye datos ni toca ai_usage', () => {
+  const file = 'backend/src/main/resources/db/migration/V12__owner_panel.sql';
+  assert.ok(existsSync(`${REPO}/${file}`), `falta ${file}`);
+  const sql = read(file);
+  assert.match(sql, /CREATE TABLE user_limit_override/i);
+  assert.match(sql, /CREATE TABLE owner_action/i);
+  assert.match(sql, /CREATE INDEX audit_event_action_idx ON audit_event \(action, occurred_at\)/i);
+  assert.doesNotMatch(sql, /DROP TABLE|TRUNCATE|ALTER TABLE ai_usage|GRANT[^;]*\bai_usage\b/i);
+});
+
+test('F14 no añade dependencias al frontend (las gráficas son SVG propios) ni cambia la política del servidor web', () => {
+  const pkg = JSON.parse(read('frontend/package.json'));
+  assert.deepEqual(Object.keys(pkg.dependencies).sort(), FRONTEND_DEPS, 'F14 no añade librerías al frontend');
+  assert.match(read('frontend/nginx.conf'), /Content-Security-Policy "default-src 'self'/);
+});
