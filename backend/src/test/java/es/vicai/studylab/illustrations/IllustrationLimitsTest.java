@@ -18,6 +18,7 @@ class IllustrationLimitsTest extends IllustrationTestBase {
 
     @BeforeEach
     void clean() {
+        owner.update("UPDATE course SET illustrations = false"); // cursos de otros tests de la misma BD no deben entrar en la cola
         owner.update("DELETE FROM course_image");
         owner.update("DELETE FROM course_action WHERE kind = 'AI_IMAGE'");
         fake.reset();
@@ -67,6 +68,7 @@ class IllustrationLimitsTest extends IllustrationTestBase {
         drain();
 
         regenerate(luis, course, topic).andExpect(status().isAccepted());
+        owner.update("DELETE FROM course_action WHERE kind = 'AI_IMAGE'"); // pasada la hora, la cola puede trabajar
         drain();
         int calls = fake.imageCalls().size();
 

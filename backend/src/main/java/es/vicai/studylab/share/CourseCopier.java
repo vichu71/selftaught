@@ -102,6 +102,18 @@ public class CourseCopier {
                     .param("chapter", p.chapterId() == null ? null : chapterIds.get(p.chapterId())).param("kind", p.kind()).param("seq", p.seq())
                     .param("md", p.markdown() == null ? null : stripCitations(p.markdown())).param("json", p.json()).update();
         }
+        // Las ilustraciones ya hechas viajan con la copia de un adulto (ADR-82); el interruptor de la copia nace apagado y no se genera nada nuevo
+        if (!minor) {
+            for (Map.Entry<UUID, UUID> topic : topicIds.entrySet()) {
+                jdbc.sql("""
+                        INSERT INTO course_image (id, course_id, owner_id, topic_id, status, alt_text, mime, size_bytes, content, generated_at)
+                        SELECT gen_random_uuid(), :course, :owner, :newTopic, 'DONE', alt_text, mime, size_bytes, content, now()
+                        FROM course_image
+                        WHERE topic_id = :topic AND course_id = :source AND owner_id = :sourceOwner AND status = 'DONE' AND content IS NOT NULL""")
+                        .param("course", newCourse).param("owner", newOwner).param("newTopic", topic.getValue())
+                        .param("topic", topic.getKey()).param("source", sourceCourse).param("sourceOwner", sourceOwner).update();
+            }
+        }
         return new Result(Status.CREATED, newCourse);
     }
 

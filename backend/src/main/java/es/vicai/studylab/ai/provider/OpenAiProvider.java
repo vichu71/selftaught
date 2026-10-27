@@ -50,6 +50,37 @@ public class OpenAiProvider extends HttpProvider {
                 finish(choice.path("finish_reason").asText("")));
     }
 
+    /**
+     * Imágenes (F12): POST /v1/images/generations con n=1, size, quality y output_format=png; los modelos gpt-image devuelven la imagen en base64 (data[0].b64_json).
+     * Una negativa por moderación llega como 400 con código moderation_blocked o content_policy_violation. Formato según la documentación: lo confirma el benchmark.
+     */
+    @Override
+    public ImageResult image(ImageCall call) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", call.model());
+        body.put("prompt", call.prompt());
+        body.put("n", 1);
+        body.put("size", call.size() + "x" + call.size());
+        body.put("quality", call.quality());
+        body.put("output_format", "png");
+
+        Raw raw = post("/v1/images/generations", Map.of("Authorization", "Bearer " + apiKey), body);
+        if (!raw.ok()) {
+            String code = errorMessage(raw, "error", "code") + " " + errorMessage(raw, "error", "type");
+            if (raw.status() == 400 && containsAny(code, "moderation_blocked", "content_policy_violation", "safety")) {
+                throw failure(ProviderErrorKind.MODERATION, raw.status());
+            }
+            throw classify(raw);
+        }
+        String b64 = parse(raw).path("data").path(0).path("b64_json").asText("");
+        if (b64.isBlank()) throw invalid();
+        try {
+            return new ImageResult(java.util.Base64.getMimeDecoder().decode(b64), "image/png");
+        } catch (IllegalArgumentException e) {
+            throw invalid();
+        }
+    }
+
     private static FinishReason finish(String reason) {
         return switch (reason) {
             case "stop" -> FinishReason.STOP;

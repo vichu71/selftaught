@@ -11,4 +11,7 @@ public interface AiProvider {
     ChatResult chat(ChatCall call);
 
     EmbedResult embed(EmbedCall call);
+
+    /** Genera una imagen (F12). Solo OpenAI, Google y el proveedor falso la ofrecen; la configuración impide pedírsela a otro. */
+    ImageResult image(ImageCall call);
 }

@@ -47,6 +47,7 @@ public class AiException extends RuntimeException {
             case INPUT_TOO_LARGE -> "El texto enviado a la IA es demasiado largo";
             case USER_NOT_ALLOWED -> "Este usuario no puede usar la IA";
             case GENERATION_BUSY -> "Ya hay una generación en curso";
+            case MODERATED -> "El proveedor de IA no ha generado la imagen";
             case CONFIG -> "La IA no está bien configurada";
         });
     }

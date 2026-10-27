@@ -53,6 +53,12 @@ public class FakeProvider implements AiProvider {
         responder = null;
         sequenceIndex.set(0);
         response = new ChatResult("respuesta-falsa", 100, 50, false, FinishReason.STOP);
+        imageCalls.clear();
+        imageFailuresLeft.set(0);
+        imageFailKind = ProviderErrorKind.SERVER_ERROR;
+        imageFailMessage = "fallo simulado";
+        imageModerated = false;
+        imageBytes = null;
     }
 
     public void respondWith(String text, int inputTokens, int outputTokens) {
@@ -109,7 +115,87 @@ public class FakeProvider implements AiProvider {
         return new ArrayList<>(embedCalls);
     }
 
+    // ---------- ganchos de prueba de la imagen (F12) ----------
+
+    private final List<ImageCall> imageCalls = new CopyOnWriteArrayList<>();
+    private final AtomicInteger imageFailuresLeft = new AtomicInteger();
+    private volatile ProviderErrorKind imageFailKind = ProviderErrorKind.SERVER_ERROR;
+    private volatile String imageFailMessage = "fallo simulado";
+    private volatile boolean imageModerated;
+    private volatile byte[] imageBytes;
+
+    /** Todas las llamadas de imagen recibidas, también las que se hicieron fallar. */
+    public List<ImageCall> imageCalls() {
+        return new ArrayList<>(imageCalls);
+    }
+
+    /** La imagen que devuelve (por defecto, un PNG de 512×512 generado en memoria). Una respuesta vacía simula un proveedor que cobra y no devuelve nada. */
+    public void imageRespondsWith(byte[] bytes) {
+        imageBytes = bytes;
+    }
+
+    /** Las siguientes {@code times} llamadas de imagen fallan con ese tipo de error (0 lo cancela). */
+    public void imageFailsTimes(int times, ProviderErrorKind kind) {
+        imageFailKind = kind;
+        imageFailuresLeft.set(times);
+    }
+
+    public void imageFailMessage(String message) {
+        imageFailMessage = message;
+    }
+
+    /** Toda llamada de imagen es rechazada por la moderación del proveedor. */
+    public void imageIsModerated() {
+        imageModerated = true;
+    }
+
+    /** Un PNG válido de {@code width}×{@code height} generado en memoria (un degradado: ocupa poco). */
+    public static byte[] png(int width, int height) {
+        java.awt.image.BufferedImage image = new java.awt.image.BufferedImage(width, height, java.awt.image.BufferedImage.TYPE_INT_RGB);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) image.setRGB(x, y, ((x * 255 / Math.max(1, width)) << 16) | ((y * 255 / Math.max(1, height)) << 8) | 0x60);
+        }
+        try (java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream()) {
+            javax.imageio.ImageIO.write(image, "png", out);
+            return out.toByteArray();
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException(e);
+        }
+    }
+
+    /** Un PNG que solo tiene la firma, la cabecera con ese tamaño y el final: sirve para probar que se rechaza una bomba de píxeles sin decodificarla. */
+    public static byte[] pngDeclaring(int width, int height) {
+        java.io.ByteArrayOutputStream out = new java.io.ByteArrayOutputStream();
+        out.writeBytes(new byte[] {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A});
+        java.nio.ByteBuffer header = java.nio.ByteBuffer.allocate(13);
+        header.putInt(width).putInt(height).put((byte) 8).put((byte) 2).put((byte) 0).put((byte) 0).put((byte) 0);
+        chunk(out, "IHDR", header.array());
+        chunk(out, "IEND", new byte[0]);
+        return out.toByteArray();
+    }
+
+    private static void chunk(java.io.ByteArrayOutputStream out, String type, byte[] data) {
+        byte[] name = type.getBytes(java.nio.charset.StandardCharsets.US_ASCII);
+        java.util.zip.CRC32 crc = new java.util.zip.CRC32();
+        crc.update(name);
+        crc.update(data);
+        out.writeBytes(java.nio.ByteBuffer.allocate(4).putInt(data.length).array());
+        out.writeBytes(name);
+        out.writeBytes(data);
+        out.writeBytes(java.nio.ByteBuffer.allocate(4).putInt((int) crc.getValue()).array());
+    }
+
     // ---------- AiProvider ----------
+
+    @Override
+    public ImageResult image(ImageCall call) {
+        imageCalls.add(call);
+        pause();
+        if (imageModerated) throw new ProviderException(ProviderErrorKind.MODERATION, imageFailMessage);
+        if (imageFailuresLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0) > 0) throw new ProviderException(imageFailKind, imageFailMessage);
+        byte[] bytes = imageBytes;
+        return new ImageResult(bytes != null ? bytes : png(512, 512), "image/png");
+    }
 
     @Override
     public ChatResult chat(ChatCall call) {

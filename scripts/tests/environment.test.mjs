@@ -483,7 +483,7 @@ test('F12 el benchmark de imágenes es un servicio de un solo uso en su propio p
   assert.doesNotMatch(block.split(/\n {2}\w[\w-]*:\n/)[0], /\n\s+ports:/, 'el benchmark de imágenes no publica puertos');
   assert.match(block, /\.\/sdd\/benchmarks/);
   for (const [name, s] of services(base)) {
-    assert.ok(!(s.profiles ?? []).includes('benchmark-images'), `${name} no debe estar en el perfil benchmark-images`);
+    if (name !== 'benchmark-images') assert.ok(!(s.profiles ?? []).includes('benchmark-images'), `${name} no debe estar en el perfil benchmark-images`);
   }
 });
 

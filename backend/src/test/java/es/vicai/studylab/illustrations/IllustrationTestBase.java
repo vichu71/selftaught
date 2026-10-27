@@ -25,6 +25,13 @@ public abstract class IllustrationTestBase extends ShareTestBase {
 
     private final java.util.Map<String, String> sessions = new java.util.HashMap<>();
 
+    /** La BD se comparte entre clases: los cursos con el interruptor de tests anteriores no deben entrar en la cola de este. */
+    @org.junit.jupiter.api.BeforeEach
+    void noOtherCourseWantsIllustrations() {
+        owner.update("UPDATE course SET illustrations = false");
+        fake.reset();
+    }
+
     /** La sesión de un adulto: se registra la primera vez y se reutiliza después (registrar dos veces el mismo correo no vale). */
     protected String session(String email) throws Exception {
         String s = sessions.get(email);

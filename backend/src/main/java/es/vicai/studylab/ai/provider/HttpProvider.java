@@ -127,6 +127,11 @@ abstract class HttpProvider implements AiProvider {
     }
 
     @Override
+    public ImageResult image(ImageCall call) {
+        throw new UnsupportedOperationException(name() + " no genera imágenes en esta versión");
+    }
+
+    @Override
     public ChatResult chat(ChatCall call) {
         throw new UnsupportedOperationException(name() + " no se usa para chat en esta versión");
     }

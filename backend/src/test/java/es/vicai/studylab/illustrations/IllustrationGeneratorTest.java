@@ -177,7 +177,7 @@ class IllustrationGeneratorTest extends IllustrationTestBase {
         UUID user = idOf("luis@example.com");
         spendFor(user, "4.99");
         drain();
-        owner.update("DELETE FROM ai_usage WHERE task = 'OUTLINE' AND user_id = ?", user);
+        owner.execute("TRUNCATE ai_usage, ai_budget_alert RESTART IDENTITY"); // el mes siguiente: el gasto previo ya no cuenta
 
         drain();
 

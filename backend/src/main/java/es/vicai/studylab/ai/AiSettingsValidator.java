@@ -16,6 +16,7 @@ public final class AiSettingsValidator {
     public static final Set<String> KNOWN_PROVIDERS = Set.of("fake", "anthropic", "openai", "gemini", "ollama");
     private static final Set<String> CHAT_PROVIDERS = Set.of("fake", "anthropic", "openai", "gemini");
     private static final Set<String> EMBEDDING_PROVIDERS = Set.of("fake", "ollama");
+    public static final Set<String> IMAGE_PROVIDERS = Set.of("fake", "openai", "gemini");
 
     private AiSettingsValidator() {}
 
@@ -31,6 +32,10 @@ public final class AiSettingsValidator {
     }
 
     public static List<String> validate(AiProperties props, boolean production, boolean benchmarkProfile) {
+        return validate(props, AiImageProperties.defaults(), production, benchmarkProfile);
+    }
+
+    public static List<String> validate(AiProperties props, AiImageProperties imageProps, boolean production, boolean benchmarkProfile) {
         List<String> problems = new ArrayList<>();
         Set<String> realProvidersInUse = new LinkedHashSet<>();
 
@@ -55,8 +60,10 @@ public final class AiSettingsValidator {
         // En el run del benchmark las tareas no se usan: el propio runner valida su plan
         if (!benchmarkProfile) {
             for (AiTask task : AiTask.values()) {
+                if (task == AiTask.IMAGE) continue; // opcional: sin proveedor, las ilustraciones quedan desactivadas (F12)
                 validateTask(props, task, production, problems, realProvidersInUse);
             }
+            validateImage(props, imageProps, production, problems, realProvidersInUse);
         }
 
         for (String provider : realProvidersInUse) {
@@ -87,6 +94,37 @@ public final class AiSettingsValidator {
             problems.add("AI_MONTHLY_LIMIT_USD (app.ai.budget.monthly-limit-usd): obligatorio con un proveedor real");
         }
         return problems;
+    }
+
+    /** La tarea de imagen (F12) es opcional; si se configura, exige proveedor que dibuje, clave, tiempo y precio por imagen. */
+    private static void validateImage(AiProperties props, AiImageProperties imageProps, boolean production, List<String> problems, Set<String> realProvidersInUse) {
+        String key = "app.ai.tasks.image";
+        AiProperties.TaskConfig config = props.tasks().get(AiTask.IMAGE);
+        String provider = config == null ? "" : config.providerName();
+        String model = config == null || config.model() == null ? "" : config.model().trim();
+        if (provider.isEmpty() && model.isEmpty()) return;
+        if (provider.isEmpty() || model.isEmpty()) {
+            problems.add(key + ".provider y " + key + ".model (APP_AI_TASKS_IMAGE_PROVIDER / _MODEL: o las dos o ninguna)");
+            return;
+        }
+        if (!KNOWN_PROVIDERS.contains(provider)) {
+            problems.add(key + ".provider: proveedor desconocido '" + provider + "'");
+            return;
+        }
+        if (!IMAGE_PROVIDERS.contains(provider)) {
+            problems.add(key + ".provider: '" + provider + "' no sirve para la tarea de imagen (válidos: " + String.join(", ", new java.util.TreeSet<>(IMAGE_PROVIDERS)) + ")");
+            return;
+        }
+        if (provider.equals("fake")) {
+            if (production) problems.add(key + ".provider=fake no está permitido en producción (perfil prod)");
+        } else {
+            realProvidersInUse.add(provider);
+        }
+        if (config.timeout() == null || config.timeout().isZero() || config.timeout().isNegative()) problems.add(key + ".timeout (debe ser positivo)");
+        AiImageProperties.ImagePrice price = imageProps.imagePricing().get(provider + "/" + model);
+        if (price == null || price.perImage() == null || price.perImage().signum() < 0) {
+            problems.add("app.ai.image-pricing[" + provider + "/" + model + "].per-image (precio por imagen del modelo)");
+        }
     }
 
     private static void validateTask(AiProperties props, AiTask task, boolean production, List<String> problems,

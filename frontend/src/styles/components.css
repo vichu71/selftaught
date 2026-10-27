@@ -326,3 +326,13 @@ a.button-link {
   .tutor-launcher { bottom: 5.25rem; }
   .tutor-panel { max-height: calc(100vh - 12rem); }
 }
+
+/* Ilustraciones de portada (F12) */
+.topic-cover { margin: 0; display: flex; flex-direction: column; align-items: center; gap: var(--space-1); }
+.topic-cover-img, .topic-cover-plant { display: block; width: 100%; aspect-ratio: 1; object-fit: cover; background: var(--color-paper); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); }
+.topic-cover-plant { padding: var(--space-2); }
+.topic-cover-label { font-size: 0.7rem; line-height: 1.2; text-align: center; color: var(--color-muted); }
+.map-topic-cover { flex: 0 0 5.5rem; width: 5.5rem; }
+.piece-cover { width: min(100%, 14rem); margin: 0 auto var(--space-4); }
+.illustration-toggle { margin-block: var(--space-3); padding: var(--space-3); background: var(--color-paper); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); }
+.illustration-toggle p { margin: var(--space-1) 0 0; }

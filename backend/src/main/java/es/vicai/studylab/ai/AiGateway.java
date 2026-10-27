@@ -11,6 +11,8 @@ import es.vicai.studylab.ai.provider.ChatCall;
 import es.vicai.studylab.ai.provider.ChatResult;
 import es.vicai.studylab.ai.provider.EmbedCall;
 import es.vicai.studylab.ai.provider.EmbedResult;
+import es.vicai.studylab.ai.provider.ImageCall;
+import es.vicai.studylab.ai.provider.ImageResult;
 import es.vicai.studylab.ai.provider.ProviderErrorKind;
 import es.vicai.studylab.ai.provider.ProviderException;
 import es.vicai.studylab.ai.provider.ProviderRegistry;
@@ -46,15 +48,17 @@ public class AiGateway {
     private record Attempt<R>(R result, int number, long durationMs) {}
 
     private final AiProperties props;
+    private final AiImageProperties imageProps;
     private final ProviderRegistry providers;
     private final PromptAssembler assembler;
     private final UsageRepository usage;
     private final BudgetService budget;
     private final JdbcClient jdbc;
 
-    public AiGateway(AiProperties props, ProviderRegistry providers, PromptAssembler assembler, UsageRepository usage,
+    public AiGateway(AiProperties props, AiImageProperties imageProps, ProviderRegistry providers, PromptAssembler assembler, UsageRepository usage,
                      BudgetService budget, JdbcClient jdbc) {
         this.props = props;
+        this.imageProps = imageProps;
         this.providers = providers;
         this.assembler = assembler;
         this.usage = usage;
@@ -156,6 +160,72 @@ public class AiGateway {
         return new EmbeddingResult(result.vectors(), in);
     }
 
+    // ---------- imágenes (F12, ADR-78) ----------
+
+    /** Hay proveedor y modelo de imagen configurados; sin ellos las ilustraciones quedan desactivadas. */
+    public boolean imageEnabled() {
+        AiProperties.TaskConfig task = props.tasks().get(AiTask.IMAGE);
+        return task != null && !task.providerName().isEmpty() && task.model() != null && !task.model().isBlank();
+    }
+
+    /** Precio por imagen del modelo configurado (para ofrecerlo al usuario y para calcular el peor caso). */
+    public BigDecimal imagePriceUsd() {
+        if (!imageEnabled()) throw AiException.of(AiErrorKind.CONFIG);
+        AiProperties.TaskConfig task = props.task(AiTask.IMAGE);
+        return imageProps.priceOf(task.providerName(), task.model().trim());
+    }
+
+    /** Una imagen para una feature, a nombre de un usuario, con su tope y sus avisos de gasto. */
+    public AiImageResponse generateImage(AiImageRequest request) {
+        if (!imageEnabled()) throw AiException.of(AiErrorKind.CONFIG);
+        AiProperties.TaskConfig task = props.task(AiTask.IMAGE);
+        return doImage(request, task.providerName(), task.model().trim(), task.timeout());
+    }
+
+    /** Para el benchmark de imágenes: fuerza proveedor y modelo, sin usuario ni vigilancia del tope (el run tiene el suyo). */
+    public AiImageResponse generateImageWith(ModelRef model, AiImageRequest request) {
+        AiProperties.TaskConfig task = props.tasks().get(AiTask.IMAGE);
+        return doImage(request, model.provider(), model.model(), task == null || task.timeout() == null ? Duration.ofMinutes(2) : task.timeout());
+    }
+
+    private AiImageResponse doImage(AiImageRequest request, String provider, String model, Duration timeout) {
+        UUID requestId = UUID.randomUUID();
+        boolean bench = request.isBenchmark();
+        Ctx ctx = new Ctx(requestId, request.userId(), request.courseId(), bench ? "BENCHMARK" : "APP", AiTask.IMAGE, provider, model);
+
+        if (!bench) requireActiveUser(ctx);
+        BigDecimal price;
+        try {
+            price = imageProps.priceOf(provider, model);
+        } catch (AiException e) {
+            throw blocked(ctx, AiErrorKind.CONFIG);
+        }
+        if (!bench) {
+            try {
+                budget.checkBeforeCall(ctx.userId(), price);
+            } catch (AiException e) {
+                usage.insert(row(ctx, 1, 0, 0, false, BigDecimal.ZERO, "BLOCKED", e.kind().name(), null, 0));
+                throw e;
+            }
+        }
+
+        AiProvider adapter = providers.get(provider);
+        ImageCall call = new ImageCall(model, request.prompt(), imageProps.imageSize(), imageProps.imageQuality(), timeout);
+        Attempt<ImageResult> attempt = withRetries(ctx, () -> adapter.image(call));
+        ImageResult result = attempt.result();
+
+        if (result == null || result.bytes() == null || result.bytes().length == 0) {
+            // Respuesta vacía de una llamada que el proveedor ya cobró: no sirve a la feature, pero el coste se contabiliza
+            usage.insert(row(ctx, attempt.number(), 0, 0, false, price, "ERROR", ProviderErrorKind.INVALID_RESPONSE.name(), null, attempt.durationMs()));
+            budget.afterCall(bench ? null : ctx.userId());
+            throw AiException.billed(AiErrorKind.INVALID_RESPONSE, price);
+        }
+        usage.insert(row(ctx, attempt.number(), 0, 0, false, price, "OK", null, null, attempt.durationMs()));
+        log.debug("IA {} {}/{} OK (intento {}, {} ms)", ctx.task(), provider, model, attempt.number(), attempt.durationMs());
+        budget.afterCall(bench ? null : ctx.userId());
+        return new AiImageResponse(result.bytes(), result.mime() == null ? "image/png" : result.mime(), price, provider, model, requestId, attempt.durationMs());
+    }
+
     // ---------- reintentos acotados (ADR-23) ----------
 
     private <R> Attempt<R> withRetries(Ctx ctx, ProviderCall<R> call) {
@@ -189,6 +259,7 @@ public class AiGateway {
             case AUTH -> AiErrorKind.PROVIDER_AUTH;
             case BAD_REQUEST, MODEL_NOT_FOUND -> AiErrorKind.PROVIDER_REJECTED;
             case INVALID_RESPONSE -> AiErrorKind.INVALID_RESPONSE;
+            case MODERATION -> AiErrorKind.MODERATED;
             case TIMEOUT, RATE_LIMITED, SERVER_ERROR, UNAVAILABLE -> AiErrorKind.PROVIDER_UNAVAILABLE;
         };
     }

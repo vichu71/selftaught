@@ -20,6 +20,7 @@ const createMessages: Record<string, string> = {
   INTAKE_EXPIRED: 'La consulta ha caducado. Empieza de nuevo.',
   COURSE_LIMIT_REACHED: 'Tienes varios cursos pendientes de preparar. Espera a que terminen para crear otro.',
   NOT_FOUND: 'Alguno de los documentos ya no está disponible. Vuelve atrás y elige otros.',
+  ILLUSTRATIONS_UNAVAILABLE: 'Las ilustraciones no están disponibles ahora. Desactiva «Con ilustraciones» y vuelve a intentarlo.',
 }
 
 /** El asistente en pasos. El tema y las respuestas viven aquí (en memoria), así que no se pierden si un paso falla ni al ir y volver. */
@@ -40,6 +41,8 @@ export const useCourseStore = defineStore('course', () => {
   const creating = ref(false)
   const createError = ref('')
   const expired = ref(false)
+  /** «Con ilustraciones» (F12): apagado por defecto y solo se activa desde el último paso. */
+  const illustrations = ref(false)
 
   const trimmedTopic = computed(() => topic.value.trim())
 
@@ -58,6 +61,7 @@ export const useCourseStore = defineStore('course', () => {
     creating.value = false
     createError.value = ''
     expired.value = false
+    illustrations.value = false
   }
 
   function submitTopic() {
@@ -126,10 +130,9 @@ export const useCourseStore = defineStore('course', () => {
     createError.value = ''
     expired.value = false
     try {
-      const course = await api.createCourse(
-        intakeId.value,
-        questions.value.map((q) => ({ questionId: q.id, optionId: answerFor(q) })),
-      )
+      const answers = questions.value.map((q) => ({ questionId: q.id, optionId: answerFor(q) }))
+      // Sin el interruptor la llamada es exactamente la de siempre (F12: apagado por defecto)
+      const course = illustrations.value ? await api.createCourse(intakeId.value, answers, true) : await api.createCourse(intakeId.value, answers)
       return course.id
     } catch (e) {
       const code = e instanceof ApiError ? e.code : undefined
@@ -143,6 +146,6 @@ export const useCourseStore = defineStore('course', () => {
 
   return {
     step, topic, topicError, wantsMaterial, documentIds, docsError, intakeId, questions, chosen, thinking, intakeError, creating, createError,
-    expired, reset, submitTopic, answerFor, askAssistant, backFromBlocked, back, toSummary, accept,
+    expired, illustrations, reset, submitTopic, answerFor, askAssistant, backFromBlocked, back, toSummary, accept,
   }
 })
