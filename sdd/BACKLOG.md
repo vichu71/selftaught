@@ -138,7 +138,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F9-2 | 🟡 Avisar al propietario o a quien copió de que hay una versión nueva del original | Fuera de v1; `origin_id` y `origin_version` ya se guardan |
 | F9-3 | 🟡 El propietario no ve quién ha canjeado su código, solo cuántas veces | Decisión de privacidad |
 | F9-4 | 🟡 Reordenar es con botones (sin arrastrar y soltar) | Mejora de interfaz (F10) |
-| F9-5 | 🟡 Un adulto que pasa una copia a su menor, y borrar un curso entero | Fuera de v1 |
+| F9-5 | 🟡 Un adulto que pasa una copia a su menor | Fuera de v1 (borrar un curso entero llegó con F13) |
 | F9-6 | 🟡 Sin moderación del contenido compartido: un adulto puede compartir algo que él mismo editó | Fuera de v1; el filtro solo protege a los menores |
 | F9-7 | 🟡 La lista local del filtro de menores es corta y en español: ahora protege también las copias (F4-3, F5-5, F7-2, F8-6) | Segunda capa pendiente |
 | F9-8 | 🟡 El panel del adulto no muestra los códigos que crea su menor ni cuándo alguien canjea uno de sus cursos | Los eventos `COURSE_SHARE_CREATED` y `COURSE_SHARE_REDEEMED` ya están en la auditoría; decidir en F10 si se enseñan |
@@ -185,3 +185,13 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F12-7 | 🟡 La exportación JSON no incluye las ilustraciones | Binario; fuera de v1 |
 | F12-8 | 🟡 Una instrucción maliciosa dentro del título de un tema no se detecta; la defensa es la estructura del prompt y la moderación del proveedor | ADR-81 |
 | F12-9 | 🟡 Quien canjea una copia no puede activar las ilustraciones para los temas que no las tengan | Sería una opción nueva con su coste a la vista |
+
+## Anotado en F13 (borrar cursos)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F13-1 | 🟡 Sin papelera ni «deshacer»: el borrado es definitivo; la red de seguridad es el aviso y la exportación previa | ADR-84; papelera de 7–30 días si se pierden cursos por error |
+| F13-2 | 🟡 Los menores no pueden borrar sus cursos y el tutor adulto tampoco los de su menor: si se acumulan, no hay forma de limpiarlos | ADR-86; opciones: archivar para el menor o borrado por el tutor con auditoría |
+| F13-3 | 🟡 El borrado de cursos no tiene límite de frecuencia | ADR-84: no gasta ni toca la IA |
+| F13-4 | 🟡 Quien canjeó un código no se entera de que el original desapareció (su copia sigue) | Fuera de v1 |
+| F13-5 | 🟡 La fila de `course_intake` se queda vacía para siempre (cuenta para el límite de consultas) | ADR-85; limpiar al pasar el límite a su propio contador |

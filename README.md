@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) en curso. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -181,6 +181,14 @@ En la página de un curso, **Editar curso** abre su editor. Puedes **renombrar, 
 - **Tengo un código:** quien lo introduce (adulto o menor) recibe **su propia copia**, que puede editar sin afectar al original. La copia **no lleva** tu material subido, ni las fuentes de las lecciones, ni tu progreso, intentos, conversaciones ni ningún dato tuyo. Un código que no vale (mal escrito, caducado o revocado) responde siempre igual,
   y hay un límite de intentos por usuario.
 - **Menores:** lo que escriben al editar y toda la copia que canjean pasan por el filtro de contenido; si salta, no se guarda ni se crea nada y su adulto tutor lo ve en los avisos de su panel.
+
+## Borrar cursos (F13)
+
+En **Tus cursos** (inicio), **Seleccionar** deja marcar varios cursos y **Borrar (n)** los borra de una vez; también hay **Borrar curso** en la página de cada curso. Antes de borrar se abre un aviso que lista los cursos, dice qué se pierde y qué se conserva, y enlaza a **exportar** cada curso por si lo quieres guardar.
+
+- **Es definitivo** (no hay papelera): se van las lecciones, ejercicios, intentos, conversaciones con el tutor, ilustraciones y códigos de compartir del curso. **Se conserva** tu gasto de IA, tu material subido y las copias que otras personas ya hicieron de tu curso.
+- **No se borra un curso que se está preparando** (en cola o generándose): espera a que termine. Si seleccionas varios y alguno está ocupado, no se borra ninguno.
+- **Solo los adultos borran.** Los menores no ven la opción (su adulto tutor ve su actividad) y el tutor no puede borrar los cursos de su menor.
 
 ## Ilustraciones de portada con IA (F12)
 

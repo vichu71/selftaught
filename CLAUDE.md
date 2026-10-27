@@ -174,6 +174,15 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - **Menores:** no generan ni reciben ilustraciones (el servidor lo rechaza y su copia de un curso compartido no lleva imágenes). La copia de un adulto lleva las `DONE` pero nace con `illustrations = false`: **nunca se cobra una generación a quien canjea sin pedirla**. `FAILED` y `BLOCKED` no se reintentan solos (cada intento cuesta).
 - Ni logs, ni auditoría, ni uso de IA llevan el prompt, el título del tema, la imagen ni mensajes del proveedor (solo ids y el tipo de error). Los tests no llaman a ninguna API de pago: el proveedor falso devuelve una imagen generada en memoria. El benchmark de imágenes (`make benchmark-images`) solo lo lanza el usuario, con sus claves y su tope.
 
+## Reglas de F13 (borrar cursos)
+- Contrato y criterios de aceptación: `sdd/specs/US-F13-borrar-cursos.md`; diseño y ADR-84 a 86: `sdd/specs/ART-F13-propuesta-borrar-cursos.md` y `ARCHITECTURE.md`. El paquete `coursedelete/` **no habla con el modelo** (nada de `AiGateway`, `MaterialSearch` ni `GenerationLock`).
+- Borrado **definitivo**, sin papelera, de uno o varios cursos (`DELETE /api/courses/{id}`, `POST /api/courses/delete` con 1–50 ids): una transacción, **todo o nada**, filas bloqueadas `ORDER BY id FOR UPDATE` con `owner_id`. Ajeno, inexistente o mal formado → 404 igual; en cola o generándose → 409 `COURSE_BUSY`; `READY`, `PAUSED` y `FAILED` se borran.
+- **Solo el adulto propietario borra:** el menor recibe 403 `CHILD_CANNOT_DELETE` (su tutor ve intentos y conversaciones) y el tutor adulto tampoco borra los cursos de su menor.
+- **`ai_usage` no se borra nunca** (registro de gasto y topes). La fila de `course_intake` del curso se **vacía** (tema, preguntas, documentos) pero se conserva: el límite por hora cuenta sobre sus filas. Las copias de otros siguen con `origin_id` nulo y sus códigos dejan de valer. «Mi material» no se toca.
+- Auditoría `COURSE_DELETED` con ids (nunca el título), dentro de la transacción; los rechazos no se auditan. Sin límite por hora (no gasta ni toca la IA).
+- Frontend: selección múltiple en la lista (`CoursesPanel`) y «Borrar curso» en la pantalla del curso, solo para adultos, con `DeleteCoursesDialog` (Reka UI; nada de `confirm()`): títulos como texto, qué se pierde y qué se conserva, enlace a exportar antes; un 404 se trata como «ya borrado» y el código del backend nunca se enseña.
+- Probar el borrado con el **rol real de la aplicación** (`studylab_app`): el `GRANT DELETE ON course` de `V11` es lo que lo permite.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

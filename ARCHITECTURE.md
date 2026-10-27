@@ -238,6 +238,20 @@ F11 sustituye la piel «Mapa» (F10) por «Mundo» y es **la interfaz definitiva
 - **Benchmark de imágenes:** `make benchmark-images` (perfil `benchmark-images`, un solo uso, con tope en USD y confirmación) pide una imagen por tema y modelo a los modelos de `APP_AI_BENCHMARK_IMAGE_MODELS` y deja en `sdd/benchmarks/` un informe y una página HTML estática para compararlas. Lo lanza solo el usuario con sus claves.
 - **Reglas de arquitectura:** `ImageArchitectureTest` exige que `illustrations/` solo hable con `AiGateway`, el cerrojo y sus registros, que no use el sistema de ficheros ni construya HTML, que toda consulta sobre `course_image` lleve `owner_id` (salvo la de la cola) y que `ai/` no conozca `illustrations/`.
 
+## Borrado de cursos (F13)
+
+```
+ Propietario adulto ──► DELETE /api/courses/{id}  ·  POST /api/courses/delete {ids:[1..50]}                                    AC-1..12
+   0. menor → 403 CHILD_CANNOT_DELETE (antes de tocar la BD; ni el tutor adulto borra, su 404 es el de «ajeno»)                        (ADR-86)
+   1. una transacción: SELECT … WHERE id = ANY(:ids) AND owner_id = :owner ORDER BY id FOR UPDATE  (menos filas que ids → 404 igual para ajeno e inexistente)
+   2. alguno PENDING_GENERATION o GENERATING → 409 COURSE_BUSY, nada cambia; READY, PAUSED y FAILED se borran
+   3. UPDATE course_intake (vacía tema, preguntas y documentos; la fila se queda para el límite por hora) ─► DELETE FROM course ─► cascada del esquema (ADR-85)
+   4. auditoría COURSE_DELETED por curso, solo ids, dentro de la transacción; los rechazos no se auditan
+```
+
+Sin IA ni cerrojo de generación (un test de arquitectura lo exige) y sin migración de tablas: `V11` solo da `DELETE` sobre `course` al rol de la aplicación. `ai_usage` no se toca; las copias de otros quedan con `origin_id` nulo y sus códigos dejan de valer. Un trabajador de ilustraciones con una llamada en vuelo
+termina sin escribir (el guardado exige la fila `PENDING`, ADR-82) y su coste ya está contado.
+
 ## Modelo de datos
 
 ```
@@ -301,6 +315,7 @@ course              + version (int, 1), origin_id (→ course, ON DELETE SET NUL
 course_piece        + outdated (boolean): «la lección cambió»; se limpia al regenerar
 course_image        F12: id, course_id + owner_id + topic_id (FK compuestas, CASCADE), status (PENDING | DONE | FAILED | BLOCKED | REMOVED), error_kind, attempts, regenerations, alt_text, mime, size_bytes (≤ 300 kB), content bytea · una por tema · course.illustrations (boolean, por defecto false)
 share_code          id, course_id + owner_id (FK compuesta → course, CASCADE), code_hash (SHA-256, único; el código NO se guarda), created_at, expires_at, revoked_at, uses
+-- F13 (migración V11): sin tablas ni columnas nuevas; GRANT DELETE ON course al rol de la aplicación (el resto cae por las FK en cascada; ai_usage.course_id no tiene FK y se conserva)
 course_action       id, user_id, kind (AI_EDIT | AI_IMAGE | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
 course_topic / course_chapter + permiso DELETE para el rol de la aplicación
 ```
@@ -343,6 +358,7 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `PUT …/pieces/{pid}/content` · `POST …/pieces/{pid}/regenerate` | propietario | texto de una lección (1–20 000 caracteres) · regenerar una pieza hecha con IA (202); mismos errores |
 | `POST/GET /api/courses/{id}/share` · `DELETE …/share/{sid}` | propietario | crear un código (201 `{id, code, expiresAt}`, el código solo esa vez; 409 `COURSE_NOT_READY`, `SHARE_LIMIT`) · ver su estado · revocar (204, idempotente) |
 | `POST /api/courses/redeem` | cualquier usuario con sesión | `{code}` → 201 `{id, title}` (la copia); 404 igual para cualquier código que no valga · 422 `COPY_NOT_ALLOWED` (menor y el filtro salta) · 429 `CODE_RATE_LIMITED` |
+| `DELETE /api/courses/{id}` · `POST /api/courses/delete` | propietario adulto | borrar uno o varios cursos (F13): `{ids}` de 1 a 50, todo o nada; 204 · 400 · 403 `CHILD_CANNOT_DELETE` (menor) · 404 (ajeno, inexistente o mal formado, igual) · 409 `COURSE_BUSY` |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -362,8 +378,9 @@ selftaught/
 │     src/main/java/es/vicai/studylab/tutor                       # F07: hilo por lección, contexto, límites, filtro de menores y llamada al modelo
 │     src/main/java/es/vicai/studylab/guardian                    # F08: panel del adulto tutor (solo lectura): resumen, intentos, conversaciones, avisos y consumo
 │     src/main/java/es/vicai/studylab/{courseedit,share}          # F09: editar temario y lecciones, regenerar; códigos de compartir, canje y copia
+│     src/main/java/es/vicai/studylab/coursedelete                # F13: borrado de cursos (uno o varios), todo o nada, con auditoría
 │     src/main/java/es/vicai/studylab/illustrations                # F12: cola de ilustraciones, saneado del prompt, procesado de la imagen, entrega y edición
-│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos)
+│     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos, V10 ilustraciones, V11 permiso de borrado)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
 │     src/test/                          # tests de integración (caja negra por HTTP)
@@ -892,3 +909,18 @@ selftaught/
 - Motivo: gasta dinero real y necesita claves; como el de texto (ADR-24), vive en un servicio de Compose de un solo uso (`make benchmark-images`) con tope en USD, 3 temas fijos y los modelos que indique `APP_AI_BENCHMARK_IMAGE_MODELS`; deja el informe y un `index.html` estático con las imágenes lado a lado y su coste real para compararlas a ojo. Nunca se ejecuta desde un test ni en el arranque.
 - Alternativas descartadas: ampliar el benchmark de texto (otro formato y otro coste); medir la calidad automáticamente (no es fiable para imágenes).
 - Revisitar si: se quiere puntuar con un modelo con visión.
+
+### ADR-84: Borrado definitivo en una transacción, todo o nada, sin papelera ni límite
+- Motivo: la necesidad es limpiar la lista. El esquema ya cascada casi todo desde `course`; borrar una fila basta, con el `GRANT DELETE` que faltaba. Una papelera exigiría `deleted_at` filtrado en todas las consultas con `owner_id` de F05 a F12 (y sus pruebas de arquitectura) y un purgado; el riesgo de una consulta que olvide el filtro supera el beneficio. La red de seguridad es el diálogo con lo que se pierde y la exportación previa. «Todo o nada» evita estados a medias en el borrado múltiple; se bloquean las filas en orden de id para no entrelazarse con ediciones ni con otro borrado. Sin límite por hora: no cuesta dinero ni toca la IA.
+- Alternativas descartadas: papelera con deshacer (ver arriba); borrado lógico solo ocultando (los datos del menor seguirían ahí y los de los adultos sin poder quitarlos); resultados parciales en el borrado múltiple (más casos y mensajes, sin ganancia real).
+- Revisitar si: se pierden cursos por error de forma repetida (entonces papelera de 7–30 días) o se añade borrado automático.
+
+### ADR-85: Qué se conserva — gasto, copias y la fila de la consulta
+- Motivo: `ai_usage` es el registro de gasto (solo se añade, y los topes mensuales se suman por usuario, no por curso), así que sus filas con un `course_id` huérfano son correctas. Las copias son cursos independientes (F09): `origin_id` pasa a nulo y no cambian. La fila de `course_intake` se conserva **vaciada** porque el límite por hora de consultas se cuenta sobre sus filas: borrarla permitiría crear-y-borrar sin límite; sin el tema ni las preguntas no queda texto del usuario.
+- Alternativas descartadas: borrar también `ai_usage` (pierde el registro de gasto); borrar la fila de la consulta (esquiva el límite A2); conservar el tema (es texto del usuario del curso que quiso quitar).
+- Revisitar si: el límite de consultas pasa a su propio contador (como `course_action`).
+
+### ADR-86: El menor no borra, y el tutor adulto tampoco
+- Motivo: el adulto tutor ve intentos y conversaciones de su menor (F08) y un clic destruiría esa supervisión; borrar el curso de otro está fuera de lo que F09 permite al tutor. El menor recibe 403 siempre (no un 404), porque su propio curso existe y el motivo no es un secreto.
+- Alternativas descartadas: el menor borra con aviso al tutor (la actividad ya borrada no se puede ver); el tutor borra cursos de su menor (cambia la regla de propiedad de F09).
+- Revisitar si: los cursos de los menores se acumulan en uso real (opción: archivar para el menor, o borrado por el tutor con auditoría).
