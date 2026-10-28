@@ -75,6 +75,7 @@ onMounted(async () => {
           <li v-for="m in usage.minors" :key="m.id" class="results-minor">
             <p><strong>{{ m.displayName }}</strong> · la IA le ha ayudado {{ times(m.calls) }}</p>
             <TopeMeter label="Tope de este mes" :spend-usd="m.spendUsd" :limit-usd="m.limitUsd" :reached="m.limitReached" />
+            <RouterLink :to="`/alumnos/${m.id}`" class="ui-button ui-button--secondary" :data-testid="`results-minor-activity-${m.id}`">Ver actividad</RouterLink>
           </li>
         </ul>
       </section>

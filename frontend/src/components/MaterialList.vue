@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { File as FileIcon, FileText, FileType } from 'lucide-vue-next'
 import type { MaterialDocument } from '@/api/client'
 import MaterialStatus from '@/components/MaterialStatus.vue'
 
@@ -23,6 +24,7 @@ function reason(kind?: string): string {
 }
 
 const typeLabels = { PDF: 'PDF', DOCX: 'Word', TEXT: 'Texto' } as const
+const icons = { PDF: FileText, DOCX: FileType, TEXT: FileIcon } as const
 
 function size(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -38,7 +40,8 @@ function confirmRemove(id: string) {
 
 <template>
   <ul class="documents">
-    <li v-for="d in documents" :key="d.id" class="document" :data-testid="`doc-${d.id}`">
+    <li v-for="d in documents" :key="d.id" class="document doc-card" :data-testid="`doc-${d.id}`">
+      <component :is="icons[d.mediaType] ?? FileIcon" :size="28" class="doc-card-icon" aria-hidden="true" :data-kind="d.mediaType" :data-testid="`doc-icon-${d.id}`" />
       <div class="document-main">
         <strong class="document-name">{{ d.name }}</strong>
         <span class="badge">{{ typeLabels[d.mediaType] }} · {{ size(d.sizeBytes) }}</span>

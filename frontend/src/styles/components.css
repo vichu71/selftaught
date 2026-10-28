@@ -437,3 +437,52 @@ a.button-link {
 .result-card .ui-progress { width: 100%; }
 .result-card p { margin: 0; }
 .result-problems { display: flex; flex-wrap: wrap; justify-content: center; gap: var(--space-2); font-weight: 600; }
+
+/* ---------- Inicio y Mi material (F16): atajos, menores y documentos como tarjetas, alta plegable, zona de subida y vacíos ---------- */
+.shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-4); margin-top: var(--space-3); }
+.action-card {
+  display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-tap); padding: var(--space-4); min-width: 0; overflow-wrap: anywhere;
+  background: var(--color-surface); color: var(--color-ink); text-decoration: none;
+  border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: var(--shadow-soft);
+}
+.action-card:hover { background: var(--color-accent); color: var(--color-on-accent); }
+.action-card svg { flex: 0 0 auto; }
+.action-card-text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.action-card-text span { font-size: 0.9rem; }
+.disclosure { margin-top: var(--space-4); }
+.disclosure-toggle { display: inline-flex; align-items: center; gap: var(--space-2); }
+.disclosure-toggle .is-open { transform: rotate(180deg); }
+.disclosure-region { margin-top: var(--space-3); }
+.empty-note { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); padding: var(--space-4); text-align: center; color: var(--color-muted); }
+.empty-note p { margin: 0; }
+.empty-note-art { width: 6rem; max-width: 40%; height: auto; }
+.students { display: flex; flex-direction: column; gap: var(--space-3); }
+.student-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); overflow-wrap: anywhere; background: var(--color-paper); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); }
+.student-card-who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
+.student-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.student-card .ui-tag { display: inline-flex; align-items: center; gap: var(--space-1); }
+.drop-zone {
+  display: flex; flex-direction: column; align-items: center; gap: var(--space-2); min-height: var(--size-tap); padding: var(--space-5) var(--space-4); text-align: center;
+  background: var(--color-paper); border: var(--border-width) dashed var(--color-line); border-radius: var(--radius-2);
+}
+.drop-zone p { margin: 0; }
+.drop-zone-title { font-weight: 700; }
+.drop-zone.is-over { background: var(--color-accent); color: var(--color-on-accent); }
+.drop-zone.is-disabled { opacity: 0.65; }
+.drop-zone.is-disabled .drop-zone-button { pointer-events: none; }
+.drop-zone:focus-within { outline: 3px solid var(--color-focus); outline-offset: 2px; }
+.drop-zone-state { font-weight: 700; }
+.documents .doc-card {
+  display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: var(--space-3); margin-bottom: var(--space-3); padding: var(--space-3) var(--space-4); overflow-wrap: anywhere;
+  background: var(--color-surface); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2);
+}
+.documents .doc-card:first-child { border-top: var(--border-width) solid var(--color-line); }
+.doc-card-icon { color: var(--color-muted); flex: 0 0 auto; }
+.status { display: inline-flex; align-items: center; gap: var(--space-1); }
+@media (max-width: 29.99rem) {
+  .documents .doc-card { grid-template-columns: auto 1fr; }
+  .documents .doc-card .actions { grid-column: 1 / -1; }
+}
+@media (prefers-reduced-motion: no-preference) {
+  .disclosure-toggle svg { transition: transform 0.2s ease; }
+}

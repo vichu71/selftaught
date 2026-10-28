@@ -4,6 +4,7 @@ import { ApiError, api, type Course, type CourseStatus } from '@/api/client'
 import DeleteCoursesDialog from '@/components/DeleteCoursesDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import { useStudyStore } from '@/stores/study'
+import EmptyNote from '@/ui/EmptyNote.vue'
 import UiButton from '@/ui/UiButton.vue'
 import UiProgress from '@/ui/UiProgress.vue'
 import PlantIllustration from '@/world/PlantIllustration.vue'
@@ -95,7 +96,7 @@ onMounted(async () => {
     <h2>Tus cursos</h2>
     <UiState v-if="listError" state="error" message="No se pudieron cargar tus cursos." data-testid="courses-error" />
     <UiState v-else-if="loading" state="loading" message="Cargando tus cursos…" />
-    <p v-else-if="courses.length === 0" class="muted" data-testid="no-courses">Todavía no tienes ningún curso. ¡Crea el primero!</p>
+    <EmptyNote v-else-if="courses.length === 0" message="Todavía no tienes ningún curso. ¡Crea el primero!" data-testid="no-courses" />
 
     <div v-if="canDelete" class="select-bar">
       <UiButton data-testid="courses-select-toggle" @click="toggleSelecting">{{ selecting ? 'Cancelar selección' : 'Seleccionar' }}</UiButton>

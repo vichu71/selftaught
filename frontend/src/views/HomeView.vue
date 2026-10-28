@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { BarChart3, BookOpenText, KeyRound } from 'lucide-vue-next'
+import ActionCard from '@/ui/ActionCard.vue'
 import { ref } from 'vue'
 import { api, type Course } from '@/api/client'
 import ContinueCard from '@/components/ContinueCard.vue'
@@ -51,9 +53,14 @@ async function pickContinue(courses: Course[]) {
 
     <section class="card">
       <h2>Tu espacio de estudio</h2>
-      <p><RouterLink to="/material" data-testid="material-link">Mi material</RouterLink> · sube tus apuntes (PDF, Word o texto).</p>
-      <p><RouterLink to="/codigo" data-testid="redeem-link">Tengo un código</RouterLink> · recibe tu propia copia de un curso que te han compartido.</p>
-      <p><RouterLink to="/resultados" data-testid="results-link">Resultados</RouterLink> · {{ auth.user?.kind === 'MINOR' ? 'cómo van tus cursos.' : 'cómo van tus cursos y cuánto se ha gastado.' }}</p>
+      <div class="shortcut-grid" data-testid="shortcut-grid">
+        <ActionCard to="/material" :icon="BookOpenText" title="Mi material" description="Sube tus apuntes (PDF, Word o texto)." data-testid="material-link" />
+        <ActionCard to="/codigo" :icon="KeyRound" title="Tengo un código" description="Recibe tu propia copia de un curso que te han compartido." data-testid="redeem-link" />
+        <ActionCard
+          to="/resultados" :icon="BarChart3" title="Resultados"
+          :description="auth.user?.kind === 'MINOR' ? 'Cómo van tus cursos.' : 'Cómo van tus cursos y cuánto se ha gastado.'" data-testid="results-link"
+        />
+      </div>
     </section>
 
     <StudentsPanel v-if="auth.isTutor" />
