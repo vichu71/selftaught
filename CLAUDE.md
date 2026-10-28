@@ -201,6 +201,13 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - El medidor del tope (`results/TopeMeter`) dice el estado **con palabras e icono** («Vas bien» < 80 %, «Cerca del tope» 80–99 %, «Tope alcanzado» ≥ 100 % o `limitReached`), nunca solo con color, y no divide por cero con tope 0 o ausente. Las tres peticiones de la pantalla (`getResults`, `getUsage`, `getUsageTasks`) **fallan por separado**: si falta una, su bloque lo dice y el resto se ve.
 - Los nombres de menores y los títulos de curso se pintan siempre como texto. Colores solo de `tokens.css` (se reutilizan `--color-stat-*` de F14, ya en el test de contraste).
 
+## Reglas de F16 (Inicio y Mi material)
+- Contrato y criterios de aceptación: `sdd/specs/US-F16-pulido-inicio-material.md`; diseño y ADR-94: `sdd/specs/ART-F16-propuesta-pulido-inicio-material.md` y `ARCHITECTURE.md`. **Solo frontend**: sin backend, migración ni librerías. Es un cambio de **forma**: se conservan todos los `data-testid`, los avisos legales al menor (`guardian-notice`, `material-minor-notice`, con su texto y su sitio) y la lógica de subida, borrado y alta.
+- Un enlace que es un atajo es `<ActionCard>`, un bloque que se abre y se cierra es `<Disclosure>` (con `v-show`, no `v-if`: no se pierde lo escrito) y un «todavía no hay nada» es `<EmptyNote>` (todos en `ui/`). No se vuelven a escribir frases con enlaces subrayados sueltos.
+- **La zona de subida (`material/DropZone`) es la `<label>` del `<input type="file">` real**, que sigue siendo el único control y solo se oculta visualmente (`.visually-hidden`, nunca `display:none`). Arrastrar y soltar entrega **el primer fichero** a `material.upload`, la **misma** subida: mismas comprobaciones de tipo, tamaño y vacío y mismos mensajes. No hay un segundo camino de subida.
+- Los textos de estado de un documento no cambian (Subido, Procesando, Listo, Error): solo ganan icono. El borrado de un documento **sigue pidiendo confirmación**.
+- «Ver actividad» (en las tarjetas de menores y en «Tus peques» de Resultados) es un `RouterLink` con la clase `ui-button` a `/alumnos/{id}`, el panel del tutor de F08; el servidor sigue respondiendo 404 si no eres su tutor.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

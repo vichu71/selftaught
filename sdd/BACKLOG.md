@@ -218,6 +218,14 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | # | Qué | Nota |
 |---|-----|------|
 | F15-1 | 🟡 El gasto por tarea es solo el del mes en curso | ADR-92; un parámetro de mes validado en el servidor si hace falta ver meses anteriores |
-| F15-2 | 🟡 «Tus peques» no enlaza con el panel del adulto tutor de cada menor (F08) | Un enlace a `/alumnos/{id}` por menor sería barato; queda fuera de v1 |
-| F15-3 | 🟡 Solo se pule Resultados: Inicio, Mi material y el resto de pantallas siguen con su estilo de antes | Se haría pantalla a pantalla con los mismos componentes de `ui/` |
+| F15-2 | ✅ **Hecho en F16 (ADR-94):** «Tus peques» no enlazaba con el panel del adulto tutor de cada menor (F08) | Un enlace a `/alumnos/{id}` por menor sería barato; queda fuera de v1 |
+| F15-3 | ✅ **Hecho en F16 (ADR-94) para Inicio y Mi material:** solo se pulía Resultados; el resto de pantallas siguen con su estilo de antes | Se haría pantalla a pantalla con los mismos componentes de `ui/` |
 | F15-4 | 🟡 `LineChart` y `DataTable` siguen en `owner/`; si Resultados necesita una gráfica diaria habría que subirlos | ADR-93 |
+
+## Anotado en F16 (Inicio y Mi material)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F16-1 | 🟡 Se sube un fichero cada vez (arrastrando varios, se coge el primero y se avisa) | ADR-94; subir varios a la vez cambiaría el almacén de material y la cola de procesado |
+| F16-2 | 🟡 Sin vista previa, renombrar, buscar ni ordenar documentos | Fuera de v1 |
+| F16-3 | 🟡 Siguen con el estilo de antes las pantallas Nuevo curso, Tengo un código, Curso, Lección, Login y el panel del tutor | Se harían pantalla a pantalla con los mismos componentes de `ui/` |

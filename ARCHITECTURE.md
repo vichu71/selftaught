@@ -284,6 +284,14 @@ termina sin escribir (el guardado exige la fila `PENDING`, ADR-82) y su coste ya
 - **Botón «Volver»:** `ui/BackLink` (enlace con aspecto de botón secundario, flecha ←, 44 px, sin subrayado) sustituye al enlace «Volver al inicio» de Resultados, Curso, Mi material, Tengo un código y Nuevo curso (que dice «Cancelar»), con los mismos `data-testid` (`back-home`, `cancel-home`).
 - **Componentes compartidos:** `StatCard`, `BarList` y `format.ts` suben de `src/owner/` a `src/ui/` (clases `ui-*`); `LineChart` y `DataTable` siguen siendo del panel (ADR-93).
 
+## Inicio y Mi material (F16)
+
+Solo frontend: sin backend, sin migración y sin librerías. Mismo estilo que Resultados (F15), con componentes de `ui/` y los tokens de siempre; todos los `data-testid`, los avisos legales al menor y la lógica de subida, borrado y alta se conservan.
+
+- **Inicio:** «Tu espacio de estudio» son tres **tarjetas-atajo** (`ui/ActionCard`: un enlace entero con icono, título y descripción; la de Resultados se describe sin dinero para un menor). «Mis menores» son **tarjetas** (`StudentCard`: estado en palabras con icono, identificador y botones `Ver actividad`, `Cambiar contraseña`, `Dar de baja`/`Reactivar`) y el alta va plegada en «Añadir un menor» (`ui/Disclosure`, abierta si no hay menores; se oculta con `v-show` para no perder lo escrito). Cursos, menores y documentos sin nada usan `ui/EmptyNote` (planta o mascota de F11 con un mensaje amable).
+- **Mi material:** la subida es una **zona** (`material/DropZone`) que es la `<label>` del `<input type="file">` real, que sigue siendo el único control (teclado, lector de pantalla, selector del sistema; solo se oculta visualmente). **Arrastrar y soltar** entrega el primer fichero a la **misma** subida, con las mismas comprobaciones de tipo, tamaño y vacío y los mismos mensajes; con varios, se coge el primero y se avisa. Mientras sube, la zona se desactiva. Los documentos son **tarjetas** (`MaterialList`: icono por tipo, nombre, tipo y tamaño, estado con icono —los textos de siempre: Subido, Procesando, Listo y Error—, motivo del error en una frase y «Borrar» con su confirmación).
+- **Resultados:** «Tus peques» gana el botón «Ver actividad» a `/alumnos/{id}` (el panel del tutor de F08, que sigue exigiendo ser su tutor).
+
 ## Modelo de datos
 
 ```
@@ -430,6 +438,7 @@ selftaught/
 │  ├─ src/{styles,ui,layouts,map}    # F10: tokens y estilos base, componentes base, marco de navegación, mapa del curso
 │  ├─ src/owner · src/results        # F14: gráficas (LineChart, DataTable), lista y acciones del panel · F15: TopeMeter y CourseCard de Resultados
 │                                    # (F15: ui/ gana BackLink, StatCard, BarList y format.ts)
+│  └─ src/material                   # F16: DropZone (zona de subida); ui/ gana ActionCard, Disclosure y EmptyNote; components/ gana StudentCard
 │  └─ src/world                      # F11 (rama de la piel «Mundo»): fases de planta e ilustraciones SVG; map/ gana roadPath.ts
 ├─ sdd/design/F10/                   # prototipos de diseño de referencia (Mapa y Mundo)
 ├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
@@ -1003,3 +1012,8 @@ selftaught/
 - Motivo: dos pantallas ya los usan (el panel del propietario y Resultados) y los componentes genéricos viven en `src/ui/` desde F10. Moverlos evita que Resultados dependa de la carpeta del propietario y deja un único sitio con el estilo (clases `ui-*`, tokens). `BackLink` sustituye cinco enlaces subrayados sueltos por un botón único, con `data-testid` y destino iguales, para cambiar su aspecto en un solo lugar. `LineChart` y `DataTable` se quedan en `owner/` porque solo el panel los usa.
 - Alternativas descartadas: importar de `owner/` desde Resultados (acopla pantallas no relacionadas); copiar los componentes (dos sitios que cambian a la vez); una carpeta nueva `charts/` (otra categoría para dos ficheros).
 - Revisitar si: un tercer sitio necesita `LineChart` o `DataTable` (entonces suben también).
+
+### ADR-94: Atajos, plegables y estados vacíos son componentes de `ui/`; la zona de subida mejora el `<input type="file">` sin sustituirlo
+- Motivo: tres pantallas repiten la misma idea (un enlace con frase, un bloque que se abre y se cierra, un «todavía no hay nada»): `ActionCard`, `Disclosure` y `EmptyNote` la dejan en un sitio con el estilo y los tokens, igual que `BackLink` y `StatCard` (ADR-93). Los cambios son de **forma** y conservan los `data-testid`, los textos legales al menor y la lógica de subida, borrado y alta. La zona de subida es una `<label>` del `<input type="file">` real, que sigue siendo el único control (teclado, lector de pantalla, selector del sistema); arrastrar y soltar solo entrega el primer fichero a la misma subida, con las mismas comprobaciones: no hay un segundo camino de subida que probar ni que proteger. El formulario de alta se oculta con `v-show` para no perder lo escrito.
+- Alternativas descartadas: sustituir el `<input>` por una zona que no sea su etiqueta (se pierde la accesibilidad); una librería de subida con arrastrar y soltar (dependencia nueva para un gesto); `v-if` en el formulario (se pierde lo escrito al plegarlo y cambia el DOM que prueban los tests de F01); cambiar los textos de estado (rompe tests sin aportar).
+- Revisitar si: se quiere subir varios ficheros a la vez o ver una vista previa (entonces cambia el almacén y la API).

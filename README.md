@@ -5,7 +5,7 @@ con base multiusuario; es un laboratorio, no formación reglada.
 
 > Estado: **F01** (base técnica, cuentas y roles) y **F02** (capa de IA y control de gasto) terminadas, con el primer benchmark real hecho
 > (`sdd/benchmarks/`), el tope de gasto por usuario (ADR-29), **F03** (material propio, ADR-30 a 36), **F04** (asistente de creación de curso, ADR-37 a 41),
-> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada; **F14** (panel del propietario, ADR-87 a 91) terminada; **F15** (pulido de Resultados y botón «Volver», ADR-92 y 93) terminada. Pendientes: `sdd/BACKLOG.md`.
+> **F05** (generación del curso, ADR-42 a 48) y **F06** (estudio, ADR-49 a 54). **F07** (tutor IA, ADR-55 a 58) , **F08** (panel del adulto tutor, ADR-59 a 62) y **F09** (edición de temario y compartir por código, ADR-63 a 66) terminadas; **F13** (borrar cursos, ADR-84 a 86) terminada; **F14** (panel del propietario, ADR-87 a 91) terminada; **F15** (pulido de Resultados y botón «Volver», ADR-92 y 93) terminada; **F16** (pulido de Inicio y Mi material, ADR-94) en curso. Pendientes: `sdd/BACKLOG.md`.
 
 ## Stack
 
@@ -201,6 +201,15 @@ Una pantalla de administración, **`/propietario`**, con las estadísticas de la
 - **Privacidad:** el panel **nunca** enseña contenido (cursos, temas, lecciones, respuestas, conversaciones, documentos). De un **menor** solo muestra su identificador de acceso, estado, fechas, gasto, tope y su tutor; puede desactivarlo, pero no ver lo que escribe. Los adultos aparecen con su nombre y correo.
 - **Límites:** 120 consultas y 60 acciones por hora; nada se refresca solo (botón «Actualizar»). Las gráficas son SVG propios, cada una con su tabla debajo.
 - **Activarlo:** pon tu correo en `OWNER_EMAIL` (en tu `.env`, que no se versiona), regístrate y verifica ese correo, y reinicia el backend. Antes de abrir la aplicación a Internet hacen falta HTTPS y la cookie `Secure` (`sdd/BACKLOG.md`, D1–D6 y F14-1): el panel es lo más sensible de la app.
+
+## Inicio y Mi material (F16)
+
+Mismo estilo que Resultados: tarjetas claras y botones reconocibles en lugar de frases con enlaces subrayados.
+
+- **Inicio:** «Tu espacio de estudio» son tres **tarjetas** (Mi material, Tengo un código y Resultados) que se pulsan enteras. Si eres adulto tutor, cada menor es una **tarjeta** con su estado («Activo» o «De baja»), su usuario y los botones **Ver actividad**, **Cambiar contraseña** y **Dar de baja** o **Reactivar**. El formulario para dar de alta a un menor está plegado en **«Añadir un menor»** (abierto si todavía no tienes ninguno). Sin cursos o sin menores ves un mensaje amable con una plantita.
+- **Mi material:** una **zona de subida**: **arrastra un documento** o pulsa **«Elegir fichero»** (PDF, Word .docx o texto .txt/.md, hasta 10 MB). Funciona igual con el teclado y con lector de pantalla. Si arrastras varios, se sube el primero y te lo dice. Cada documento es una tarjeta con su icono, su estado («Subido», «Procesando», «Listo» o «Error», y por qué falló) y su botón **Borrar**, que sigue pidiendo confirmación. Como tutor ves además el material de tus menores, en solo lectura.
+- **Resultados:** en «Tus peques», cada menor lleva un botón **Ver actividad** que abre su panel.
+- **Menores:** el aviso de que su adulto tutor puede ver su actividad y sus documentos no cambia.
 
 ## Ilustraciones de portada con IA (F12)
 
