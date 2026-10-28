@@ -250,6 +250,19 @@ describe('ResultsView', () => {
       expect(byId(m.wrapper, 'results-minors').find('b').exists()).toBe(false)
     })
 
+    // F16 AC-4 (D4, F15-2): un botón a la actividad de cada menor, en el panel del tutor de F08
+    it('offers «Ver actividad» for each minor, as a button-shaped link to the guardian panel', async () => {
+      vi.mocked(api.getUsage).mockResolvedValue({ ...usage, minors } as never)
+      const m = await open()
+
+      for (const id of ['m1', 'm2']) {
+        const link = byId(m.wrapper, `results-minor-activity-${id}`)
+        expect(link.attributes('href')).toBe(`/alumnos/${id}`)
+        expect(link.classes()).toContain('ui-button')
+        expect(link.text()).toBe('Ver actividad')
+      }
+    })
+
     it('does not show the block to an adult without minors', async () => {
       const m = await open()
 
