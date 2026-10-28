@@ -10,9 +10,16 @@ export function num(value: number | null | undefined, decimals = 0): string {
   return (Number.isFinite(value) ? (value as number) : 0).toLocaleString(locale, { minimumFractionDigits: 0, maximumFractionDigits: decimals })
 }
 
-/** Una cifra con su unidad: «USD» siempre con dos decimales, el resto con uno como mucho. */
+/** «1 vez» y «N veces». */
+export function times(value: number | null | undefined): string {
+  const n = Number.isFinite(value) ? (value as number) : 0
+  return n === 1 ? '1 vez' : `${num(n)} veces`
+}
+
+/** Una cifra con su unidad: «USD» siempre con dos decimales, «veces» en singular o plural, el resto con uno como mucho. */
 export function withUnit(value: number, unit?: string): string {
   if (unit === 'USD') return usd(value)
+  if (unit === 'veces') return times(value)
   return unit ? `${num(value, 1)} ${unit}` : num(value, 1)
 }
 

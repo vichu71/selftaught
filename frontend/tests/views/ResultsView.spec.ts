@@ -176,6 +176,18 @@ describe('ResultsView', () => {
     for (const word of ['Temario', 'Lecciones', 'Ejercicios y exámenes', 'Tutor', 'Material', 'Asistente', 'Ilustraciones']) expect(text).toContain(word)
   })
 
+  it('says «1 vez» in the singular and «N veces» in the plural', async () => {
+    vi.mocked(api.getUsage).mockResolvedValue({ month: '2026-10', you: { calls: 1, limitReached: false } } as never)
+    vi.mocked(api.getUsageTasks).mockResolvedValue({ month: '2026-10', tasks: [{ task: 'LESSON', calls: 1 }, { task: 'TUTOR', calls: 4 }] } as never)
+    const m = await open(minor)
+
+    expect(byId(m.wrapper, 'results-stat-calls').text()).toContain('1 vez')
+    expect(byId(m.wrapper, 'results-stat-calls').text()).not.toContain('1 veces')
+    expect(byId(m.wrapper, 'results-tasks').text()).toContain('1 vez')
+    expect(byId(m.wrapper, 'results-tasks').text()).toContain('4 veces')
+    expect(byId(m.wrapper, 'results-tasks').text()).not.toContain('1 veces')
+  })
+
   // ---------- menores (AC-3, D3, D6) ----------
 
   describe('for a minor', () => {

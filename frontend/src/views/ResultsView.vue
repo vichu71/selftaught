@@ -6,7 +6,7 @@ import TopeMeter from '@/results/TopeMeter.vue'
 import { taskLabel } from '@/results/taskLabels'
 import BackLink from '@/ui/BackLink.vue'
 import BarList from '@/ui/BarList.vue'
-import { num, usd } from '@/ui/format'
+import { num, times, usd } from '@/ui/format'
 import StatCard from '@/ui/StatCard.vue'
 import UiState from '@/ui/UiState.vue'
 
@@ -54,7 +54,7 @@ onMounted(async () => {
         <h2>Este mes ({{ usage.month }})</h2>
         <p v-if="usage.you.calls === 0" class="muted">La IA todavía no te ha ayudado este mes.</p>
         <div class="results-stats">
-          <StatCard label="La IA te ha ayudado" :value="`${num(usage.you.calls)} veces`" hint="Este mes" data-testid="results-stat-calls" />
+          <StatCard label="La IA te ha ayudado" :value="times(usage.you.calls)" hint="Este mes" data-testid="results-stat-calls" />
           <StatCard v-if="usage.you.spendUsd !== undefined" label="Gasto del mes" :value="`${usd(usage.you.spendUsd)} USD`" data-testid="results-stat-spend" />
           <StatCard v-if="results" label="Cursos listos" :value="num(ready)" :hint="`de ${num(courses.length)}`" data-testid="results-stat-ready" />
         </div>
@@ -65,16 +65,16 @@ onMounted(async () => {
       </section>
 
       <UiState v-if="tasksFailed" state="error" message="No se pudo cargar en qué te ha ayudado la IA." data-testid="results-tasks-error" />
-      <section v-else-if="taskItems.length > 0" class="card" data-testid="results-tasks">
+      <div v-else-if="taskItems.length > 0" data-testid="results-tasks">
         <BarList :items="taskItems" title="En qué te ha ayudado la IA" :unit="withMoney ? 'USD' : 'veces'" />
-      </section>
+      </div>
 
       <section v-if="usage && usage.minors && usage.minors.length > 0" class="card" data-testid="results-minors">
         <h2>Tus peques</h2>
         <ul class="results-minors">
           <li v-for="m in usage.minors" :key="m.id" class="results-minor">
-            <p><strong>{{ m.displayName }}</strong> · la IA le ha ayudado {{ num(m.calls) }} veces</p>
-            <TopeMeter :label="`Tope de ${m.displayName}`" :spend-usd="m.spendUsd" :limit-usd="m.limitUsd" :reached="m.limitReached" />
+            <p><strong>{{ m.displayName }}</strong> · la IA le ha ayudado {{ times(m.calls) }}</p>
+            <TopeMeter label="Tope de este mes" :spend-usd="m.spendUsd" :limit-usd="m.limitUsd" :reached="m.limitReached" />
           </li>
         </ul>
       </section>
