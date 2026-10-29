@@ -251,3 +251,14 @@ Los tests nunca llaman a APIs de pago ni envían correo real.
 ## Material del curso (F18)
 
 El material de un curso se sube **al crearlo**: en «Nuevo curso», si contestas que sí tienes información, aparece una zona para añadir los apuntes de ese curso (por ejemplo, los de matemáticas de 1.º de ESO). El documento se marca solo cuando termina de procesarse, y si ya tienes otros subidos puedes elegirlos también. En la pantalla del curso, la tarjeta **Material de este curso** dice qué documentos se usaron, y en **Mi material** cada documento dice **en qué cursos se usa** (o «Sin usar todavía»). Si borras un documento que se usa, te avisa de que los cursos ya creados no cambian.
+
+## Fotos de apuntes (F19)
+
+> **En curso:** la especificación, la propuesta y los tests están hechos; el código (FASE 6) está pendiente. Contrato: `sdd/specs/US-F19-fotos-de-apuntes.md`; diseño y ADR-100 a 105: `sdd/specs/ART-F19-propuesta-fotos-apuntes.md`.
+
+Podrás subir una **foto o captura de tus apuntes** (JPEG o PNG) a Mi material y usarla como cualquier otro documento: un modelo de visión la lee y el texto entra al mismo flujo de fragmentos que un PDF.
+
+- La foto se envía a un servicio de IA para leerla: **evita fotos con datos personales**. Se re-codifica sin metadatos y el original se borra al terminar.
+- Hasta 20 fotos por día y usuario. Si la lectura no encuentra texto, el documento queda en «Error» y se invita a repetirla con más luz.
+- **Menores:** solo pueden subir fotos si su adulto tutor lo permite, desde el panel del alumno («Permitir fotos de apuntes»). Una foto inapropiada no se guarda y el menor ve «Contenido inapropiado. Consulta con tu adulto.».
+- Se activa con la tarea `OCR` (`APP_AI_TASKS_OCR_PROVIDER`, `APP_AI_TASKS_OCR_MODEL`) y el precio del modelo en `ai-pricing.properties`; sin ellas las fotos quedan desactivadas y todo lo demás funciona igual. El modelo se elegirá con un benchmark que lanza el usuario con sus claves.
