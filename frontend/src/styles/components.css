@@ -179,10 +179,10 @@ a.button-link {
 
 /* Zonas de color (F17, ADR-95): el marco las pone según la ruta y cada enlace de la barra, según su destino; sin zona, el acento neutro */
 :root { --zone-fill: var(--color-primary); --zone-on: var(--color-on-primary); --zone-ink: var(--color-ink); }
-.shell[data-zone='map'], .nav-link[data-zone='map'] { --zone-fill: var(--color-zone-map); --zone-on: var(--color-on-zone-map); --zone-ink: var(--color-zone-map-ink); }
-.shell[data-zone='material'], .nav-link[data-zone='material'] { --zone-fill: var(--color-zone-material); --zone-on: var(--color-on-zone-material); --zone-ink: var(--color-zone-material-ink); }
-.shell[data-zone='results'], .nav-link[data-zone='results'] { --zone-fill: var(--color-zone-results); --zone-on: var(--color-on-zone-results); --zone-ink: var(--color-zone-results-ink); }
-.shell[data-zone='owner'], .nav-link[data-zone='owner'] { --zone-fill: var(--color-zone-owner); --zone-on: var(--color-on-zone-owner); --zone-ink: var(--color-zone-owner-ink); }
+.shell[data-zone='map'], .nav-link[data-zone='map'], .action-card[data-zone='map'] { --zone-fill: var(--color-zone-map); --zone-on: var(--color-on-zone-map); --zone-ink: var(--color-zone-map-ink); }
+.shell[data-zone='material'], .nav-link[data-zone='material'], .action-card[data-zone='material'] { --zone-fill: var(--color-zone-material); --zone-on: var(--color-on-zone-material); --zone-ink: var(--color-zone-material-ink); }
+.shell[data-zone='results'], .nav-link[data-zone='results'], .action-card[data-zone='results'] { --zone-fill: var(--color-zone-results); --zone-on: var(--color-on-zone-results); --zone-ink: var(--color-zone-results-ink); }
+.shell[data-zone='owner'], .nav-link[data-zone='owner'], .action-card[data-zone='owner'] { --zone-fill: var(--color-zone-owner); --zone-on: var(--color-on-zone-owner); --zone-ink: var(--color-zone-owner-ink); }
 .page > .card, .page > .ui-card, .ui-card { border-top: 6px solid var(--zone-fill); }
 
 /* Cabecera de página: burbuja con el icono de la zona y el título en su tono */
@@ -348,7 +348,7 @@ a.button-link {
 .select-all { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-tap); }
 .select-box { width: var(--size-tap); height: var(--size-tap); }
 .garden { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr)); gap: var(--space-5); }
-.plant-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; padding: var(--space-4); background: var(--color-surface); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: var(--shadow-soft); }
+.plant-card { display: flex; flex-direction: column; align-items: center; gap: var(--space-2); text-align: center; padding: var(--space-4); background: color-mix(in srgb, var(--color-grass) 40%, var(--color-surface)); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: 0 5px 0 var(--color-zone-map-ink); }
 .plant-card .plant { width: 100%; max-width: 9rem; height: auto; }
 .plant-card a { font-weight: 600; font-size: 1.1rem; display: inline-flex; align-items: center; min-height: var(--size-tap); }
 .document a { display: inline-flex; align-items: center; min-height: var(--size-tap); }
@@ -479,12 +479,13 @@ a.button-link {
 .shortcut-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(15rem, 1fr)); gap: var(--space-4); margin-top: var(--space-3); }
 .action-card {
   display: flex; align-items: center; gap: var(--space-3); min-height: var(--size-tap); padding: var(--space-4); min-width: 0; overflow-wrap: anywhere;
-  background: var(--color-surface); color: var(--color-ink); text-decoration: none;
-  border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: var(--shadow-soft);
+  background: color-mix(in srgb, var(--zone-fill) 24%, var(--color-surface)); color: var(--color-ink); text-decoration: none;
+  border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); box-shadow: 0 5px 0 var(--zone-ink);
 }
-.action-card:hover { background: var(--color-accent); color: var(--color-on-accent); }
-.action-card svg { flex: 0 0 auto; }
+.action-card:hover { background: color-mix(in srgb, var(--zone-fill) 45%, var(--color-surface)); }
+.action-card-bubble { display: inline-grid; place-items: center; flex: none; width: 3.25rem; height: 3.25rem; border-radius: 50%; background: var(--zone-fill); color: var(--zone-on); border: var(--border-width) solid var(--color-line); }
 .action-card-text { display: flex; flex-direction: column; gap: var(--space-1); min-width: 0; }
+.action-card-text strong { font-size: 1.1rem; color: var(--zone-ink); }
 .action-card-text span { font-size: 0.9rem; }
 .disclosure { margin-top: var(--space-4); }
 .disclosure-toggle { display: inline-flex; align-items: center; gap: var(--space-2); }
@@ -514,7 +515,7 @@ a.button-link {
   background: var(--color-surface); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2);
 }
 .documents .doc-card:first-child { border-top: var(--border-width) solid var(--color-line); }
-.doc-card-icon { color: var(--color-muted); flex: 0 0 auto; }
+.doc-card-icon { color: var(--color-zone-material-ink); flex: 0 0 auto; }
 .status { display: inline-flex; align-items: center; gap: var(--space-1); }
 @media (max-width: 29.99rem) {
   .documents .doc-card { grid-template-columns: auto 1fr; }
