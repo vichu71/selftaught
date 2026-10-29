@@ -228,4 +228,12 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 |---|-----|------|
 | F16-1 | 🟡 Se sube un fichero cada vez (arrastrando varios, se coge el primero y se avisa) | ADR-94; subir varios a la vez cambiaría el almacén de material y la cola de procesado |
 | F16-2 | 🟡 Sin vista previa, renombrar, buscar ni ordenar documentos | Fuera de v1 |
-| F16-3 | 🟡 Siguen con el estilo de antes las pantallas Nuevo curso, Tengo un código, Curso, Lección, Login y el panel del tutor | Se harían pantalla a pantalla con los mismos componentes de `ui/` |
+| F16-3 | ✅ **Hecho en F17 (ADR-95 a 97) para la cabecera y los colores; el rediseño a fondo de cada pantalla sigue en F17-3:** siguen con el estilo de antes las pantallas Nuevo curso, Tengo un código, Curso, Lección, Login y el panel del tutor | Se harían pantalla a pantalla con los mismos componentes de `ui/` |
+
+## Anotado en F17 (alegría y colorido)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F17-1 | 🟡 No hay un color o tema elegible por usuario ni un tema de alto contraste | Fuera de v1; los tokens de zona lo permitirían (ADR-95, ADR-96) |
+| F17-2 | 🟡 El destello, el confeti y el gesto de la mascota son los mismos para todos | ADR-97; una celebración por curso o por usuario sería otra feature |
+| F17-3 | 🟡 Las pantallas internas (Nuevo curso, Editar curso, Intentos, panel del tutor) usan la cabecera y los tonos de zona, pero no se han rediseñado a fondo | Se mejorarían pantalla a pantalla con los componentes de `ui/` |

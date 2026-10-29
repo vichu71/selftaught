@@ -208,6 +208,13 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - Los textos de estado de un documento no cambian (Subido, Procesando, Listo, Error): solo ganan icono. El borrado de un documento **sigue pidiendo confirmación**.
 - «Ver actividad» (en las tarjetas de menores y en «Tus peques» de Resultados) es un `RouterLink` con la clase `ui-button` a `/alumnos/{id}`, el panel del tutor de F08; el servidor sigue respondiendo 404 si no eres su tutor.
 
+## Reglas de F17 (alegría y colorido)
+- Contrato y criterios de aceptación: `sdd/specs/US-F17-alegria-y-color.md`; diseño y ADR-95 a 97: `sdd/specs/ART-F17-propuesta-alegria-color.md` y `ARCHITECTURE.md`. **Solo frontend**: sin backend, migración ni librerías. Se conservan los `data-testid`, los avisos legales al menor y las reglas de F10–F16.
+- **La zona de color sale de la ruta** (`layouts/zone.ts`) y la pone `AppShell` en `data-zone`; las vistas **no** llevan colores ni estilos por zona: usan `--zone-fill`, `--zone-on` y `--zone-ink` o los componentes (`PageHeader`, `UiTag`, `ui-card`). Un color nuevo de zona son tres tokens (relleno, `on` e `ink`) en `tokens.css` y sus parejas en `contrast.spec.ts`.
+- El **naranja** (`--color-primary`) es solo la acción principal; no se usa como color de zona. Un estado nunca se dice solo con color: `UiTag` con `ok|warn|bad|info` lleva icono.
+- **Todo `animation`, `transition` y `@keyframes` va dentro de `@media (prefers-reduced-motion: no-preference)`** (`tests/design/f17.spec.ts` lo comprueba). La celebración (`ui/Celebration`) siempre dice «¡Hecho!» con texto en `role="status"`; el confeti es decoración `aria-hidden` y no hay librería.
+- El saludo («¡Hola, {primer nombre}!», `layouts/greeting.ts`) es texto plano recortado; usa el reloj del navegador y **nunca** enseña dinero ni datos de otros a un menor. Cada pantalla nueva empieza con `PageHeader`.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

@@ -211,6 +211,10 @@ Mismo estilo que Resultados: tarjetas claras y botones reconocibles en lugar de 
 - **Resultados:** en «Tus peques», cada menor lleva un botón **Ver actividad** que abre su panel.
 - **Menores:** el aviso de que su adulto tutor puede ver su actividad y sus documentos no cambia.
 
+## Alegría y colorido (F17)
+
+Cada zona de la app tiene su color, para saber siempre dónde estás: **Mapa** en verde, **Mi material** en azul, **Resultados** en ámbar y el **panel del propietario** en violeta. La barra de arriba (y la de abajo en el móvil) lleva un icono en una burbuja de color por destino, marca el sitio donde estás con relleno y una sombra gruesa, y te saluda por tu nombre. Las páginas tienen una cabecera con el icono de su zona. Hay pequeños detalles de alegría: la mascota se mueve al pasar por el logo, la planta de un curso termina con un destello, al marcar una lección como hecha sale «¡Hecho!» con confeti y el Inicio te saluda según la hora. Si tu sistema pide menos movimiento, no se mueve nada y todo se dice con texto.
+
 ## Ilustraciones de portada con IA (F12)
 
 Al crear un curso, un adulto puede activar **«Con ilustraciones»** (apagado por defecto): cada **tema** recibe una ilustración de portada generada por IA, que sale en su tarjeta del curso y en la cabecera de sus lecciones con el rótulo «Ilustración generada por IA» y su texto alternativo. Es para **ambientar, no para enseñar hechos** (las imágenes por IA inventan detalles): contrástalo siempre con tu material.

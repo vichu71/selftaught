@@ -292,6 +292,16 @@ Solo frontend: sin backend, sin migración y sin librerías. Mismo estilo que Re
 - **Mi material:** la subida es una **zona** (`material/DropZone`) que es la `<label>` del `<input type="file">` real, que sigue siendo el único control (teclado, lector de pantalla, selector del sistema; solo se oculta visualmente). **Arrastrar y soltar** entrega el primer fichero a la **misma** subida, con las mismas comprobaciones de tipo, tamaño y vacío y los mismos mensajes; con varios, se coge el primero y se avisa. Mientras sube, la zona se desactiva. Los documentos son **tarjetas** (`MaterialList`: icono por tipo, nombre, tipo y tamaño, estado con icono —los textos de siempre: Subido, Procesando, Listo y Error—, motivo del error en una frase y «Borrar» con su confirmación).
 - **Resultados:** «Tus peques» gana el botón «Ver actividad» a `/alumnos/{id}` (el panel del tutor de F08, que sigue exigiendo ser su tutor).
 
+## Alegría y colorido (F17)
+
+Solo frontend: sin backend, sin migración y **sin librerías** (confeti y destellos son CSS). Contrato: `sdd/specs/US-F17-alegria-y-color.md`; diseño y ADR-95 a 97: `sdd/specs/ART-F17-propuesta-alegria-color.md`.
+
+- **Zonas de color:** Mapa (verde), Mi material (azul), Resultados (ámbar) y Propietario (violeta); el naranja queda solo para el botón primario. La zona sale **solo de la ruta** (`layouts/zone.ts`, `zoneOf`, función pura; Login y rutas sin zona son «neutral»). `AppShell` pone `data-zone` en `.shell` y el CSS lo traduce a tres variables (`--zone-fill`, `--zone-on`, `--zone-ink`) que leen las páginas, las tarjetas (`.ui-card` lleva un borde superior de 6 px: la forma marca la zona) y las etiquetas.
+- **Tokens:** tres por zona en `tokens.css` (`--color-zone-*`, `--color-on-zone-*`, `--color-zone-*-ink`), en claro y en noche, todos en `tests/design/contrast.spec.ts` (AA).
+- **Barra:** cada enlace lleva su icono en una **burbuja** (`.nav-bubble`) con el color de su zona (`data-zone` en el enlace); el activo va relleno y con sombra gruesa abajo, además de `aria-current`. Saludo «¡Hola, {primer nombre}!» como texto (`layouts/greeting.ts`, recortado a 20 caracteres) y «Dejarlo por hoy» y «Cerrar sesión» más discretos. La barra inferior de móvil usa las mismas burbujas.
+- **Páginas:** `ui/PageHeader` (burbuja de zona, título y acciones) en Inicio, Mi material, Resultados, Propietario, Curso, Lección, Nuevo curso, Tengo un código, Login, Registro y el panel del tutor; `ui/UiTag` gana los estados `ok`, `warn`, `bad` e `info` **con icono**.
+- **Alegría medida:** gesto de la mascota (logo), destello de la planta al 100 % (`.plant--bloom`), «¡Hecho!» con confeti al marcar una lección (`ui/Celebration`: texto en `role="status"` y 12 `<span>` decorativos `aria-hidden`) y saludo por franja del día en Inicio (reloj del navegador). **Todo `animation`, `transition` y `@keyframes` vive dentro de `prefers-reduced-motion: no-preference`** (lo comprueba `tests/design/f17.spec.ts`).
+
 ## Modelo de datos
 
 ```
@@ -439,6 +449,7 @@ selftaught/
 │  ├─ src/owner · src/results        # F14: gráficas (LineChart, DataTable), lista y acciones del panel · F15: TopeMeter y CourseCard de Resultados
 │                                    # (F15: ui/ gana BackLink, StatCard, BarList y format.ts)
 │  └─ src/material                   # F16: DropZone (zona de subida); ui/ gana ActionCard, Disclosure y EmptyNote; components/ gana StudentCard
+│  └─ src/layouts · src/ui           # F17: zone.ts (zoneOf) y greeting.ts; ui/ gana PageHeader y Celebration; UiTag con estados; tokens de zona en styles/
 │  └─ src/world                      # F11 (rama de la piel «Mundo»): fases de planta e ilustraciones SVG; map/ gana roadPath.ts
 ├─ sdd/design/F10/                   # prototipos de diseño de referencia (Mapa y Mundo)
 ├─ db/init/01-roles.sh               # roles de BD (dueño y aplicación) y extensiones; se ejecuta al crear la BD
@@ -1017,3 +1028,18 @@ selftaught/
 - Motivo: tres pantallas repiten la misma idea (un enlace con frase, un bloque que se abre y se cierra, un «todavía no hay nada»): `ActionCard`, `Disclosure` y `EmptyNote` la dejan en un sitio con el estilo y los tokens, igual que `BackLink` y `StatCard` (ADR-93). Los cambios son de **forma** y conservan los `data-testid`, los textos legales al menor y la lógica de subida, borrado y alta. La zona de subida es una `<label>` del `<input type="file">` real, que sigue siendo el único control (teclado, lector de pantalla, selector del sistema); arrastrar y soltar solo entrega el primer fichero a la misma subida, con las mismas comprobaciones: no hay un segundo camino de subida que probar ni que proteger. El formulario de alta se oculta con `v-show` para no perder lo escrito.
 - Alternativas descartadas: sustituir el `<input>` por una zona que no sea su etiqueta (se pierde la accesibilidad); una librería de subida con arrastrar y soltar (dependencia nueva para un gesto); `v-if` en el formulario (se pierde lo escrito al plegarlo y cambia el DOM que prueban los tests de F01); cambiar los textos de estado (rompe tests sin aportar).
 - Revisitar si: se quiere subir varios ficheros a la vez o ver una vista previa (entonces cambia el almacén y la API).
+
+### ADR-95: El color de zona es una variable CSS que pone el marco a partir de la ruta
+- Motivo: una sola fuente de verdad (`zoneOf`) para la barra, las páginas y los tests; las vistas no llevan estilos por zona y cambiar un acento es cambiar un token. Se calcula por la ruta (como ya hacía `NavBar`) y no con `meta` en el router.
+- Alternativas descartadas: `meta.zone` en cada ruta (dos fuentes que se desincronizan); clases por vista (estilos duplicados); un color por usuario (fuera de alcance).
+- Revisitar si: una pantalla debe enseñar dos zonas a la vez.
+
+### ADR-96: Tres tonos por zona (relleno, texto sobre relleno y texto sobre superficie) y el estado nunca solo con color
+- Motivo: un relleno vivo no sirve como color de texto; separar los tonos permite AA en claro y en noche. La forma (borde grueso, burbuja con icono, texto) lleva el significado: el color acompaña.
+- Alternativas descartadas: un solo color por zona (falla el contraste); colores a mano por componente (rompe el test de tokens).
+- Revisitar si: se añaden más zonas o un tema de alto contraste.
+
+### ADR-97: La alegría es CSS, de una pasada y solo con movimiento permitido
+- Motivo: el confeti, el destello y el gesto de la mascota no deben añadir dependencias ni ocultar información; sin movimiento, el texto («¡Hecho!») sigue saliendo.
+- Alternativas descartadas: una librería de confeti o Lottie (dependencia y `canvas` inaccesible); animaciones continuas (distraen al estudiar).
+- Revisitar si: se quiere una celebración distinta por usuario o por curso.
