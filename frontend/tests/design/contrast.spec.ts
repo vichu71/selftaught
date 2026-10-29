@@ -43,6 +43,11 @@ const TEXT: [string, string][] = [
   ['--color-on-ok', '--color-ok'], ['--color-on-now', '--color-now'], ['--color-on-danger', '--color-danger'],
   // F11: el texto que se apoya en el paisaje (cielo y hierba)
   ['--color-ink', '--color-sky'], ['--color-muted', '--color-sky'], ['--color-link', '--color-sky'], ['--color-ink', '--color-grass'],
+  // F17: las cuatro zonas de color (relleno con su texto, y su tono de texto sobre superficie, papel y cielo)
+  ...['map', 'material', 'results', 'owner'].flatMap((z): [string, string][] => [
+    [`--color-on-zone-${z}`, `--color-zone-${z}`],
+    [`--color-zone-${z}-ink`, '--color-surface'], [`--color-zone-${z}-ink`, '--color-paper'], [`--color-zone-${z}-ink`, '--color-sky'],
+  ]),
 ]
 const UI: [string, string][] = [
   ['--color-line', '--color-paper'], ['--color-line', '--color-surface'],
