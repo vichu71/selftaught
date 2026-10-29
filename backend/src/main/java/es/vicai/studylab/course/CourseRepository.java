@@ -21,6 +21,9 @@ public class CourseRepository {
 
     public record DocumentRef(UUID id, String name) {}
 
+    /** Un documento y un curso del mismo usuario que lo usa (F18). */
+    public record UsageRow(UUID documentId, UUID courseId, String title) {}
+
     private final JdbcClient jdbc;
 
     public CourseRepository(JdbcClient jdbc) {
@@ -124,5 +127,18 @@ public class CourseRepository {
                 WHERE cd.course_id = :course AND cd.owner_id = :owner ORDER BY d.created_at, d.id""")
                 .param("course", courseId).param("owner", ownerId)
                 .query((rs, row) -> new DocumentRef(rs.getObject("id", UUID.class), rs.getString("display_name"))).list();
+    }
+
+    /**
+     * Los cursos del usuario que usan cada uno de sus documentos (F18), del más reciente al más antiguo. Solo del propietario: el enlace, el curso y el
+     * documento comparten {@code owner_id}. El techo evita una respuesta enorme; no hay parámetros del cliente.
+     */
+    public List<UsageRow> documentUsage(UUID ownerId) {
+        return jdbc.sql("""
+                SELECT cd.document_id, c.id AS course_id, c.title
+                FROM course_document cd JOIN course c ON c.id = cd.course_id AND c.owner_id = cd.owner_id
+                WHERE cd.owner_id = :owner ORDER BY c.created_at DESC, c.id LIMIT 2000""")
+                .param("owner", ownerId)
+                .query((rs, row) -> new UsageRow(rs.getObject("document_id", UUID.class), rs.getObject("course_id", UUID.class), rs.getString("title"))).list();
     }
 }

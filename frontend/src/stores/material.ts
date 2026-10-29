@@ -1,6 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { ApiError, api, type MaterialDocument, type MinorMaterial } from '@/api/client'
+import { ApiError, api, type MaterialDocument, type MaterialUsageMap, type MinorMaterial } from '@/api/client'
 
 const POLL_MS = 3000
 const MAX_BYTES = 10 * 1024 * 1024
@@ -22,6 +22,8 @@ export const useMaterialStore = defineStore('material', () => {
   const uploadError = ref('')
   const deleteError = ref(false)
   const uploading = ref(false)
+  /** F18: en qué cursos se usa cada documento; `null` si no se pudo leer (la lista funciona igual, sin esa línea). */
+  const usage = ref<MaterialUsageMap | null>(null)
   let timer: ReturnType<typeof setTimeout> | undefined
   let polling = false
 
@@ -67,19 +69,30 @@ export const useMaterialStore = defineStore('material', () => {
     return ''
   }
 
-  async function upload(file: File) {
-    if (uploading.value) return
+  /** Sube un fichero y devuelve el id del documento (F18: el asistente lo marca al estar listo); cadena vacía si no se subió. */
+  async function upload(file: File): Promise<string> {
+    if (uploading.value) return ''
     uploadError.value = check(file)
-    if (uploadError.value) return
+    if (uploadError.value) return ''
     uploading.value = true
     try {
-      await api.uploadMaterial(file)
+      const created = await api.uploadMaterial(file)
       await load()
+      return created?.id ?? ''
     } catch (e) {
       uploadError.value =
         (e instanceof ApiError && e.code && uploadMessages[e.code]) || 'No se pudo subir el documento. Inténtalo de nuevo.'
     } finally {
       uploading.value = false
+    }
+    return ''
+  }
+
+  async function loadUsage() {
+    try {
+      usage.value = await api.getMaterialUsage()
+    } catch {
+      usage.value = null
     }
   }
 
@@ -88,10 +101,11 @@ export const useMaterialStore = defineStore('material', () => {
     try {
       await api.deleteMaterial(id)
       await load()
+      void loadUsage()
     } catch {
       deleteError.value = true
     }
   }
 
-  return { own, minors, listError, uploadError, deleteError, uploading, pending, load, startPolling, stopPolling, upload, remove }
+  return { own, minors, listError, uploadError, deleteError, uploading, usage, pending, load, loadUsage, startPolling, stopPolling, upload, remove }
 })

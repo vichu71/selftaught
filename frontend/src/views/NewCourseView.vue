@@ -2,10 +2,13 @@
 import PageHeader from '@/ui/PageHeader.vue'
 import { Sparkles as PageIcon } from 'lucide-vue-next'
 import BackLink from '@/ui/BackLink.vue'
-import { computed, onMounted, ref } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { api, type IllustrationOffer } from '@/api/client'
 import IllustrationToggle from '@/components/IllustrationToggle.vue'
+import DropZone from '@/material/DropZone.vue'
+import { autoSelect } from '@/material/autoSelect'
+import { reasonText } from '@/material/reasons'
 import { useAuthStore } from '@/stores/auth'
 import { BLOCKED_TEXT, MAX_DOCUMENTS, useCourseStore } from '@/stores/course'
 import { useMaterialStore } from '@/stores/material'
@@ -32,10 +35,34 @@ const chosenAnswers = computed(() =>
   course.questions.map((q) => ({ question: q.text, label: q.options.find((o) => o.id === course.answerFor(q))?.label ?? '' })),
 )
 
+// Los apuntes subidos desde aquí se marcan solos al estar listos (F18, AC-2); mientras se procesan se espera con el sondeo de Mi material
+const awaiting = ref<string[]>([])
+const docNote = ref('')
+
+function applyAuto() {
+  const errored = material.own.find((d) => awaiting.value.includes(d.id) && d.status === 'ERROR')
+  const readyNew = awaiting.value.filter((id) => material.own.find((d) => d.id === id)?.status === 'READY' && !course.documentIds.includes(id))
+  const result = autoSelect({ documents: material.own, selected: course.documentIds, awaiting: awaiting.value, max: MAX_DOCUMENTS })
+  if (result.select.length > 0) course.documentIds = [...course.documentIds, ...result.select]
+  awaiting.value = result.awaiting
+  if (errored) docNote.value = `«${errored.name}»: ${reasonText(errored.errorKind)}`
+  else if (readyNew.length > result.select.length) docNote.value = `Ya has elegido el máximo de ${MAX_DOCUMENTS} documentos.`
+}
+
+async function addMaterial(file: File) {
+  docNote.value = ''
+  const id = await material.upload(file)
+  if (id) awaiting.value = [...awaiting.value, id]
+  applyAuto()
+}
+
+watch(() => material.own, applyAuto, { deep: true })
+onBeforeUnmount(() => material.stopPolling())
+
 async function chooseMaterial(yes: boolean) {
   course.wantsMaterial = yes
   course.docsError = ''
-  if (yes) await material.load()
+  if (yes) await material.startPolling()
 }
 
 async function accept() {
@@ -75,14 +102,21 @@ function restart() {
     <!-- Paso 2: ¿tienes información? -->
     <section v-else-if="course.step === 'material'" class="card" data-testid="step-material">
       <h2>¿Tienes información que aportar?</h2>
-      <p class="muted">Puedes usar apuntes o documentos que hayas subido a «Mi material».</p>
+      <p class="muted">Sube aquí los apuntes de este curso o usa documentos que ya tengas en «Mi material».</p>
       <div class="choice">
         <button type="button" data-testid="material-yes" :aria-pressed="course.wantsMaterial === true" @click="chooseMaterial(true)">Sí</button>
         <button type="button" data-testid="material-no" :aria-pressed="course.wantsMaterial === false" @click="chooseMaterial(false)">No</button>
       </div>
 
       <div v-if="course.wantsMaterial" class="documents-choice">
-        <p v-if="material.own.length === 0" class="muted">Todavía no tienes documentos. <RouterLink to="/material">Sube uno en «Mi material»</RouterLink>.</p>
+        <div class="wizard-dropzone" data-testid="wizard-dropzone">
+          <h3>Añade los apuntes de este curso</h3>
+          <DropZone :uploading="material.uploading" :minor="auth.user?.kind === 'MINOR'" @choose="addMaterial" />
+          <p v-if="material.uploadError" class="error" role="alert" data-testid="upload-error">{{ material.uploadError }}</p>
+          <p v-if="docNote" class="field-error" role="status" data-testid="wizard-doc-note">{{ docNote }}</p>
+        </div>
+        <p v-if="material.own.length === 0" class="muted">Todavía no tienes documentos: sube aquí los apuntes de este curso.</p>
+        <p v-else class="muted">…o elige alguno que ya tengas:</p>
         <ul class="documents">
           <li v-for="d in material.own" :key="d.id" class="document">
             <label class="check">

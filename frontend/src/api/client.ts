@@ -177,6 +177,9 @@ export interface MaterialList {
   minors: MinorMaterial[]
 }
 
+/** F18: por documento, los cursos del usuario que lo usan. */
+export type MaterialUsageMap = Record<string, { id: string; title: string }[]>
+
 export type TutorRole = 'USER' | 'TUTOR'
 /** OK es un mensaje normal; BLOCKED, una pregunta que el filtro de menores no deja enviar; FILTERED, una respuesta sustituida por un texto fijo. */
 export type TutorMessageStatus = 'OK' | 'BLOCKED' | 'FILTERED'
@@ -513,6 +516,7 @@ export const api = {
   getResults: () => request<Results>('GET', '/api/results'),
   getUsage: () => request<Usage>('GET', '/api/ai/usage'),
   getUsageTasks: () => request<UsageTasks>('GET', '/api/ai/usage/tasks'),
+  getMaterialUsage: async (): Promise<MaterialUsageMap> => (await request<{ usage: MaterialUsageMap }>('GET', '/api/courses/material-usage')).usage,
 }
 
 /** Dirección de la ilustración de un tema (F12): siempre del propio origen y con los identificadores codificados; se pinta con un `<img>`, no con `fetch`. */

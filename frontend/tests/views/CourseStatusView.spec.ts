@@ -38,13 +38,13 @@ describe('CourseStatusView', () => {
     expect(byId(m.wrapper, 'course-status').text().toLowerCase()).toContain('en cola')
   })
 
-  it('shows what was agreed: focus, topics, exam and documents', async () => {
+  it('shows what was agreed: focus, topics and exam, and the documents in the material card (F18)', async () => {
     const m = await mountApp(CourseStatusView, { user: adult, route: '/cursos/c1' })
 
     const text = byId(m.wrapper, 'course-sheet').text()
     expect(text).toContain('Gramática y vocabulario')
     expect(text).toContain('6')
-    expect(text).toContain('apuntes.pdf')
+    expect(byId(m.wrapper, 'course-material').text()).toContain('apuntes.pdf')
   })
 
   it('carries the generated-by-AI notice', async () => {

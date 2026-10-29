@@ -44,5 +44,11 @@ public class CourseController {
         return service.list(user);
     }
 
+    /** F18: en qué cursos del que llama se usa cada documento suyo (solo lectura, sin parámetros). La ruta literal gana a /{id}. */
+    @GetMapping("/material-usage")
+    CourseService.MaterialUsage materialUsage(@AuthenticationPrincipal AuthUser user) {
+        return service.materialUsage(user);
+    }
+
     // GET /api/courses/{id} (detalle con temario y progreso) lo sirve generation.CourseContentController desde F05
 }

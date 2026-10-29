@@ -9,6 +9,7 @@ import DeleteCoursesDialog from '@/components/DeleteCoursesDialog.vue'
 import { useAuthStore } from '@/stores/auth'
 import UiButton from '@/ui/UiButton.vue'
 import CourseMap from '@/map/CourseMap.vue'
+import CourseMaterial from '@/components/CourseMaterial.vue'
 import { useCourseDetailStore } from '@/stores/courseDetail'
 import { useStudyStore } from '@/stores/study'
 import { BLOCKED_TEXT } from '@/stores/course'
@@ -155,9 +156,9 @@ onBeforeUnmount(() => {
           <li>Tu nivel: {{ course.sheet.startLevel }}</li>
           <li>Tu objetivo: {{ course.sheet.goal }}</li>
           <li>{{ course.sheet.topicsCount }} temas{{ course.sheet.examPerTopic ? ', con examen en cada uno' : ', sin examen' }}</li>
-          <li v-if="course.documents.length > 0">Documentos: {{ course.documents.map((d) => d.name).join(', ') }}</li>
         </ul>
       </section>
+      <CourseMaterial :documents="course.documents" />
       <DeleteCoursesDialog v-model="deleteOpen" :courses="[{ id: course.id, title: course.title }]" :busy="deleting" @confirm="confirmDelete" />
     </template>
   </div>

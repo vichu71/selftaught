@@ -12,7 +12,10 @@ import { useMaterialStore } from '@/stores/material'
 const auth = useAuthStore()
 const material = useMaterialStore()
 
-onMounted(() => material.startPolling())
+onMounted(() => {
+  void material.startPolling()
+  void material.loadUsage()
+})
 onBeforeUnmount(() => material.stopPolling())
 
 function onChoose(file: File) {
@@ -42,7 +45,7 @@ function onChoose(file: File) {
       <p v-if="material.listError" class="error" role="alert" data-testid="list-error">No se pudo cargar la lista.</p>
       <EmptyNote v-else-if="material.own.length === 0" message="Todavía no has subido ningún documento." data-testid="no-documents" />
       <p v-if="material.deleteError" class="error" role="alert" data-testid="delete-error">No se pudo borrar el documento.</p>
-      <MaterialList :documents="material.own" @remove="material.remove" />
+      <MaterialList :documents="material.own" :usage="material.usage" @remove="material.remove" />
     </section>
 
     <section v-if="material.minors.length > 0" class="card" data-testid="minors-material">

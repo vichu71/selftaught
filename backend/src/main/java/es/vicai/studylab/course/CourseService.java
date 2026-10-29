@@ -56,6 +56,11 @@ public class CourseService {
 
     public record Created(CourseView course, boolean created) {}
 
+    public record CourseRef(UUID id, String title) {}
+
+    /** F18: por documento, los cursos del usuario que lo usan. Solo ids y títulos: nunca contenido, hash ni propietario. */
+    public record MaterialUsage(Map<String, List<CourseRef>> usage) {}
+
     private final CourseRepository courses;
     private final CourseProperties props;
     private final AiGateway gateway;
@@ -172,6 +177,14 @@ public class CourseService {
 
     public List<CourseView> list(AuthUser user) {
         return courses.listCourses(user.id()).stream().map(row -> view(row, user.id())).toList();
+    }
+
+    public MaterialUsage materialUsage(AuthUser user) {
+        Map<String, List<CourseRef>> usage = new java.util.LinkedHashMap<>();
+        for (CourseRepository.UsageRow row : courses.documentUsage(user.id())) {
+            usage.computeIfAbsent(row.documentId().toString(), k -> new ArrayList<>()).add(new CourseRef(row.courseId(), row.title()));
+        }
+        return new MaterialUsage(usage);
     }
 
     public CourseView get(AuthUser user, String rawId) {
