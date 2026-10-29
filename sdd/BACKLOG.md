@@ -245,7 +245,7 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F18-1 | 🟡 No se puede añadir o quitar material de un curso **ya creado** | Sería una edición de curso (F09) que regenera piezas y gasta IA |
 | F18-2 | 🟡 Se sube un fichero cada vez también en el asistente | Como F16-1 |
 | F18-3 | 🟡 «Usado en» solo en la biblioteca propia, no en el material de los menores (solo lectura) | D7; el tutor ve sus cursos desde su panel (F08) |
-| **F19** | 🟠 **Imágenes y fotos de apuntes: especificada y con tests (FASES 1–5); código pendiente (FASE 6)** | Spec `sdd/specs/US-F19-fotos-de-apuntes.md`, propuesta `ART-F19-propuesta-fotos-apuntes.md` (ADR-100 a 105), tests en `sdd/reports/F19-fase4-tests.md`. Decidido: JPEG y PNG, tarea `OCR` por `AiGateway` (visión de pago), menores solo con permiso del tutor, `GenerationLock`. Falta: el código, ejecutar los tests de backend en la máquina del usuario y el **benchmark de lectura** (lo lanza el usuario con sus claves) para elegir modelo y precio |
+| **F19** | 🟠 **Imágenes y fotos de apuntes: implementada (FASES 1–6); falta el benchmark de lectura y la verificación con un proveedor real** | Spec `sdd/specs/US-F19-fotos-de-apuntes.md`, propuesta `ART-F19-propuesta-fotos-apuntes.md` (ADR-100 a 105), tests en `sdd/reports/F19-fase4-tests.md`. Decidido: JPEG y PNG, tarea `OCR` por `AiGateway` (visión de pago), menores solo con permiso del tutor, `GenerationLock`. Falta: el código, ejecutar los tests de backend en la máquina del usuario y el **benchmark de lectura** (lo lanza el usuario con sus claves) para elegir modelo y precio |
 
 ## Anotado en F19 (fotos de apuntes)
 
