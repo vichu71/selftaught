@@ -154,21 +154,58 @@ a.button-link {
 /* ---------- Marco: navegación ---------- */
 .shell { position: relative; min-height: 100vh; display: flex; flex-direction: column; }
 .shell-main { flex: 1; padding-bottom: 5.5rem; }
-.nav-bar { background: var(--color-surface); border-bottom: var(--border-width) solid var(--color-line); }
+.nav-bar { background: linear-gradient(var(--color-sky), var(--color-paper)); border-bottom: var(--border-width) solid color-mix(in srgb, var(--color-line) 35%, transparent); }
 .nav-inner { max-width: var(--width-page); margin: 0 auto; padding: var(--space-3) var(--space-4); display: flex; align-items: center; gap: var(--space-4); flex-wrap: wrap; }
 .brand {
+  display: inline-flex; align-items: center;
   font-family: var(--font-display); font-weight: 600; font-size: 1.5rem; letter-spacing: -0.01em; text-decoration: none;
-  background: var(--color-accent); color: var(--color-on-accent);
-  border: var(--border-width) solid var(--color-line); box-shadow: var(--shadow-soft); padding: 0 var(--space-3);
+  background: var(--color-accent); background: linear-gradient(135deg, var(--color-accent), color-mix(in srgb, var(--color-now) 70%, var(--color-accent)));
+  color: var(--color-on-accent);
+  border: var(--border-width) solid var(--color-line); border-radius: var(--radius-pill); box-shadow: var(--shadow-soft); padding: 0 var(--space-4) 0 var(--space-2);
 }
 .nav-links { display: flex; gap: var(--space-2); flex: 1; }
 .nav-link {
-  white-space: nowrap; display: inline-flex; align-items: center; min-height: var(--size-tap); padding: 0 var(--space-4);
+  white-space: nowrap; display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--size-tap); padding: 0 var(--space-4) 0 var(--space-2);
   border: var(--border-width) solid var(--color-line); border-radius: var(--radius-pill);
   background: var(--color-surface); color: var(--color-ink); font-weight: 700; text-decoration: none;
 }
-.nav-link.is-active { background: var(--color-primary); color: var(--color-on-primary); }
+.nav-link:hover { background: color-mix(in srgb, var(--zone-fill) 30%, var(--color-surface)); }
+.nav-link.is-active { background: var(--zone-fill); color: var(--zone-on); box-shadow: 0 5px 0 var(--zone-ink); }
+.nav-bubble { display: inline-grid; place-items: center; flex: none; width: 2rem; height: 2rem; border-radius: 50%; background: var(--zone-fill); color: var(--zone-on); border: var(--border-width) solid var(--color-line); }
+.nav-link.is-active .nav-bubble { background: var(--zone-on); color: var(--zone-fill); }
 .nav-user { display: flex; align-items: center; gap: var(--space-3); font-weight: 700; }
+.nav-greeting { display: inline-flex; align-items: center; min-height: 2rem; padding: 0 var(--space-3); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--zone-fill) 35%, var(--color-surface)); color: var(--color-ink); }
+.nav-user button { font-weight: 600; }
+
+/* Zonas de color (F17, ADR-95): el marco las pone según la ruta y cada enlace de la barra, según su destino; sin zona, el acento neutro */
+:root { --zone-fill: var(--color-primary); --zone-on: var(--color-on-primary); --zone-ink: var(--color-ink); }
+.shell[data-zone='map'], .nav-link[data-zone='map'] { --zone-fill: var(--color-zone-map); --zone-on: var(--color-on-zone-map); --zone-ink: var(--color-zone-map-ink); }
+.shell[data-zone='material'], .nav-link[data-zone='material'] { --zone-fill: var(--color-zone-material); --zone-on: var(--color-on-zone-material); --zone-ink: var(--color-zone-material-ink); }
+.shell[data-zone='results'], .nav-link[data-zone='results'] { --zone-fill: var(--color-zone-results); --zone-on: var(--color-on-zone-results); --zone-ink: var(--color-zone-results-ink); }
+.shell[data-zone='owner'], .nav-link[data-zone='owner'] { --zone-fill: var(--color-zone-owner); --zone-on: var(--color-on-zone-owner); --zone-ink: var(--color-zone-owner-ink); }
+.page > .card, .page > .ui-card, .ui-card { border-top: 6px solid var(--zone-fill); }
+
+/* Cabecera de página: burbuja con el icono de la zona y el título en su tono */
+.page-header { align-items: center; gap: var(--space-3); flex-wrap: nowrap; }
+.page-bubble { display: inline-grid; place-items: center; flex: none; width: 3rem; height: 3rem; border-radius: 50%; background: var(--zone-fill); color: var(--zone-on); border: var(--border-width) solid var(--color-line); box-shadow: var(--shadow-soft); }
+.page-title { flex: 1 1 auto; min-width: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; overflow-wrap: anywhere; }
+.page-title h1 { margin: 0; color: var(--zone-ink); }
+.page-actions { display: flex; align-items: center; gap: var(--space-2); flex: none; }
+
+/* Etiquetas de estado y de zona: el estado lleva icono (ADR-96) */
+.ui-tag { display: inline-flex; align-items: center; gap: var(--space-1); }
+.ui-tag--warn { background: var(--color-accent); color: var(--color-on-accent); }
+.ui-tag--bad { background: var(--color-danger); color: var(--color-on-danger); }
+.ui-tag--info { background: var(--color-zone-material); color: var(--color-on-zone-material); }
+.ui-tag--map { background: var(--color-zone-map); color: var(--color-on-zone-map); }
+.ui-tag--material { background: var(--color-zone-material); color: var(--color-on-zone-material); }
+.ui-tag--results { background: var(--color-zone-results); color: var(--color-on-zone-results); }
+.ui-tag--owner { background: var(--color-zone-owner); color: var(--color-on-zone-owner); }
+
+/* Celebración (F17, ADR-97): el confeti solo se ve con movimiento permitido; el texto siempre */
+.celebration { position: relative; margin: var(--space-3) 0; }
+.celebration-text { margin: 0; font-family: var(--font-display); font-weight: 600; font-size: 1.25rem; color: var(--zone-ink); }
+.confetti { display: none; }
 
 @media (max-width: 29.99rem) {
   .rest-text { display: none; }
@@ -486,3 +523,11 @@ a.button-link {
 @media (prefers-reduced-motion: no-preference) {
   .disclosure-toggle svg { transition: transform 0.2s ease; }
 }
+
+/* Barra inferior de móvil (F17): las mismas burbujas, algo más pequeñas, y el activo sigue relleno con su sombra */
+@media (max-width: 29.99rem) {
+  .nav-link { padding: var(--space-1); }
+  .nav-bubble { width: 1.75rem; height: 1.75rem; }
+  .nav-link.is-active { box-shadow: 0 3px 0 var(--zone-ink); }
+}
+.daypart { margin: 0 0 var(--space-3); color: var(--zone-ink); font-weight: 700; }

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { BookOpenText as PageIcon } from 'lucide-vue-next'
 import BackLink from '@/ui/BackLink.vue'
 import { onBeforeUnmount, onMounted } from 'vue'
 import MaterialList from '@/components/MaterialList.vue'
@@ -20,10 +22,10 @@ function onChoose(file: File) {
 
 <template>
   <div class="page wide" data-testid="material-view">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1>Mi material</h1>
       <BackLink data-testid="back-home" />
-    </header>
+    </PageHeader>
 
     <p v-if="auth.user?.kind === 'MINOR'" class="notice" data-testid="material-minor-notice">
       Tu adulto tutor puede ver los documentos que subes.

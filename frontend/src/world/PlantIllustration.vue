@@ -7,6 +7,7 @@ defineProps<{ stage: PlantStage; label?: string }>()
 <template>
   <svg
     class="plant"
+    :class="{ 'plant--bloom': stage === 'fruit' }"
     viewBox="0 0 120 120"
     xmlns="http://www.w3.org/2000/svg"
     :data-stage="stage"

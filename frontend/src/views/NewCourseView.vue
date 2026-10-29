@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { Sparkles as PageIcon } from 'lucide-vue-next'
 import BackLink from '@/ui/BackLink.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -51,10 +53,10 @@ function restart() {
 
 <template>
   <div class="page" data-testid="new-course-view">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1>Nuevo curso</h1>
       <BackLink data-testid="cancel-home" label="Cancelar" aria-label="Cancelar y volver al inicio" />
-    </header>
+    </PageHeader>
 
     <!-- Paso 1: el tema -->
     <section v-if="course.step === 'topic'" class="card" data-testid="step-topic">

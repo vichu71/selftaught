@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import { api } from '@/api/client'
+import Celebration from '@/ui/Celebration.vue'
 
 const props = defineProps<{ courseId: string; pieceId: string; done: boolean; navigation?: { previous?: string; next?: string } }>()
 
 const isDone = ref(props.done)
+const celebrate = ref(false) // solo al marcarla como hecha en esta pantalla, nunca al abrir una lección ya hecha
 const busy = ref(false)
 const error = ref(false)
 
@@ -15,6 +17,7 @@ async function toggle() {
   try {
     await api.setLessonDone(props.courseId, props.pieceId, !isDone.value)
     isDone.value = !isDone.value
+    celebrate.value = isDone.value
   } catch {
     error.value = true // el estado anterior se conserva
   } finally {
@@ -28,6 +31,7 @@ async function toggle() {
     <button type="button" class="primary" data-testid="mark-done" :aria-pressed="isDone ? 'true' : 'false'" :disabled="busy" @click="toggle">
       {{ isDone ? '✓ Hecha (pulsa para desmarcar)' : 'Marcar como hecha' }}
     </button>
+    <Celebration v-if="celebrate" data-testid="celebration" />
     <p v-if="error" class="error" role="alert" data-testid="done-error">No se pudo guardar. Inténtalo de nuevo.</p>
 
     <nav class="nav" aria-label="Lecciones">

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { BarChart3 as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { api, type CourseResult, type Results, type Usage, type UsageTasks } from '@/api/client'
 import CourseCard from '@/results/CourseCard.vue'
@@ -41,10 +43,10 @@ onMounted(async () => {
 
 <template>
   <div class="page wide" data-testid="results-view">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1>Resultados</h1>
       <BackLink data-testid="back-home" />
-    </header>
+    </PageHeader>
 
     <UiState v-if="loading" state="loading" message="Cargando tus resultados…" data-testid="results-loading" />
 

@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { Users as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type GuardianAlert, type GuardianConversation, type GuardianOverview } from '@/api/client'
@@ -32,11 +34,11 @@ onMounted(async () => {
 
 <template>
   <div class="page wide" data-testid="guardian-student">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1 v-if="overview" data-testid="guardian-name">Actividad de {{ overview.student.displayName }}</h1>
       <h1 v-else>Actividad del alumno</h1>
       <RouterLink to="/" data-testid="guardian-back">Volver</RouterLink>
-    </header>
+    </PageHeader>
 
     <p v-if="loading" class="muted" data-testid="guardian-loading">Cargando…</p>
     <p v-else-if="notFound" class="error" role="alert" data-testid="guardian-not-found">No encontramos a este alumno entre los tuyos.</p>

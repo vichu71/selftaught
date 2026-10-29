@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { Sprout as PageIcon } from 'lucide-vue-next'
 import BackLink from '@/ui/BackLink.vue'
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -103,11 +105,11 @@ onBeforeUnmount(() => {
 
 <template>
   <div class="page wide" data-testid="course-view">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1 v-if="course" data-testid="course-title">{{ course.title }}</h1>
       <h1 v-else>Tu curso</h1>
       <BackLink data-testid="back-home" />
-    </header>
+    </PageHeader>
 
     <p v-if="store.notFound" class="error" role="alert" data-testid="course-not-found">No encontramos este curso.</p>
     <p v-else-if="store.failed && !course" class="error" role="alert" data-testid="course-error">No se pudo cargar el curso. Inténtalo más tarde.</p>

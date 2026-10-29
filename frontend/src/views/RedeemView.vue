@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { KeyRound as PageIcon } from 'lucide-vue-next'
 import BackLink from '@/ui/BackLink.vue'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
@@ -35,10 +37,10 @@ async function send() {
 
 <template>
   <div class="page" data-testid="redeem-view">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1>Tengo un código</h1>
       <BackLink data-testid="back-home" />
-    </header>
+    </PageHeader>
 
     <section class="card">
       <p data-testid="redeem-info">

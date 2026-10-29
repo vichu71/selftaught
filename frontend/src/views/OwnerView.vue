@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { ShieldCheck as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import {
   ApiError, api, type OwnerAccounts, type OwnerAi, type OwnerHealth, type OwnerPrices, type OwnerRange, type OwnerUsage,
@@ -117,7 +119,7 @@ const tone = (n: number): 'ok' | 'bad' => (n > 0 ? 'bad' : 'ok')
 
 <template>
   <section class="page wide owner" data-testid="owner-view">
-    <h1>Panel del propietario</h1>
+    <PageHeader :icon="PageIcon"><h1>Panel del propietario</h1></PageHeader>
     <p class="muted">Solo cifras: aquí nunca se ve el contenido de nadie.</p>
 
     <div class="owner-toolbar">

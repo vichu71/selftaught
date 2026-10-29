@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { Map as PageIcon } from 'lucide-vue-next'
 import { BarChart3, BookOpenText, KeyRound } from 'lucide-vue-next'
 import ActionCard from '@/ui/ActionCard.vue'
 import { ref } from 'vue'
@@ -7,10 +9,12 @@ import ContinueCard from '@/components/ContinueCard.vue'
 import CoursesPanel from '@/components/CoursesPanel.vue'
 import StudentsPanel from '@/components/StudentsPanel.vue'
 import { nextStop, type NextStop } from '@/map/layoutMap'
+import { daypart } from '@/layouts/greeting'
 import { useAuthStore } from '@/stores/auth'
 import { useStudyStore } from '@/stores/study'
 
 const auth = useAuthStore()
+const part = daypart() // reloj del navegador: sin petición
 const study = useStudyStore()
 const stop = ref<NextStop | null>(null)
 const stopCourse = ref('')
@@ -39,9 +43,10 @@ async function pickContinue(courses: Course[]) {
 
 <template>
   <div class="page wide" data-testid="app-shell">
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1 data-testid="welcome">Hola, {{ auth.user?.displayName }}</h1>
-    </header>
+    </PageHeader>
+    <p class="daypart" data-testid="home-daypart">{{ part }}</p>
 
     <p v-if="auth.user?.kind === 'MINOR'" class="notice" data-testid="guardian-notice">
       Tu adulto tutor puede ver tus cursos, tu progreso, tus respuestas e intentos de ejercicios y exámenes y tus conversaciones con el tutor de IA.

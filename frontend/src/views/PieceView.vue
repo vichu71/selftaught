@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { BookOpen as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type Piece } from '@/api/client'
@@ -42,11 +44,11 @@ watch(() => route.params.pieceId, (id, old) => {
 <template>
   <div class="page wide" data-testid="piece-view">
     <Breadcrumb :items="[{ label: 'Mapa', to: '/' }, { label: 'Curso', to: `/cursos/${courseId}` }, { label: piece?.title ?? 'Lección' }]" />
-    <header class="topbar">
+    <PageHeader :icon="PageIcon">
       <h1 v-if="piece" data-testid="piece-title">{{ kindLabel }}: {{ piece.title }}</h1>
       <h1 v-else>Tu curso</h1>
       <RouterLink :to="`/cursos/${courseId}`" data-testid="back-course">Volver al curso</RouterLink>
-    </header>
+    </PageHeader>
 
     <p v-if="notFound" class="error" role="alert" data-testid="piece-not-found">No encontramos esta página del curso.</p>
     <p v-else-if="failed" class="error" role="alert" data-testid="piece-error">No se pudo cargar. Inténtalo más tarde.</p>

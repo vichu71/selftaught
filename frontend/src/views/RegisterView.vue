@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { UserPlus as PageIcon } from 'lucide-vue-next'
 import { reactive, ref } from 'vue'
 import { api } from '@/api/client'
 
@@ -36,7 +38,7 @@ async function submit() {
 
 <template>
   <div class="page">
-    <h1>Crear cuenta de adulto</h1>
+    <PageHeader :icon="PageIcon"><h1>Crear cuenta de adulto</h1></PageHeader>
 
     <section v-if="sentTo" class="card" data-testid="check-email">
       <h2>Revisa tu correo</h2>

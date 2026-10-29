@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import PageHeader from '@/ui/PageHeader.vue'
+import { LogIn as PageIcon } from 'lucide-vue-next'
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { ApiError } from '@/api/client'
@@ -40,7 +42,7 @@ async function submit() {
 
 <template>
   <div class="page">
-    <h1>Entrar en Study Lab</h1>
+    <PageHeader :icon="PageIcon"><h1>Entrar en Study Lab</h1></PageHeader>
     <form class="card" novalidate @submit.prevent="submit">
       <label for="identifier">Correo o usuario</label>
       <input id="identifier" v-model="identifier" data-testid="identifier" autocomplete="username" autocapitalize="none" />

@@ -36,6 +36,20 @@
   --color-stat-warn: #92400e;
   --color-stat-bad: #a3123a;
 
+  /* Zonas de color (F17, ADR-95/96): relleno, texto sobre el relleno y texto sobre superficie, cuatro zonas */
+  --color-zone-map: #3fae6a;
+  --color-on-zone-map: #0b2a18;
+  --color-zone-map-ink: #166534;
+  --color-zone-material: #7db7ff;
+  --color-on-zone-material: #0b1d3a;
+  --color-zone-material-ink: #1d4ed8;
+  --color-zone-results: #f5b82e;
+  --color-on-zone-results: #3b2300;
+  --color-zone-results-ink: #92400e;
+  --color-zone-owner: #b79cff;
+  --color-on-zone-owner: #1e0f4d;
+  --color-zone-owner-ink: #6d28d9;
+
   /* Paisaje e ilustraciones */
   --color-grass: #a8e6b0;
   --color-leaf: #3fae6a;
@@ -100,6 +114,19 @@
     --color-stat-ok: #6ee7a8;
     --color-stat-warn: #fcd34d;
     --color-stat-bad: #ff8fa8;
+
+    --color-zone-map: #4cc38a;
+    --color-on-zone-map: #0b1623;
+    --color-zone-map-ink: #6ee7a8;
+    --color-zone-material: #8cb8ff;
+    --color-on-zone-material: #0b1623;
+    --color-zone-material-ink: #8cb8ff;
+    --color-zone-results: #ffd966;
+    --color-on-zone-results: #0b1623;
+    --color-zone-results-ink: #fcd34d;
+    --color-zone-owner: #c4a5ff;
+    --color-on-zone-owner: #0b1623;
+    --color-zone-owner-ink: #c4a5ff;
 
     --color-grass: #1f4d3b;
     --color-leaf: #4cc38a;
