@@ -40,7 +40,28 @@ public class GeminiProvider extends HttpProvider {
         body.put("contents", List.of(Map.of("role", "user", "parts", List.of(Map.of("text", call.dataMessage())))));
         body.put("generationConfig", Map.of("maxOutputTokens", call.maxOutputTokens()));
 
-        Raw raw = post("/v1beta/models/{model}:generateContent", Map.of("x-goog-api-key", apiKey), body, call.model());
+        return parseChat(post("/v1beta/models/{model}:generateContent", Map.of("x-goog-api-key", apiKey), body, call.model()));
+    }
+
+    /**
+     * Lectura de imágenes (F19): generateContent con el texto de los datos y la imagen en {@code inline_data} (base64) en el mismo mensaje del usuario; la clave, en
+     * cabecera. Formato según la documentación: lo confirma el benchmark.
+     */
+    @Override
+    public ChatResult vision(VisionCall call) {
+        if (!MODEL.matcher(call.model()).matches()) throw new ProviderException(ProviderErrorKind.BAD_REQUEST, "Modelo no válido");
+
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("systemInstruction", Map.of("parts", List.of(Map.of("text", call.instructions()))));
+        body.put("contents", List.of(Map.of("role", "user", "parts", List.of(
+                Map.of("text", call.data()),
+                Map.of("inline_data", Map.of("mime_type", call.mime(), "data", java.util.Base64.getEncoder().encodeToString(call.image())))))));
+        body.put("generationConfig", Map.of("maxOutputTokens", call.maxOutputTokens()));
+
+        return parseChat(post("/v1beta/models/{model}:generateContent", Map.of("x-goog-api-key", apiKey), body, call.model()));
+    }
+
+    private ChatResult parseChat(Raw raw) {
         if (!raw.ok()) throw classify(raw);
 
         JsonNode root = parse(raw);

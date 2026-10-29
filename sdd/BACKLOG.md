@@ -245,4 +245,17 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F18-1 | 🟡 No se puede añadir o quitar material de un curso **ya creado** | Sería una edición de curso (F09) que regenera piezas y gasta IA |
 | F18-2 | 🟡 Se sube un fichero cada vez también en el asistente | Como F16-1 |
 | F18-3 | 🟡 «Usado en» solo en la biblioteca propia, no en el material de los menores (solo lectura) | D7; el tutor ve sus cursos desde su panel (F08) |
-| **F19** | 🟠 **Imágenes y fotos de apuntes** (feature futura): que un alumno suba una foto de sus apuntes y la app la interprete | Pedida por el usuario el 29-10-2026. Hace falta: una tarea de IA nueva por `AiGateway` (visión u OCR) con **precio por imagen**, tope y plantilla; elegir proveedor y medirlo con el benchmark; `MaterialType` ampliado (JPEG/PNG) con el tipo decidido por contenido y la imagen tratada como **entrada no fiable** (como F12); `ContentGuard` sobre el texto leído y sobre la imagen si es de un menor; límites por usuario y tamaño; el texto extraído entra al mismo flujo de fragmentos como **dato no instrucción**. Riesgos: coste, fotos con datos personales, calidad de la escritura a mano |
+| **F19** | 🟠 **Imágenes y fotos de apuntes: implementada (FASES 1–6); falta el benchmark de lectura y la verificación con un proveedor real** | Spec `sdd/specs/US-F19-fotos-de-apuntes.md`, propuesta `ART-F19-propuesta-fotos-apuntes.md` (ADR-100 a 105), tests en `sdd/reports/F19-fase4-tests.md`. Decidido: JPEG y PNG, tarea `OCR` por `AiGateway` (visión de pago), menores solo con permiso del tutor, `GenerationLock`. Falta: el código, ejecutar los tests de backend en la máquina del usuario y el **benchmark de lectura** (lo lanza el usuario con sus claves) para elegir modelo y precio |
+
+## Anotado en F19 (fotos de apuntes)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F19-1 | 🟡 Sin HEIC (formato por defecto del iPhone), WebP ni GIF | El 415 lo dice en palabras; el navegador suele convertir a JPEG al elegir desde el selector, pero no está garantizado |
+| F19-2 | 🟡 Un PDF escaneado (sin capa de texto) sigue yendo a `ERROR` `NO_TEXT` | Pasarlo por la misma lectura es otra feature: mismas defensas, más páginas y mucho más coste |
+| F19-3 | 🟡 Sin «Reintentar lectura» sobre un `ERROR` | Exigiría conservar el original más tiempo (hoy se borra al terminar); se sube otra foto |
+| F19-4 | 🟡 Duplicación entre `illustrations/ImageProcessor` y `material/image/PhotoProcessor` | Mismo patrón (firma, píxeles, re-codificado); unificarlos en un saneador compartido, sin coste funcional |
+| F19-5 | 🟠 El benchmark de lectura (`make benchmark-ocr`) no existe aún | Imágenes sintéticas con texto conocido generadas con `java.awt` y, opcionalmente, un directorio de fotos reales montado de solo lectura; gasta dinero real: solo lo lanza el usuario |
+| F19-6 | 🟡 La escritura a mano puede leerse con errores y no se promete exactitud | El documento lleva «Leído por IA»; las citas de la IA no marcan que vienen de una foto |
+| F19-7 | 🟠 Los formatos de petición de visión de OpenAI y Google están **por confirmar** | Los tests fijan la forma conocida; el run del benchmark es la confirmación (regla de F02) |
+| F19-8 | 🟡 `GenerationLock` compartido con la generación de cursos: una foto espera a una generación larga y al revés | ADR-103; revisitar si se notan esperas |

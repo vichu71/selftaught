@@ -59,6 +59,12 @@ public class FakeProvider implements AiProvider {
         imageFailMessage = "fallo simulado";
         imageModerated = false;
         imageBytes = null;
+        visionCalls.clear();
+        visionFailuresLeft.set(0);
+        visionFailKind = ProviderErrorKind.SERVER_ERROR;
+        visionFailMessage = "fallo simulado";
+        visionBefore = null;
+        visionResponse = new ChatResult("{\"appropriate\":true,\"text\":\"texto-leido-falso\"}", 1_000, 100, false, FinishReason.STOP);
     }
 
     public void respondWith(String text, int inputTokens, int outputTokens) {
@@ -185,7 +191,51 @@ public class FakeProvider implements AiProvider {
         out.writeBytes(java.nio.ByteBuffer.allocate(4).putInt((int) crc.getValue()).array());
     }
 
+    // ---------- ganchos de prueba de la lectura de imágenes (F19) ----------
+
+    private final List<VisionCall> visionCalls = new CopyOnWriteArrayList<>();
+    private final AtomicInteger visionFailuresLeft = new AtomicInteger();
+    private volatile ProviderErrorKind visionFailKind = ProviderErrorKind.SERVER_ERROR;
+    private volatile String visionFailMessage = "fallo simulado";
+    private volatile Runnable visionBefore;
+    private volatile ChatResult visionResponse = new ChatResult("{\"appropriate\":true,\"text\":\"texto-leido-falso\"}", 1_000, 100, false, FinishReason.STOP);
+
+    /** Todas las lecturas recibidas, también las que se hicieron fallar. */
+    public List<VisionCall> visionCalls() {
+        return new ArrayList<>(visionCalls);
+    }
+
+    /** El texto crudo que devuelve la lectura (un sobre JSON, o lo que se quiera probar) y los tokens que informa. Vacío simula una llamada cobrada sin respuesta. */
+    public void visionRespondsWith(String raw, int inputTokens, int outputTokens) {
+        visionResponse = new ChatResult(raw, inputTokens, outputTokens, false, FinishReason.STOP);
+    }
+
+    /** Las siguientes {@code times} lecturas fallan con ese tipo de error (0 lo cancela). */
+    public void visionFailsTimes(int times, ProviderErrorKind kind) {
+        visionFailKind = kind;
+        visionFailuresLeft.set(times);
+    }
+
+    public void visionFailMessage(String message) {
+        visionFailMessage = message;
+    }
+
+    /** Se ejecuta al principio de cada lectura (para simular que algo cambia mientras el proveedor trabaja). */
+    public void visionBefore(Runnable action) {
+        visionBefore = action;
+    }
+
     // ---------- AiProvider ----------
+
+    @Override
+    public ChatResult vision(VisionCall call) {
+        visionCalls.add(call);
+        Runnable before = visionBefore;
+        if (before != null) before.run();
+        pause();
+        if (visionFailuresLeft.getAndUpdate(n -> n > 0 ? n - 1 : 0) > 0) throw new ProviderException(visionFailKind, visionFailMessage);
+        return visionResponse;
+    }
 
     @Override
     public ImageResult image(ImageCall call) {

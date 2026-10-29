@@ -16,6 +16,7 @@ import es.vicai.studylab.ai.provider.ImageResult;
 import es.vicai.studylab.ai.provider.ProviderErrorKind;
 import es.vicai.studylab.ai.provider.ProviderException;
 import es.vicai.studylab.ai.provider.ProviderRegistry;
+import es.vicai.studylab.ai.provider.VisionCall;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Duration;
@@ -224,6 +225,67 @@ public class AiGateway {
         log.debug("IA {} {}/{} OK (intento {}, {} ms)", ctx.task(), provider, model, attempt.number(), attempt.durationMs());
         budget.afterCall(bench ? null : ctx.userId());
         return new AiImageResponse(result.bytes(), result.mime() == null ? "image/png" : result.mime(), price, provider, model, requestId, attempt.durationMs());
+    }
+
+    // ---------- lectura de fotos (F19, ADR-100) ----------
+
+    /** Tokens que se suponen para una imagen al calcular el peor caso del tope (la imagen ya viene reducida a 1568 px). */
+    private static final int ASSUMED_IMAGE_TOKENS = 2_000;
+
+    /** Hay proveedor y modelo de lectura configurados; sin ellos las fotos quedan desactivadas. */
+    public boolean readEnabled() {
+        AiProperties.TaskConfig task = props.tasks().get(AiTask.OCR);
+        return task != null && !task.providerName().isEmpty() && task.model() != null && !task.model().isBlank();
+    }
+
+    /**
+     * Lee una foto a nombre de un usuario, con su tope y sus avisos de gasto. Devuelve la salida sin validar. Una respuesta vacía de una llamada ya cobrada falla con
+     * {@code INVALID_RESPONSE} y con su coste: se contabiliza igualmente.
+     */
+    public AiReadResponse readImage(AiReadRequest request) {
+        if (!readEnabled()) throw AiException.of(AiErrorKind.CONFIG);
+        AiProperties.TaskConfig task = props.task(AiTask.OCR);
+        UUID requestId = UUID.randomUUID();
+        Ctx ctx = new Ctx(requestId, request.userId(), null, "APP", AiTask.OCR, task.providerName(), task.model().trim());
+
+        requireActiveUser(ctx);
+        AssembledPrompt prompt = assembleRead(ctx, request);
+        int inputChars = prompt.instructions().length() + prompt.dataMessage().length();
+        AiProperties.Price price = priceOf(ctx);
+        int maxOutput = Math.max(1, Math.min(task.maxOutputTokens() == null ? props.hardMaxOutputTokens() : task.maxOutputTokens(), props.hardMaxOutputTokens()));
+        try {
+            budget.checkBeforeCall(ctx.userId(), cost(price, estimateTokens(inputChars) + ASSUMED_IMAGE_TOKENS, maxOutput));
+        } catch (AiException e) {
+            usage.insert(row(ctx, 1, 0, 0, false, BigDecimal.ZERO, "BLOCKED", e.kind().name(), null, 0));
+            throw e;
+        }
+
+        AiProvider adapter = providers.get(ctx.provider());
+        VisionCall call = new VisionCall(ctx.model(), prompt.instructions(), prompt.dataMessage(), request.image(), request.mime(), maxOutput, task.timeout());
+        Attempt<ChatResult> attempt = withRetries(ctx, () -> adapter.vision(call));
+        ChatResult result = attempt.result();
+        int in = result.tokensEstimated() ? estimateTokens(inputChars) + ASSUMED_IMAGE_TOKENS : result.inputTokens();
+        int out = result.tokensEstimated() ? estimateTokens(result.text().length()) : result.outputTokens();
+        BigDecimal cost = cost(price, in, out);
+
+        if (result.text().isBlank()) {
+            usage.insert(row(ctx, attempt.number(), in, out, result.tokensEstimated(), cost, "ERROR", ProviderErrorKind.INVALID_RESPONSE.name(),
+                    result.finish().name(), attempt.durationMs()));
+            budget.afterCall(ctx.userId());
+            throw AiException.billed(AiErrorKind.INVALID_RESPONSE, cost);
+        }
+        usage.insert(row(ctx, attempt.number(), in, out, result.tokensEstimated(), cost, "OK", null, result.finish().name(), attempt.durationMs()));
+        log.debug("IA {} {}/{} OK (intento {}, {} ms)", ctx.task(), ctx.provider(), ctx.model(), attempt.number(), attempt.durationMs());
+        budget.afterCall(ctx.userId());
+        return new AiReadResponse(result.text(), cost, ctx.provider(), ctx.model(), requestId, attempt.durationMs());
+    }
+
+    private AssembledPrompt assembleRead(Ctx ctx, AiReadRequest request) {
+        try {
+            return assembler.assemble("read-image", java.util.Map.of("audiencia", request.audience()));
+        } catch (TemplateNotFoundException | IllegalArgumentException e) {
+            throw blocked(ctx, AiErrorKind.CONFIG);
+        }
     }
 
     // ---------- reintentos acotados (ADR-23) ----------

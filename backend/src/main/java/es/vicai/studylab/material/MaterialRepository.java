@@ -39,6 +39,11 @@ public class MaterialRepository {
                 rs.getTimestamp("created_at").toInstant());
     }
 
+    /** ¿Es un menor el propietario? Decide la audiencia que se declara al leer una foto. */
+    public boolean isMinor(UUID ownerId) {
+        return jdbc.sql("SELECT kind = 'MINOR' FROM app_user WHERE id = :id").param("id", ownerId).query(Boolean.class).optional().orElse(true);
+    }
+
     public int count(UUID ownerId) {
         return jdbc.sql("SELECT count(*) FROM source_document WHERE owner_id = :owner").param("owner", ownerId)
                 .query(Integer.class).single();
@@ -75,32 +80,61 @@ public class MaterialRepository {
 
     // ---------- cola de procesado (ADR-32) ----------
 
-    /** Reclama el documento pendiente más antiguo de un propietario activo; varios workers no pisan el mismo documento. */
-    public Optional<Claimed> claimNext() {
+    /**
+     * Reclama el documento pendiente más antiguo de un propietario activo; varios workers no pisan el mismo documento. {@code skip} son los que esta ronda ya dejó
+     * esperando (una foto con el cerrojo de su usuario ocupado): no se reclaman otra vez hasta la siguiente ronda.
+     */
+    public Optional<Claimed> claimNext(java.util.Collection<UUID> skip) {
         return jdbc.sql("""
                 UPDATE source_document SET status = 'PROCESSING', attempts = attempts + 1, processing_started_at = now(), updated_at = now()
                 WHERE id = (SELECT d.id FROM source_document d JOIN app_user u ON u.id = d.owner_id
-                            WHERE d.status = 'UPLOADED' AND u.status = 'ACTIVE'
+                            WHERE d.status = 'UPLOADED' AND u.status = 'ACTIVE' AND d.id::text <> ALL (string_to_array(:skip, ','))
                             ORDER BY d.created_at, d.id FOR UPDATE OF d SKIP LOCKED LIMIT 1)
                 RETURNING id, owner_id, media_type, content""")
+                .param("skip", skip.stream().map(UUID::toString).collect(java.util.stream.Collectors.joining(",")))
                 .query((rs, row) -> new Claimed(rs.getObject("id", UUID.class), rs.getObject("owner_id", UUID.class),
                         MaterialType.valueOf(rs.getString("media_type")), rs.getBytes("content")))
                 .optional();
     }
 
-    /** Tras un reinicio: lo que quedó en PROCESSING vuelve a la cola, salvo si ya se intentó 3 veces (devuelve esos ids). */
+    /**
+     * Tras un reinicio: lo que quedó en PROCESSING vuelve a la cola, salvo si ya se intentó 3 veces (devuelve esos ids). Una foto (IMAGE) que quedó leyéndose NO vuelve a la
+     * cola: la lectura es de pago y pudo haberse cobrado ya (ADR-102), así que acaba en ERROR READ_FAILED, y su id también se devuelve.
+     */
     public List<UUID> recoverInterrupted() {
+        List<UUID> ids = new java.util.ArrayList<>(jdbc.sql("""
+                UPDATE source_document SET status = 'ERROR', error_kind = 'READ_FAILED', content = NULL, updated_at = now()
+                WHERE status = 'PROCESSING' AND media_type = 'IMAGE' RETURNING id""").query(UUID.class).list());
         jdbc.sql("UPDATE source_document SET status = 'UPLOADED', updated_at = now() WHERE status = 'PROCESSING' AND attempts < 3").update();
-        return jdbc.sql("""
+        ids.addAll(jdbc.sql("""
                 UPDATE source_document SET status = 'ERROR', error_kind = 'INDEXING_FAILED', content = NULL, updated_at = now()
-                WHERE status = 'PROCESSING' AND attempts >= 3 RETURNING id""").query(UUID.class).list();
+                WHERE status = 'PROCESSING' AND attempts >= 3 RETURNING id""").query(UUID.class).list());
+        return ids;
     }
 
-    /** Un fallo inesperado: de nuevo a la cola si quedan intentos, o a ERROR. Devuelve true si acabó en ERROR. */
+    /** Un fallo inesperado: de nuevo a la cola si quedan intentos, o a ERROR. Una foto (IMAGE) nunca se reencola. Devuelve true si acabó en ERROR. */
     public boolean requeueOrFail(UUID id) {
-        jdbc.sql("UPDATE source_document SET status = 'UPLOADED', updated_at = now() WHERE id = :id AND status = 'PROCESSING' AND attempts < 3")
+        jdbc.sql("UPDATE source_document SET status = 'UPLOADED', updated_at = now() WHERE id = :id AND status = 'PROCESSING' AND attempts < 3 AND media_type <> 'IMAGE'")
                 .param("id", id).update();
         return markFailed(id, "INDEXING_FAILED");
+    }
+
+    /** El cerrojo del usuario estaba ocupado: la foto vuelve a la cola sin gastar el intento que reclamarla sumó (ADR-103). */
+    public void releaseBusy(UUID id) {
+        jdbc.sql("UPDATE source_document SET status = 'UPLOADED', attempts = GREATEST(attempts - 1, 0), updated_at = now() WHERE id = :id AND status = 'PROCESSING'")
+                .param("id", id).update();
+    }
+
+    // ---------- contador diario de fotos (ADR-105) ----------
+
+    /** Fotos aceptadas por el usuario en las últimas 24 horas (también las borradas después). */
+    public int countImageUploads(UUID ownerId) {
+        return jdbc.sql("SELECT count(*) FROM material_action WHERE owner_id = :owner AND kind = 'IMAGE_UPLOAD' AND created_at > now() - interval '24 hours'")
+                .param("owner", ownerId).query(Integer.class).single();
+    }
+
+    public void insertImageUpload(UUID ownerId) {
+        jdbc.sql("INSERT INTO material_action (owner_id, kind) VALUES (:owner, 'IMAGE_UPLOAD')").param("owner", ownerId).update();
     }
 
     /** Pasa a ERROR (solo si seguía procesándose) y descarta el original. */

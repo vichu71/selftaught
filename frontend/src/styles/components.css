@@ -547,3 +547,29 @@ a.button-link {
 .doc-usage { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .usage-chip { text-decoration: none; min-height: var(--size-tap); max-width: 100%; overflow-wrap: anywhere; }
 .documents .doc-card.is-confirming .actions { grid-column: 1 / -1; flex-wrap: wrap; }
+
+/* Interruptor (F19): 44 px de alto como objetivo táctil; apagado = botón a la izquierda y pista neutra, encendido = botón a la derecha y pista de acción */
+.ui-switch {
+  position: relative;
+  flex: none;
+  width: 4.25rem;
+  min-height: var(--size-tap);
+  padding: var(--space-1);
+  border: 2px solid var(--color-line);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+  display: inline-flex;
+  align-items: center;
+  cursor: pointer;
+}
+.ui-switch[data-state='checked'] { background: var(--color-primary); }
+.ui-switch:disabled { opacity: 0.6; cursor: not-allowed; }
+.ui-switch-thumb {
+  display: block;
+  width: 1.5rem;
+  height: 1.5rem;
+  border-radius: var(--radius-pill);
+  background: var(--color-line);
+}
+.ui-switch[data-state='checked'] .ui-switch-thumb { background: var(--color-on-primary); transform: translateX(1.75rem); }
+.photo-permission-row { display: flex; align-items: center; gap: var(--space-3); flex-wrap: wrap; }

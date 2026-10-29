@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { File as FileIcon, FileText, FileType } from 'lucide-vue-next'
+import { File as FileIcon, FileText, FileType, Image as ImageIcon } from 'lucide-vue-next'
 import type { MaterialDocument } from '@/api/client'
 import MaterialStatus from '@/components/MaterialStatus.vue'
 import { reasonText as reason } from '@/material/reasons'
@@ -16,8 +16,8 @@ const usageNote = (id: string) => {
   return n > 0 ? `Se usa en ${n} ${n === 1 ? 'curso' : 'cursos'}. Los cursos ya creados no cambian.` : ''
 }
 
-const typeLabels = { PDF: 'PDF', DOCX: 'Word', TEXT: 'Texto' } as const
-const icons = { PDF: FileText, DOCX: FileType, TEXT: FileIcon } as const
+const typeLabels = { PDF: 'PDF', DOCX: 'Word', TEXT: 'Texto', IMAGE: 'Foto' } as const
+const icons = { PDF: FileText, DOCX: FileType, TEXT: FileIcon, IMAGE: ImageIcon } as const
 
 function size(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -39,6 +39,7 @@ function confirmRemove(id: string) {
         <strong class="document-name">{{ d.name }}</strong>
         <span class="badge">{{ typeLabels[d.mediaType] }} · {{ size(d.sizeBytes) }}</span>
         <MaterialStatus :status="d.status" :data-testid="`doc-status-${d.id}`" />
+        <span v-if="d.mediaType === 'IMAGE' && d.status === 'READY'" class="badge" :data-testid="`doc-ai-read-${d.id}`">Leído por IA</span>
         <template v-if="usage && !readonly && d.ownedByMe">
           <span v-if="usedBy(d.id).length > 0" class="doc-usage" :data-testid="`doc-usage-${d.id}`">
             Usado en:
@@ -46,7 +47,7 @@ function confirmRemove(id: string) {
           </span>
           <span v-else class="doc-usage muted" :data-testid="`doc-unused-${d.id}`">Sin usar todavía</span>
         </template>
-        <p v-if="d.status === 'ERROR'" class="field-error" :data-testid="`doc-error-${d.id}`">{{ reason(d.errorKind) }}</p>
+        <p v-if="d.status === 'ERROR'" class="field-error" :data-testid="`doc-error-${d.id}`">{{ reason(d.errorKind, d.mediaType) }}</p>
       </div>
 
       <div v-if="!readonly && d.ownedByMe" class="actions">

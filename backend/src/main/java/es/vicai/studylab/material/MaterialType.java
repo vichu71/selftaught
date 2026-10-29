@@ -4,5 +4,7 @@ package es.vicai.studylab.material;
 public enum MaterialType {
     PDF,
     DOCX,
-    TEXT
+    TEXT,
+    /** Foto de apuntes en JPEG o PNG (F19): su texto lo lee un modelo de visión. */
+    IMAGE
 }

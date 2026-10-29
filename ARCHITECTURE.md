@@ -310,6 +310,21 @@ Contrato: `sdd/specs/US-F18-material-del-curso.md`; diseño y ADR-98 y 99: `sdd/
 - **Pantalla del curso:** la tarjeta «Material de este curso» (`components/CourseMaterial`) lista los documentos que `GET /api/courses/{id}` ya devolvía (`course_document`, F04).
 - **Mi material:** cada documento propio dice «Usado en» con chips a sus cursos o «Sin usar todavía», a partir de `GET /api/courses/material-usage` → `{usage: {documentId: [{id, title}]}}`, solo de quien llama (consulta con `owner_id`, más reciente primero, techo de 2000 filas). `DocumentView` **no cambia**. Borrar un documento usado avisa de en cuántos cursos está y que los ya creados no cambian.
 
+## Fotos de apuntes (F19)
+
+> **Estado: especificada y con tests (FASES 1 a 5); el código está pendiente (FASE 6).** Contrato: `sdd/specs/US-F19-fotos-de-apuntes.md`; diseño y ADR-100 a 105: `sdd/specs/ART-F19-propuesta-fotos-apuntes.md` (con el contrato que fijan los tests en su última sección).
+
+Una foto de apuntes (JPEG o PNG) entra a la **biblioteca de material** como un documento más (`media_type = IMAGE`); un modelo de visión la lee y el texto resultante sigue el flujo de F03 (fragmentos, embeddings, `MaterialSearch`). Nada más cambia: `DocumentView`, la relación curso–documento (F18) y la recuperación son los mismos.
+
+- **Tipo y entrada no fiable (ADR-101):** el tipo se decide por la firma y por poder leer la cabecera; los píxeles se acotan **antes de decodificar** (`PhotoProcessor.inspect`); al procesar se decodifica, se aplica la orientación EXIF, se reduce a 1568 px y se **re-codifica a JPEG sin metadatos**. Solo eso llega al modelo; el original (en `bytea`, como el resto) se borra al terminar en `READY` y en `ERROR`.
+- **Lectura = tarea `OCR` de `AiGateway` (ADR-100):** `AiProvider.vision(VisionCall)` (OpenAI y Google; Anthropic y Ollama no la implementan) y `AiGateway.readImage`. Es opcional como `IMAGE`: sin `APP_AI_TASKS_OCR_*` las fotos quedan **desactivadas** y la app arranca; con modelo y sin precio de tokens no arranca. Se registra en `ai_usage` con tarea `OCR` (nunca la imagen ni el texto) y cuenta para el tope propio del usuario.
+- **Salida = sobre JSON validado:** `{"appropriate": bool, "text": "…"}` por `ImageReadParser` (patrón de `IntakeParser`; devuelve vacío, nunca lanza). El texto leído es **dato no fiable**: va a los fragmentos y sale solo por `MaterialSearch` hacia `AiRequest.data(...)`.
+- **Una lectura de pago no se reintenta (ADR-102):** `IMAGE` queda fuera de `requeueOrFail` y `recoverInterrupted` de la cola de F03; un fallo tras la llamada, incluido el de los embeddings, es `ERROR` (`IMAGE_INVALID`, `NO_TEXT`, `READ_FAILED`, `BUDGET`, `INDEXING_FAILED` o `BLOCKED`).
+- **Cerrojo (ADR-103):** la lectura usa `GenerationLock` con `renew()` antes de la llamada; si está ocupado el documento vuelve a `UPLOADED` **sin gastar intento** (`releaseBusy`).
+- **Menores (ADR-104):** solo suben fotos si su tutor lo activa (`child_setting`, `PUT/GET /api/tutor/students/{id}/photo-material`, paquete `childsettings/`); la misma llamada devuelve `appropriate` y `ContentGuard` revisa el texto leído antes de indexar. Un bloqueo es `ERROR`/`BLOCKED` con el mensaje sin categoría, auditoría `DOCUMENT_BLOCKED` con ids y aviso en el panel del tutor (sin texto).
+- **Límite diario (ADR-105):** 20 fotos por usuario y día contadas al subir en `material_action` (429 `IMAGE_READ_RATE_LIMIT`, sin fila ni llamada); nunca por IP.
+- **Interfaz:** `GET /api/material/capabilities` → `{images}` decide si la `DropZone` ofrece fotos (con aviso de privacidad); «Foto» y «Leído por IA» en la lista; interruptor «Permitir fotos de apuntes» en el panel del alumno.
+
 ## Modelo de datos
 
 ```
@@ -380,6 +395,11 @@ owner_action        id, owner_id (→ app_user), kind (QUERY | ACTION), created_
 audit_event         + índice (action, occurred_at) para contar eventos por día · ai_usage y audit_event no cambian de permisos (el panel solo los lee)
 course_action       id, user_id, kind (AI_EDIT | AI_IMAGE | REDEEM_OK | REDEEM_FAIL), created_at · límites por usuario de ediciones con IA, canjes y fallos (se purgan al día)
 course_topic / course_chapter + permiso DELETE para el rol de la aplicación
+-- F19 (migración V13, pendiente): fotos de apuntes
+source_document     media_type admite también IMAGE (CHECK ampliado); la imagen original vive en content (bytea) solo hasta procesar
+ai_usage            task admite también OCR
+child_setting       child_id (PK, → app_user), photo_material (boolean, false), updated_by (→ app_user), updated_at · sin fila = desactivado; el rol de la aplicación no borra
+material_action     id, owner_id (→ app_user), kind (IMAGE_UPLOAD), created_at · contador diario de fotos; solo SELECT e INSERT para el rol de la aplicación
 ```
 
 Un `ADULT` exige correo; un `MINOR` exige `login_id` y nunca tiene correo (restricciones `CHECK` en BD).
@@ -426,6 +446,9 @@ Los roles se derivan de `kind`: adulto = alumno + tutor, menor = alumno.
 | `GET /api/owner/users?kind=&status=&sort=spend|activity|created&dir=&page=&size=` | propietario | lista paginada (25 por defecto, máximo 100) sin contenido; de un menor solo su identificador de acceso, estado, fechas, gasto, tope, cursos y tutor |
 | `POST /api/owner/users/{id}/deactivate` · `…/reactivate` · `…/revoke-sessions` | propietario | 204 idempotente; 400 `CANNOT_TARGET_SELF` (uno mismo) y para activar una cuenta sin verificar · 404 (id inexistente o mal formado) · 429; auditan `OWNER_USER_DEACTIVATED`, `OWNER_USER_REACTIVATED`, `OWNER_SESSIONS_REVOKED` |
 | `PUT /api/owner/users/{id}/limit` `{limitUsd}` · `DELETE …/limit` | propietario | fijar el tope mensual de IA de un usuario (0,00–500,00, dos decimales; 400 si no) o volver al de por defecto; 204; auditan `OWNER_LIMIT_SET`, `OWNER_LIMIT_CLEARED` |
+| `POST /api/material` (F19) | autenticado | acepta además JPEG y PNG: 400 `IMAGE_INVALID` · 403 `CHILD_IMAGES_NOT_ENABLED` · 413 `MATERIAL_TOO_LARGE` o `IMAGE_TOO_LARGE` · 415 (WebP, GIF, SVG o fotos desactivadas) · 429 `IMAGE_READ_RATE_LIMIT` |
+| `GET /api/material/capabilities` (F19) | autenticado | `{images}`: fotos activas en el servidor y, para un menor, activadas por su tutor |
+| `GET/PUT /api/tutor/students/{id}/photo-material` (F19) | adulto tutor de `{id}` | `{enabled}`; `PUT` con CSRF, idempotente, audita solo si cambia; 404 igual para cualquier otro caso; 409 con fotos desactivadas o alumno desactivado |
 | `GET /actuator/health` | red interna | solo `status`, sin detalles |
 
 ## Estructura de carpetas
@@ -448,6 +471,7 @@ selftaught/
 │     src/main/java/es/vicai/studylab/coursedelete                # F13: borrado de cursos (uno o varios), todo o nada, con auditoría
 │     src/main/java/es/vicai/studylab/owner                       # F14: panel del propietario (guardia, límites, informes agregados, lista y acciones sobre cuentas)
 │     src/main/java/es/vicai/studylab/illustrations                # F12: cola de ilustraciones, saneado del prompt, procesado de la imagen, entrega y edición
+│     src/main/java/es/vicai/studylab/{material/image,childsettings}  # F19 (pendiente): PhotoProcessor e ImageReadParser; permiso de fotos por menor
 │     src/main/resources/db/migration/   # migraciones Flyway (V1 cuentas, V2 IA, V3 material, V4 cursos, V5 generación, V6 estudio, V7 tutor, V8 índice del panel, V9 edición y códigos, V10 ilustraciones, V11 permiso de borrado, V12 panel del propietario)
 │     src/main/resources/safety/blocked-terms.txt                # términos del filtro de menores, editable sin recompilar
 │     src/main/resources/{prompts,benchmark}/ · ai-pricing.properties           # plantillas, temas y precios por modelo
@@ -1061,3 +1085,33 @@ selftaught/
 - Motivo: un solo camino de subida (mismas comprobaciones, límites y mensajes) y un curso solo puede usar documentos `READY` (`readyDocuments` lo exige en el servidor).
 - Alternativas descartadas: subir y enlazar en un paso del servidor (cambiaría F04 y mezclaría el procesado con el asistente); dejar elegir documentos sin procesar (el servidor los rechaza).
 - Revisitar si: el procesado de documentos deja de ser asíncrono.
+
+### ADR-100: La lectura de una foto es una tarea propia (`OCR`) de `AiGateway`, con una operación de visión en el puerto
+- Motivo: es una llamada de pago con su modelo, tope de salida y precio; el registro de gasto, los topes y los avisos ya viven en la pasarela. El puerto gana `vision(VisionCall)` (la audiencia viaja como dato, nunca en la plantilla).
+- Alternativas descartadas: reutilizar `AiRequest.data` (solo texto); llamar a un adaptador desde `material/` (rompe ADR-18).
+- Revisitar si: aparece otra tarea multimodal (generalizar `VisionCall`) o el benchmark muestra que un proveedor cobra por imagen (añadir `image-price`).
+
+### ADR-101: La foto es entrada no fiable y se re-codifica antes de salir
+- Motivo: bombas de píxeles, metadatos (GPS) y formatos políglota. Se acotan los píxeles desde la cabecera, se decodifica, se endereza, se reduce y se re-codifica a JPEG sin metadatos; al modelo solo llega eso y el original se borra.
+- Alternativas descartadas: enviar el original (filtra EXIF y lo que sobre en un políglota); guardar la imagen (privacidad y espacio); reutilizar `illustrations/ImageProcessor` (otro paquete, 768 px y 300 kB; unificar ambos queda como deuda).
+- Revisitar si: se pide ver la foto original en la interfaz.
+
+### ADR-102: Una lectura de pago no se reintenta y no se guarda el texto entre intentos
+- Motivo: cada intento cuesta y la cola de F03 reintenta por naturaleza. `IMAGE` queda fuera de `requeueOrFail` y de `recoverInterrupted`: tras la llamada todo fallo es `ERROR`, también el de los embeddings. Al arrancar, un `IMAGE` en `PROCESSING` acaba en `READ_FAILED`.
+- Alternativa descartada: persistir el texto leído hasta indexar (un dato más en reposo para ahorrar una llamada).
+- Revisitar si: el fallo de embeddings tras una lectura pagada resulta frecuente.
+
+### ADR-103: La lectura reutiliza `GenerationLock` y espera sin gastar intento
+- Motivo: la regla de F02 es una sola llamada de IA concurrente por usuario. **Amplía el alcance que ADR-20 daba al cerrojo** (que F07 evitó a propósito): una foto puede esperar a una generación larga y al revés. El documento vuelve a `UPLOADED` con `releaseBusy` (resta el intento que sumó `claimNext`).
+- Alternativa descartada: un cerrojo propio de lectura (cambia la regla global).
+- Revisitar si: se notan esperas largas.
+
+### ADR-104: Las fotos de un menor exigen el permiso de su tutor y dos defensas tras la lectura
+- Motivo: una imagen no se puede filtrar antes de enviarla (ADR-34 solo cubre texto). El permiso por menor traslada la decisión al adulto; `appropriate` en la **misma** llamada y `ContentGuard` sobre el texto leído evitan indexar lo inapropiado. El ajuste vive en `childsettings/` porque `guardian/` es de solo lectura (ADR-59); el menor no puede cambiarlo.
+- Alternativas descartadas: prohibirlo (no responde a lo pedido); clasificar con una llamada previa (el doble de gasto y la imagen se envía igual).
+- Revisitar si: el benchmark muestra que `appropriate` en la misma llamada no es fiable.
+
+### ADR-105: El límite diario de fotos se cuenta al subir, en `material_action`
+- Motivo: 429 síncrono sin fila ni llamada, resistente al borrado y por usuario (nunca por IP, D1).
+- Alternativas descartadas: contar `ai_usage` (asíncrono, mezcla reintentos, es de solo añadir) o `source_document` (se esquiva borrando).
+- Revisitar si: hay más acciones de material con límite (una tabla común).

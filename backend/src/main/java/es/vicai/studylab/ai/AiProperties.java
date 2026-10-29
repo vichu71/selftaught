@@ -79,6 +79,12 @@ public record AiProperties(
     public record Benchmark(@DefaultValue("true") boolean autorun, String models,
                             @DefaultValue("5.00") BigDecimal budgetUsd, @DefaultValue("/out") String outDir) {}
 
+    /** ¿Tiene la tarea proveedor y modelo? Para las tareas opcionales (imagen, lectura de fotos): sin ellos quedan desactivadas. */
+    public boolean isConfigured(AiTask task) {
+        TaskConfig config = tasks.get(task);
+        return config != null && !config.providerName().isEmpty() && config.model() != null && !config.model().isBlank();
+    }
+
     public TaskConfig task(AiTask task) {
         TaskConfig config = tasks.get(task);
         if (config == null) throw AiException.of(AiErrorKind.CONFIG);

@@ -13,6 +13,12 @@ import org.springframework.boot.web.servlet.MultipartConfigFactory;
 @Configuration
 public class MaterialConfig {
 
+    /** El procesador de fotos (F19) con los límites de la configuración: se crea una vez, no guarda estado. */
+    @Bean
+    es.vicai.studylab.material.image.PhotoProcessor photoProcessor(MaterialProperties props) {
+        return new es.vicai.studylab.material.image.PhotoProcessor(props.photos().maxPixels(), props.photos().maxSide());
+    }
+
     @Bean
     MultipartConfigElement multipartConfigElement(MaterialProperties props) {
         MultipartConfigFactory factory = new MultipartConfigFactory();

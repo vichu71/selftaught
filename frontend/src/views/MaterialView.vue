@@ -15,6 +15,7 @@ const material = useMaterialStore()
 onMounted(() => {
   void material.startPolling()
   void material.loadUsage()
+  void material.loadCapabilities()
 })
 onBeforeUnmount(() => material.stopPolling())
 
@@ -36,7 +37,7 @@ function onChoose(file: File) {
 
     <section class="card">
       <h2>Subir un documento</h2>
-      <DropZone :uploading="material.uploading" :minor="auth.user?.kind === 'MINOR'" @choose="onChoose" />
+      <DropZone :uploading="material.uploading" :minor="auth.user?.kind === 'MINOR'" :photos="material.capabilities?.images === true" @choose="onChoose" />
       <p v-if="material.uploadError" class="error" role="alert" data-testid="upload-error">{{ material.uploadError }}</p>
     </section>
 

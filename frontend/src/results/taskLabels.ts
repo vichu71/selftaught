@@ -7,6 +7,7 @@ const LABELS: Record<string, string> = {
   EMBEDDING: 'Material',
   INTAKE: 'Asistente',
   IMAGE: 'Ilustraciones',
+  OCR: 'Leer fotos',
 }
 
 export const taskLabel = (task: string): string => LABELS[task] ?? task

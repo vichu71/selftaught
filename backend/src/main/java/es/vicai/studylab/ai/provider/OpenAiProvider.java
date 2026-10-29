@@ -36,7 +36,28 @@ public class OpenAiProvider extends HttpProvider {
                 Map.of("role", "system", "content", call.instructions()),
                 Map.of("role", "user", "content", call.dataMessage())));
 
-        Raw raw = post("/v1/chat/completions", Map.of("Authorization", "Bearer " + apiKey), body);
+        return parseChat(post("/v1/chat/completions", Map.of("Authorization", "Bearer " + apiKey), body));
+    }
+
+    /**
+     * Lectura de imágenes (F19): el mismo POST /v1/chat/completions, con el mensaje del usuario como lista de partes: el texto de los datos y la imagen como
+     * data URI (image_url). La imagen cuenta como tokens de entrada y "usage" los informa. Formato según la documentación: lo confirma el benchmark.
+     */
+    @Override
+    public ChatResult vision(VisionCall call) {
+        Map<String, Object> body = new LinkedHashMap<>();
+        body.put("model", call.model());
+        body.put("max_completion_tokens", call.maxOutputTokens());
+        String dataUri = "data:" + call.mime() + ";base64," + java.util.Base64.getEncoder().encodeToString(call.image());
+        body.put("messages", List.of(
+                Map.of("role", "system", "content", call.instructions()),
+                Map.of("role", "user", "content", List.of(
+                        Map.of("type", "text", "text", call.data()),
+                        Map.of("type", "image_url", "image_url", Map.of("url", dataUri))))));
+        return parseChat(post("/v1/chat/completions", Map.of("Authorization", "Bearer " + apiKey), body));
+    }
+
+    private ChatResult parseChat(Raw raw) {
         if (!raw.ok()) throw classify(raw);
 
         JsonNode root = parse(raw);

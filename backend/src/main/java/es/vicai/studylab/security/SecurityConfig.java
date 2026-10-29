@@ -60,6 +60,8 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(PUBLIC_AUTH).permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        // F19: el permiso de fotos responde 404 también a un menor (lo decide AccessGuard), no un 403 que delate la ruta
+                        .requestMatchers("/api/tutor/students/*/photo-material").authenticated()
                         .requestMatchers("/api/tutor/**").hasRole("TUTOR")
                         .anyRequest().authenticated())
                 .exceptionHandling(e -> e

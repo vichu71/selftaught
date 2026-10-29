@@ -1,6 +1,10 @@
 package es.vicai.studylab.material;
 
+import es.vicai.studylab.ai.AiGateway;
 import es.vicai.studylab.audit.AuditService;
+import es.vicai.studylab.childsettings.ChildSettingsService;
+import es.vicai.studylab.material.image.PhotoProcessor;
+import es.vicai.studylab.material.image.PhotoRejectedException;
 import es.vicai.studylab.material.extract.FileTypeDetector;
 import es.vicai.studylab.security.AuthUser;
 import es.vicai.studylab.user.UserRepository;
@@ -37,14 +41,23 @@ public class MaterialService {
 
     public record Listing(List<DocumentView> own, List<MinorMaterial> minors) {}
 
+    /** Qué puede subir quien llama: solo eso, ni modelo ni coste ni límites (F19). */
+    public record Capabilities(boolean images) {}
+
     private final MaterialRepository documents;
     private final MaterialProperties props;
     private final FileTypeDetector detector;
     private final UserRepository users;
     private final AuditService audit;
+    private final AiGateway gateway;
+    private final ChildSettingsService childSettings;
+    private final PhotoProcessor photos;
 
     public MaterialService(MaterialRepository documents, MaterialProperties props, FileTypeDetector detector, UserRepository users,
-                           AuditService audit) {
+                           AuditService audit, AiGateway gateway, ChildSettingsService childSettings, PhotoProcessor photos) {
+        this.gateway = gateway;
+        this.childSettings = childSettings;
+        this.photos = photos;
         this.documents = documents;
         this.props = props;
         this.detector = detector;
@@ -64,16 +77,41 @@ public class MaterialService {
         }
         if (content.length > props.maxFileBytes()) throw MaterialException.tooLarge(props.maxFileMb());
         MaterialType type = detector.detect(content).orElseThrow(MaterialException::typeNotAllowed);
+        boolean photo = type == MaterialType.IMAGE;
+        if (photo) checkPhoto(user, content);
 
         // Se bloquea al usuario para que dos subidas a la vez no se salten el límite de documentos
         users.lockUser(user.id());
         if (documents.count(user.id()) >= props.maxDocuments()) throw MaterialException.limitReached(props.maxDocuments());
+        if (photo && documents.countImageUploads(user.id()) >= props.photos().maxReadsPerDay()) throw MaterialException.imageReadRateLimit();
 
         UUID id = UUID.randomUUID();
         String name = sanitizeName(file.getOriginalFilename());
         if (!documents.insert(id, user.id(), name, type, content, sha256(content))) throw MaterialException.duplicate();
+        if (photo) documents.insertImageUpload(user.id()); // en la misma transacción que el documento: una foto rechazada no gasta el límite
         audit.record("DOCUMENT_UPLOADED", AuditService.OK, user.id(), user.id(), ip, Map.of("documentId", id.toString(), "mediaType", type.name()));
         return view(documents.find(id).orElseThrow(), user.id());
+    }
+
+    /**
+     * Comprobaciones de una foto antes de insertar nada y sin llamar al modelo (ART-003): el servidor la ofrece (si no, 415 como cualquier tipo no admitido), el menor tiene el permiso
+     * de su tutor (403), pesa lo permitido (413) y su cabecera se lee sin decodificarla (400 si no se puede, 413 si declara demasiados píxeles).
+     */
+    private void checkPhoto(AuthUser user, byte[] content) {
+        if (!gateway.readEnabled()) throw MaterialException.typeNotAllowed();
+        if (!childSettings.photosEnabledFor(user.id(), user.kind() == es.vicai.studylab.user.UserKind.MINOR)) throw MaterialException.childImagesNotEnabled();
+        if (content.length > props.maxImageBytes()) throw MaterialException.imageTooLargeInMb(props.photos().maxMb());
+        try {
+            photos.inspect(content);
+        } catch (PhotoRejectedException e) {
+            throw PhotoRejectedException.TOO_LARGE.equals(e.kind()) ? MaterialException.imageTooLarge() : MaterialException.imageInvalid();
+        }
+    }
+
+    /** Lo que esta sesión puede hacer con el material hoy: por ahora, si puede subir fotos (el servidor las ofrece y, si es un menor, su tutor las permite). */
+    public Capabilities capabilities(AuthUser user) {
+        boolean minor = user.kind() == es.vicai.studylab.user.UserKind.MINOR;
+        return new Capabilities(gateway.readEnabled() && childSettings.photosEnabledFor(user.id(), minor));
     }
 
     public Listing list(AuthUser user) {
