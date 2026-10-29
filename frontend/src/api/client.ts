@@ -32,7 +32,7 @@ export type MaterialStatus = 'UPLOADED' | 'PROCESSING' | 'READY' | 'ERROR'
 export interface MaterialDocument {
   id: string
   name: string
-  mediaType: 'PDF' | 'DOCX' | 'TEXT'
+  mediaType: 'PDF' | 'DOCX' | 'TEXT' | 'IMAGE'
   sizeBytes: number
   status: MaterialStatus
   errorKind?: string
@@ -40,6 +40,14 @@ export interface MaterialDocument {
   pageCount?: number
   createdAt: string
   ownedByMe: boolean
+}
+
+export interface MaterialCapabilities {
+  images: boolean
+}
+
+export interface PhotoPermission {
+  enabled: boolean
 }
 
 export interface MinorMaterial {
@@ -444,6 +452,12 @@ export const api = {
     return request<MaterialDocument>('POST', '/api/material', form)
   },
   deleteMaterial: (id: string) => request<void>('DELETE', `/api/material/${encodeURIComponent(id)}`),
+  /** F19: qué puede subir esta sesión (fotos de apuntes si el servidor las ofrece y, siendo menor, su tutor las permite). */
+  getMaterialCapabilities: () => request<MaterialCapabilities>('GET', '/api/material/capabilities'),
+  /** F19: el permiso de fotos de un menor, que solo cambia su tutor. */
+  getPhotoPermission: (studentId: string) => request<PhotoPermission>('GET', `/api/tutor/students/${encodeURIComponent(studentId)}/photo-material`),
+  setPhotoPermission: (studentId: string, enabled: boolean) =>
+    request<PhotoPermission>('PUT', `/api/tutor/students/${encodeURIComponent(studentId)}/photo-material`, { enabled }),
 
   startIntake: (topic: string, documentIds: string[]) => request<IntakeResult>('POST', '/api/courses/intake', { topic, documentIds }),
   createCourse: (intakeId: string, answers: { questionId: string; optionId: string }[], illustrations?: boolean) =>

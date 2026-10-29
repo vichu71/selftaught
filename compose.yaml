@@ -62,6 +62,9 @@ services:
       APP_AI_TASKS_INTAKE_MODEL: ${APP_AI_TASKS_INTAKE_MODEL:-}
       APP_AI_TASKS_IMAGE_PROVIDER: ${APP_AI_TASKS_IMAGE_PROVIDER:-}
       APP_AI_TASKS_IMAGE_MODEL: ${APP_AI_TASKS_IMAGE_MODEL:-}
+      # F19: lectura de fotos de apuntes (opcional; sin proveedor y modelo las fotos quedan desactivadas)
+      APP_AI_TASKS_OCR_PROVIDER: ${APP_AI_TASKS_OCR_PROVIDER:-}
+      APP_AI_TASKS_OCR_MODEL: ${APP_AI_TASKS_OCR_MODEL:-}
       OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://ollama:11434}
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
@@ -75,6 +78,9 @@ services:
       # F03: límites del material propio
       MATERIAL_MAX_FILE_MB: ${MATERIAL_MAX_FILE_MB:-10}
       MATERIAL_MAX_DOCUMENTS: ${MATERIAL_MAX_DOCUMENTS:-20}
+      # F19: fotos de apuntes (MB por foto, siempre <= MATERIAL_MAX_FILE_MB, y lecturas por usuario y día)
+      MATERIAL_MAX_IMAGE_MB: ${MATERIAL_MAX_IMAGE_MB:-5}
+      MATERIAL_MAX_IMAGE_READS_PER_DAY: ${MATERIAL_MAX_IMAGE_READS_PER_DAY:-20}
       # F04: límites del asistente de creación de curso, por usuario
       COURSE_INTAKES_PER_HOUR: ${COURSE_INTAKES_PER_HOUR:-30}
       COURSE_MAX_PENDING: ${COURSE_MAX_PENDING:-5}

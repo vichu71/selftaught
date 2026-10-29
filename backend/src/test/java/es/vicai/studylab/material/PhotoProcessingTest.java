@@ -173,7 +173,7 @@ class PhotoProcessingTest extends PhotoTestBase {
         try (GenerationLock.Lease lease = locks.acquire(user)) {
             worker.processPending();
             assertThat(statusOf(id)).isEqualTo("UPLOADED");
-            assertThat(documentRow(id).get("attempts")).isEqualTo((short) 0);
+            assertThat(((Number) documentRow(id).get("attempts")).intValue()).isZero(); // el driver da un Integer para smallint
             assertThat(fake.visionCalls()).isEmpty();
         }
 

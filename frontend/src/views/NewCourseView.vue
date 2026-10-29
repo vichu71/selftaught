@@ -21,6 +21,7 @@ const router = useRouter()
 // «Con ilustraciones» (F12): un menor nunca lo ve; si la oferta no se puede cargar, el asistente funciona como siempre, sin el interruptor
 const offer = ref<IllustrationOffer | null>(null)
 onMounted(async () => {
+  void material.loadCapabilities()
   if (auth.user?.kind === 'MINOR') return
   try {
     offer.value = await api.getIllustrationOffer()
@@ -111,7 +112,7 @@ function restart() {
       <div v-if="course.wantsMaterial" class="documents-choice">
         <div class="wizard-dropzone" data-testid="wizard-dropzone">
           <h3>Añade los apuntes de este curso</h3>
-          <DropZone :uploading="material.uploading" :minor="auth.user?.kind === 'MINOR'" @choose="addMaterial" />
+          <DropZone :uploading="material.uploading" :minor="auth.user?.kind === 'MINOR'" :photos="material.capabilities?.images === true" @choose="addMaterial" />
           <p v-if="material.uploadError" class="error" role="alert" data-testid="upload-error">{{ material.uploadError }}</p>
           <p v-if="docNote" class="field-error" role="status" data-testid="wizard-doc-note">{{ docNote }}</p>
         </div>

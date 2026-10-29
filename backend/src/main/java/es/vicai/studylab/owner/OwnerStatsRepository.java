@@ -303,7 +303,7 @@ public class OwnerStatsRepository {
     public long contentBlocksLastDay() {
         return jdbc.sql("""
                 SELECT count(*) FROM audit_event WHERE occurred_at >= now() - interval '24 hours' AND action IN
-                ('COURSE_TOPIC_BLOCKED', 'COURSE_CONTENT_BLOCKED', 'TUTOR_QUESTION_BLOCKED', 'TUTOR_ANSWER_FILTERED', 'STUDY_ANSWER_BLOCKED', 'COURSE_EDIT_BLOCKED', 'COURSE_COPY_BLOCKED')""")
+                ('COURSE_TOPIC_BLOCKED', 'COURSE_CONTENT_BLOCKED', 'TUTOR_QUESTION_BLOCKED', 'TUTOR_ANSWER_FILTERED', 'STUDY_ANSWER_BLOCKED', 'COURSE_EDIT_BLOCKED', 'COURSE_COPY_BLOCKED', 'DOCUMENT_BLOCKED')""")
                 .query(Long.class).single();
     }
 

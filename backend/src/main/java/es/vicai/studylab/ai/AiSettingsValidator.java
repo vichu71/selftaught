@@ -61,6 +61,7 @@ public final class AiSettingsValidator {
         if (!benchmarkProfile) {
             for (AiTask task : AiTask.values()) {
                 if (task == AiTask.IMAGE) continue; // opcional: sin proveedor, las ilustraciones quedan desactivadas (F12)
+                if (task == AiTask.OCR && isUnset(props.tasks().get(task))) continue; // opcional: sin proveedor, las fotos quedan desactivadas (F19)
                 validateTask(props, task, production, problems, realProvidersInUse);
             }
             validateImage(props, imageProps, production, problems, realProvidersInUse);
@@ -94,6 +95,10 @@ public final class AiSettingsValidator {
             problems.add("AI_MONTHLY_LIMIT_USD (app.ai.budget.monthly-limit-usd): obligatorio con un proveedor real");
         }
         return problems;
+    }
+
+    private static boolean isUnset(AiProperties.TaskConfig config) {
+        return config == null || (config.providerName().isEmpty() && (config.model() == null || config.model().isBlank()));
     }
 
     /** La tarea de imagen (F12) es opcional; si se configura, exige proveedor que dibuje, clave, tiempo y precio por imagen. */
@@ -142,7 +147,7 @@ public final class AiSettingsValidator {
             problems.add(key + ".provider: proveedor desconocido '" + provider + "' (válidos: " + String.join(", ", new java.util.TreeSet<>(KNOWN_PROVIDERS)) + ")");
             return;
         }
-        Set<String> allowed = task == AiTask.EMBEDDING ? EMBEDDING_PROVIDERS : CHAT_PROVIDERS;
+        Set<String> allowed = task == AiTask.EMBEDDING ? EMBEDDING_PROVIDERS : task == AiTask.OCR ? IMAGE_PROVIDERS : CHAT_PROVIDERS; // leer una foto: los que ven imágenes
         if (!allowed.contains(provider)) {
             problems.add(key + ".provider: '" + provider + "' no sirve para esta tarea (válidos: " + String.join(", ", new java.util.TreeSet<>(allowed)) + ")");
             return;

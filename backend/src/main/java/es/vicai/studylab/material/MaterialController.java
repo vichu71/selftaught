@@ -40,6 +40,12 @@ public class MaterialController {
         return service.list(user);
     }
 
+    /** Si esta sesión puede subir fotos (F19). Solo eso: ni modelo, ni coste, ni límites. */
+    @GetMapping("/capabilities")
+    MaterialService.Capabilities capabilities(@AuthenticationPrincipal AuthUser user) {
+        return service.capabilities(user);
+    }
+
     @GetMapping("/{id}")
     DocumentView get(@AuthenticationPrincipal AuthUser user, @PathVariable String id) {
         return service.get(user, id);

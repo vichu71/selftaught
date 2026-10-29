@@ -14,4 +14,7 @@ public interface AiProvider {
 
     /** Genera una imagen (F12). Solo OpenAI, Google y el proveedor falso la ofrecen; la configuración impide pedírsela a otro. */
     ImageResult image(ImageCall call);
+
+    /** Lee una imagen y devuelve el texto del modelo (F19). Solo OpenAI, Google y el proveedor falso la ofrecen; la configuración impide pedírsela a otro. */
+    ChatResult vision(VisionCall call);
 }

@@ -8,6 +8,7 @@ import { ApiError, api, type GuardianAlert, type GuardianConversation, type Guar
 import GuardianAlerts from '@/components/GuardianAlerts.vue'
 import GuardianCourses from '@/components/GuardianCourses.vue'
 import GuardianUsage from '@/components/GuardianUsage.vue'
+import UiSwitch from '@/ui/UiSwitch.vue'
 
 const route = useRoute()
 const studentId = computed(() => String(route.params.id))
@@ -18,6 +19,11 @@ const conversations = ref<GuardianConversation[]>([])
 const loading = ref(true)
 const notFound = ref(false)
 const failed = ref(false)
+
+// F19: permiso de fotos de apuntes del alumno (lo decide solo su tutor). Si no se puede leer, el resto del panel funciona igual
+const photoPermission = ref<boolean | null>(null)
+const photoSaving = ref(false)
+const photoError = ref('')
 
 const when = (iso: string) => new Date(iso).toLocaleString('es-ES', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })
 
@@ -30,7 +36,35 @@ onMounted(async () => {
   notFound.value = errors.some((e) => e instanceof ApiError && e.status === 404)
   failed.value = !notFound.value && errors.length > 0
   loading.value = false
+  void loadPhotoPermission()
 })
+
+async function loadPhotoPermission() {
+  try {
+    photoPermission.value = (await api.getPhotoPermission(studentId.value)).enabled
+  } catch (e) {
+    photoPermission.value = null
+    if (e instanceof ApiError && e.status === 404) photoError.value = 'No encontramos a este alumno entre los tuyos.'
+  }
+}
+
+async function changePhotoPermission(enabled: boolean) {
+  if (photoSaving.value) return
+  photoSaving.value = true
+  photoError.value = ''
+  try {
+    photoPermission.value = (await api.setPhotoPermission(studentId.value, enabled)).enabled
+  } catch (e) {
+    photoError.value =
+      e instanceof ApiError && e.status === 404
+        ? 'No encontramos a este alumno entre los tuyos.'
+        : e instanceof ApiError && e.status === 409
+          ? 'Ahora no se puede cambiar: la lectura de fotos no está disponible o la cuenta está dada de baja.'
+          : 'No se ha podido cambiar el permiso. Inténtalo de nuevo.'
+  } finally {
+    photoSaving.value = false
+  }
+}
 </script>
 
 <template>
@@ -53,6 +87,23 @@ onMounted(async () => {
       </template>
 
       <GuardianAlerts :student-id="studentId" :alerts="alerts" />
+
+      <section v-if="overview && (photoPermission !== null || photoError)" class="card" data-testid="photo-permission">
+        <h2>Fotos de apuntes</h2>
+        <div v-if="photoPermission !== null" class="photo-permission-row">
+          <UiSwitch
+            :model-value="photoPermission" :disabled="photoSaving" aria-labelledby="photo-permission-label" data-testid="photo-permission-switch"
+            @update:model-value="changePhotoPermission"
+          />
+          <span id="photo-permission-label" data-testid="photo-permission-state">
+            {{ photoPermission ? `${overview.student.displayName} puede subir fotos de apuntes` : `${overview.student.displayName} no puede subir fotos de apuntes` }}
+          </span>
+        </div>
+        <p class="muted" data-testid="photo-permission-note">
+          La foto se envía a un servicio de IA para leerla y no se puede filtrar antes de enviarla. Lo que se lee se revisa después, pero conviene que solo la use quien sepa evitar datos personales.
+        </p>
+        <p v-if="photoError" class="error" role="alert" data-testid="photo-permission-error">{{ photoError }}</p>
+      </section>
       <GuardianUsage v-if="overview" :usage="overview.usage" />
       <GuardianCourses v-if="overview" :student-id="studentId" :courses="overview.courses" />
 

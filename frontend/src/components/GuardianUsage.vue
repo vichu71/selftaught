@@ -10,6 +10,8 @@ const tasks: Record<string, string> = {
   TUTOR: 'Tutor',
   INTAKE: 'Asistente de cursos',
   EMBEDDING: 'Búsqueda en su material',
+  IMAGE: 'Ilustraciones de portada',
+  OCR: 'Lectura de fotos de apuntes',
 }
 
 /** Con 2 decimales un gasto pequeño parecería cero: por debajo de un céntimo se dice así. */
