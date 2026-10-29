@@ -215,6 +215,13 @@ equivalentes (`ENV_FILE=ruta make …` pasa otro fichero de variables). Detalle 
 - **Todo `animation`, `transition` y `@keyframes` va dentro de `@media (prefers-reduced-motion: no-preference)`** (`tests/design/f17.spec.ts` lo comprueba). La celebración (`ui/Celebration`) siempre dice «¡Hecho!» con texto en `role="status"`; el confeti es decoración `aria-hidden` y no hay librería.
 - El saludo («¡Hola, {primer nombre}!», `layouts/greeting.ts`) es texto plano recortado; usa el reloj del navegador y **nunca** enseña dinero ni datos de otros a un menor. Cada pantalla nueva empieza con `PageHeader`.
 
+## Reglas de F18 (material del curso)
+- Contrato y criterios de aceptación: `sdd/specs/US-F18-material-del-curso.md`; diseño y ADR-98 y 99: `sdd/specs/ART-F18-propuesta-material-del-curso.md` y `ARCHITECTURE.md`. Sin migración: la relación curso–documento ya era `course_document` (F04).
+- **No hay un segundo camino de subida:** el asistente de «Nuevo curso» usa `DropZone` y `material.upload`, igual que Mi material. Un documento subido desde el asistente se marca con `autoSelect` solo cuando está `READY` y sin pasar de `MAX_DOCUMENTS`.
+- **`DocumentView` no se amplía** (lo fija un test): el «usado en» llega por `GET /api/courses/material-usage` (en `course/`, solo lectura, con `owner_id`, sin parámetros, solo `id` y `title`). `material/` no lee tablas de cursos.
+- Borrar un documento usado **no cambia** los cursos ya creados (solo cae el enlace): la confirmación lo dice y sigue pidiéndose. Los títulos de curso y nombres de documento salen siempre como texto.
+- **Imágenes y fotos de apuntes (F19, pendiente):** no existen aún; cuando se hagan, entran por `MaterialType` y la subida decide el tipo por contenido, la lectura es una tarea nueva de IA por `AiGateway`, y el texto leído es dato no fiable con `ContentGuard` para menores.
+
 ## Lecciones de F01 (no obvias en el código)
 - Todo flujo con sesión o CSRF se prueba **también sin `csrf()` de MockMvc** (con cookies reales, en una clase con su propio
   contexto: `csrf()` sustituye el repositorio CSRF del contexto compartido) y con **el stack levantado**: así se vio que la

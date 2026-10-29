@@ -237,3 +237,12 @@ ejercicios con solución comprobable (F06) · borrado definitivo de cuentas por 
 | F17-1 | 🟡 No hay un color o tema elegible por usuario ni un tema de alto contraste | Fuera de v1; los tokens de zona lo permitirían (ADR-95, ADR-96) |
 | F17-2 | 🟡 El destello, el confeti y el gesto de la mascota son los mismos para todos | ADR-97; una celebración por curso o por usuario sería otra feature |
 | F17-3 | 🟡 Las pantallas internas (Nuevo curso, Editar curso, Intentos, panel del tutor) usan la cabecera y los tonos de zona, pero no se han rediseñado a fondo | Se mejorarían pantalla a pantalla con los componentes de `ui/` |
+
+## Anotado en F18 (material del curso)
+
+| # | Qué | Nota |
+|---|-----|------|
+| F18-1 | 🟡 No se puede añadir o quitar material de un curso **ya creado** | Sería una edición de curso (F09) que regenera piezas y gasta IA |
+| F18-2 | 🟡 Se sube un fichero cada vez también en el asistente | Como F16-1 |
+| F18-3 | 🟡 «Usado en» solo en la biblioteca propia, no en el material de los menores (solo lectura) | D7; el tutor ve sus cursos desde su panel (F08) |
+| **F19** | 🟠 **Imágenes y fotos de apuntes** (feature futura): que un alumno suba una foto de sus apuntes y la app la interprete | Pedida por el usuario el 29-10-2026. Hace falta: una tarea de IA nueva por `AiGateway` (visión u OCR) con **precio por imagen**, tope y plantilla; elegir proveedor y medirlo con el benchmark; `MaterialType` ampliado (JPEG/PNG) con el tipo decidido por contenido y la imagen tratada como **entrada no fiable** (como F12); `ContentGuard` sobre el texto leído y sobre la imagen si es de un menor; límites por usuario y tamaño; el texto extraído entra al mismo flujo de fragmentos como **dato no instrucción**. Riesgos: coste, fotos con datos personales, calidad de la escritura a mano |

@@ -302,6 +302,14 @@ Solo frontend: sin backend, sin migración y **sin librerías** (confeti y deste
 - **Páginas:** `ui/PageHeader` (burbuja de zona, título y acciones) en Inicio, Mi material, Resultados, Propietario, Curso, Lección, Nuevo curso, Tengo un código, Login, Registro y el panel del tutor; `ui/UiTag` gana los estados `ok`, `warn`, `bad` e `info` **con icono**.
 - **Alegría medida:** gesto de la mascota (logo), destello de la planta al 100 % (`.plant--bloom`), «¡Hecho!» con confeti al marcar una lección (`ui/Celebration`: texto en `role="status"` y 12 `<span>` decorativos `aria-hidden`) y saludo por franja del día en Inicio (reloj del navegador). **Todo `animation`, `transition` y `@keyframes` vive dentro de `prefers-reduced-motion: no-preference`** (lo comprueba `tests/design/f17.spec.ts`).
 
+## Material del curso (F18)
+
+Contrato: `sdd/specs/US-F18-material-del-curso.md`; diseño y ADR-98 y 99: `sdd/specs/ART-F18-propuesta-material-del-curso.md`. **Backend mínimo** (una lectura), sin migración y sin librerías. El material sigue siendo una **biblioteca del usuario** (F03); cambia cómo se usa.
+
+- **Subir dentro de «Nuevo curso»:** en el paso del material, con «Sí», la misma `DropZone` de Mi material («Añade los apuntes de este curso») sube con `material.upload`, **sin segundo camino de subida**. El documento subido se **marca solo** cuando llega a `READY` (`material/autoSelect.ts`, función pura, máximo 5); mientras tanto no se puede elegir. Los documentos ya subidos siguen disponibles («o elige alguno que ya tengas»).
+- **Pantalla del curso:** la tarjeta «Material de este curso» (`components/CourseMaterial`) lista los documentos que `GET /api/courses/{id}` ya devolvía (`course_document`, F04).
+- **Mi material:** cada documento propio dice «Usado en» con chips a sus cursos o «Sin usar todavía», a partir de `GET /api/courses/material-usage` → `{usage: {documentId: [{id, title}]}}`, solo de quien llama (consulta con `owner_id`, más reciente primero, techo de 2000 filas). `DocumentView` **no cambia**. Borrar un documento usado avisa de en cuántos cursos está y que los ya creados no cambian.
+
 ## Modelo de datos
 
 ```
@@ -1043,3 +1051,13 @@ selftaught/
 - Motivo: el confeti, el destello y el gesto de la mascota no deben añadir dependencias ni ocultar información; sin movimiento, el texto («¡Hecho!») sigue saliendo.
 - Alternativas descartadas: una librería de confeti o Lottie (dependencia y `canvas` inaccesible); animaciones continuas (distraen al estudiar).
 - Revisitar si: se quiere una celebración distinta por usuario o por curso.
+
+### ADR-98: El uso de cada documento es un endpoint aparte en `course/`
+- Motivo: la relación es de cursos (`course_document`), `material/` no debe leer tablas de cursos y `DocumentView` tiene su contrato fijado por tests (como pasó con `/api/ai/usage`, ADR-92).
+- Alternativas descartadas: ampliar `DocumentView` con `courses` (rompe el contrato y acopla paquetes); calcularlo en el cliente con el detalle de cada curso (N peticiones).
+- Revisitar si: hace falta el uso por documento dentro de un listado paginado.
+
+### ADR-99: El asistente sube con la misma subida de Mi material y marca el documento al estar listo
+- Motivo: un solo camino de subida (mismas comprobaciones, límites y mensajes) y un curso solo puede usar documentos `READY` (`readyDocuments` lo exige en el servidor).
+- Alternativas descartadas: subir y enlazar en un paso del servidor (cambiaría F04 y mezclaría el procesado con el asistente); dejar elegir documentos sin procesar (el servidor los rechaza).
+- Revisitar si: el procesado de documentos deja de ser asíncrono.

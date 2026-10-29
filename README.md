@@ -247,3 +247,7 @@ Los tests nunca llaman a APIs de pago ni envían correo real.
 - Especificación: `sdd/PROJECT.md`, `sdd/features/` y `sdd/specs/`
 - Arquitectura y decisiones: `ARCHITECTURE.md`
 - Proceso de trabajo: `sdd/SDD_PROCESS.md`
+
+## Material del curso (F18)
+
+El material de un curso se sube **al crearlo**: en «Nuevo curso», si contestas que sí tienes información, aparece una zona para añadir los apuntes de ese curso (por ejemplo, los de matemáticas de 1.º de ESO). El documento se marca solo cuando termina de procesarse, y si ya tienes otros subidos puedes elegirlos también. En la pantalla del curso, la tarjeta **Material de este curso** dice qué documentos se usaron, y en **Mi material** cada documento dice **en qué cursos se usa** (o «Sin usar todavía»). Si borras un documento que se usa, te avisa de que los cursos ya creados no cambian.
