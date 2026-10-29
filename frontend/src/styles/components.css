@@ -179,10 +179,10 @@ a.button-link {
 
 /* Zonas de color (F17, ADR-95): el marco las pone según la ruta y cada enlace de la barra, según su destino; sin zona, el acento neutro */
 :root { --zone-fill: var(--color-primary); --zone-on: var(--color-on-primary); --zone-ink: var(--color-ink); }
-.shell[data-zone='map'], .nav-link[data-zone='map'], .action-card[data-zone='map'] { --zone-fill: var(--color-zone-map); --zone-on: var(--color-on-zone-map); --zone-ink: var(--color-zone-map-ink); }
-.shell[data-zone='material'], .nav-link[data-zone='material'], .action-card[data-zone='material'] { --zone-fill: var(--color-zone-material); --zone-on: var(--color-on-zone-material); --zone-ink: var(--color-zone-material-ink); }
-.shell[data-zone='results'], .nav-link[data-zone='results'], .action-card[data-zone='results'] { --zone-fill: var(--color-zone-results); --zone-on: var(--color-on-zone-results); --zone-ink: var(--color-zone-results-ink); }
-.shell[data-zone='owner'], .nav-link[data-zone='owner'], .action-card[data-zone='owner'] { --zone-fill: var(--color-zone-owner); --zone-on: var(--color-on-zone-owner); --zone-ink: var(--color-zone-owner-ink); }
+.shell[data-zone='map'], .nav-link[data-zone='map'], .action-card[data-zone='map'], .student-card[data-zone='map'] { --zone-fill: var(--color-zone-map); --zone-on: var(--color-on-zone-map); --zone-ink: var(--color-zone-map-ink); }
+.shell[data-zone='material'], .nav-link[data-zone='material'], .action-card[data-zone='material'], .student-card[data-zone='material'] { --zone-fill: var(--color-zone-material); --zone-on: var(--color-on-zone-material); --zone-ink: var(--color-zone-material-ink); }
+.shell[data-zone='results'], .nav-link[data-zone='results'], .action-card[data-zone='results'], .student-card[data-zone='results'] { --zone-fill: var(--color-zone-results); --zone-on: var(--color-on-zone-results); --zone-ink: var(--color-zone-results-ink); }
+.shell[data-zone='owner'], .nav-link[data-zone='owner'], .action-card[data-zone='owner'], .student-card[data-zone='owner'] { --zone-fill: var(--color-zone-owner); --zone-on: var(--color-on-zone-owner); --zone-ink: var(--color-zone-owner-ink); }
 .page > .card, .page > .ui-card, .ui-card { border-top: 6px solid var(--zone-fill); }
 
 /* Cabecera de página: burbuja con el icono de la zona y el título en su tono */
@@ -495,7 +495,9 @@ a.button-link {
 .empty-note p { margin: 0; }
 .empty-note-art { width: 6rem; max-width: 40%; height: auto; }
 .students { display: flex; flex-direction: column; gap: var(--space-3); }
-.student-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); overflow-wrap: anywhere; background: var(--color-paper); border: var(--border-width) solid var(--color-line); border-radius: var(--radius-2); }
+.student-card { display: flex; flex-direction: column; gap: var(--space-3); padding: var(--space-3) var(--space-4); overflow-wrap: anywhere; background: color-mix(in srgb, var(--zone-fill) 20%, var(--color-surface)); border: var(--border-width) solid var(--color-line); border-left: 8px solid var(--zone-fill); border-radius: var(--radius-2); box-shadow: 0 4px 0 var(--zone-ink); }
+.student-avatar { display: inline-grid; place-items: center; flex: none; width: 2.5rem; height: 2.5rem; border-radius: 50%; background: var(--zone-fill); color: var(--zone-on); border: var(--border-width) solid var(--color-line); font-family: var(--font-display); font-weight: 600; font-size: 1.2rem; }
+.student-card-who strong { font-size: 1.1rem; color: var(--zone-ink); }
 .student-card-who { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
 .student-card-actions { display: flex; flex-wrap: wrap; gap: var(--space-2); }
 .student-card .ui-tag { display: inline-flex; align-items: center; gap: var(--space-1); }
