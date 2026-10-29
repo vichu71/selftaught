@@ -60,16 +60,16 @@ GRANT USAGE ON SEQUENCE material_action_id_seq TO studylab_app;
 
 ```
 POST   /api/material                    (F03; multipart)  JPEG/PNG aceptados; 202 / 400 / 403 CHILD_IMAGES_NOT_ENABLED / 409 / 413 / 415 / 429 IMAGE_READ_RATE_LIMIT
-GET    /api/material, /api/material/{id}                  type puede valer IMAGE; DocumentView conserva sus claves
+GET    /api/material, /api/material/{id}                  `mediaType` puede valer IMAGE; DocumentView conserva sus claves
 DELETE /api/material/{id}                                 igual
 
 GET    /api/material/capabilities       (sesión)          → { "images": boolean }
-PUT    /api/children/{id}/photo-material (sesión + CSRF)  → { "enabled": boolean }  solo tutor vinculado
-GET    /api/children/{id}/photo-material (sesión)         → { "enabled": boolean }
+PUT    /api/tutor/students/{id}/photo-material (sesión + CSRF)  → { "enabled": boolean }  solo tutor vinculado
+GET    /api/tutor/students/{id}/photo-material (sesión)         → { "enabled": boolean }
 ```
 - **Orden de comprobaciones de `POST /api/material` para un `IMAGE`** (todas antes de insertar y sin llamar al modelo): tamaño global → tipo por contenido → fotos activas en el servidor (`gateway.readEnabled()`, si no, 415) → menor sin permiso (403) → `MATERIAL_MAX_IMAGE_MB` (413) → cabecera decodificable y píxeles bajo el tope (400/413) → bloqueo del usuario (`lockUser`) → límite de documentos (409) → límite diario en `material_action` (429) → duplicado por hash (409) → insertar documento y fila de `material_action` en la **misma** transacción → auditoría.
 - `capabilities.images` = fotos activas en el servidor **y** (adulto, o menor con `child_setting.photo_material = true`). No lleva nada más (ni modelo, ni coste, ni límites).
-- `/api/children/{id}/photo-material`: `AccessGuard.requireStudentOf` primero; sin vínculo, menor ajeno o inexistente, id mal formado, o un menor llamando → el mismo 404. `PUT` idempotente (sin cambio = sin auditoría), 409 si las fotos están desactivadas en el servidor, auditoría `CHILD_PHOTOS_ENABLED`/`CHILD_PHOTOS_DISABLED` con ids. Un alumno desactivado se puede consultar (como F08) pero no cambiar.
+- `/api/tutor/students/{id}/photo-material`: `AccessGuard.requireStudentOf` primero; sin vínculo, menor ajeno o inexistente, id mal formado, o un menor llamando → el mismo 404. `PUT` idempotente (sin cambio = sin auditoría), 409 si las fotos están desactivadas en el servidor, auditoría `CHILD_PHOTOS_ENABLED`/`CHILD_PHOTOS_DISABLED` con ids. Un alumno desactivado se puede consultar (como F08) pero no cambiar.
 - Respuestas de error con `GlobalExceptionHandler` (nada de mapeos a mano); `MaterialException` gana `childImagesNotEnabled()`, `imageReadRateLimit()`, `imageTooLarge(mb)`.
 - `error_kind` nuevos en el documento: `IMAGE_INVALID`, `IMAGE_TOO_LARGE`, `NO_TEXT` (ya existe en `ExtractionError`), `READ_FAILED`, `BUDGET`, `BLOCKED`.
 
@@ -120,7 +120,7 @@ safety/ContentGuard                  sin cambios (se usa localCheck)
 ```
 api/client.ts                        getMaterialCapabilities(), getPhotoPermission(childId), setPhotoPermission(childId, enabled)
 stores/material.ts                   capabilities (ref) con carga tolerante a fallos; upload() acepta imagen si capabilities.images
-material/DropZone.vue                accept = tipos de F03 + image/jpeg,image/png solo si capabilities.images; capture="environment" como ayuda en móvil; el aviso de privacidad
+material/DropZone.vue                accept = tipos de F03 + image/jpeg,image/png solo si capabilities.images; `accept` con `image/jpeg,image/png` (sin `capture`, que en móvil impediría elegir un PDF); el aviso de privacidad
                                        «Se envía la foto a un servicio de IA para leerla; evita datos personales» va dentro de la zona (data-testid photo-notice)
 material/errors.ts (o donde estén)   textos de IMAGE_INVALID, IMAGE_TOO_LARGE, NO_TEXT («No he podido leer texto en la foto: prueba con más luz»), READ_FAILED, BUDGET, BLOCKED
                                        (BLOCKED = «Contenido inapropiado. Consulta con tu adulto.», sin categoría)
@@ -153,7 +153,7 @@ sdd/                 specs/US-F19…, specs/ART-F19…, BACKLOG.md, reports/F19-
 Mi material (adulto, fotos activas)                      Panel del tutor · {menor}
 ┌──────────────────────────────────────────────┐         ┌──────────────────────────────────────────┐
 │ ⬆  Suelta aquí un PDF, Word, texto o foto    │         │ Fotos de apuntes                         │
-│    [Elegir fichero]  [📷 Hacer foto] (móvil) │         │ [ ◯──  ] Permitir que {menor} suba fotos │
+│    [Elegir fichero]  (en móvil ofrece cámara)│         │ [ ◯──  ] Permitir que {menor} suba fotos │
 │ ⓘ La foto se envía a un servicio de IA para  │         │ La foto se envía a un servicio de IA y   │
 │   leerla; evita datos personales.            │         │ no se puede filtrar antes de enviarla.   │
 └──────────────────────────────────────────────┘         └──────────────────────────────────────────┘
@@ -210,3 +210,18 @@ Frontend (Vitest):
 - **HEIC:** el 415 debe decir en palabras que se admite JPEG y PNG.
 - **Datos personales en la foto:** nada del contenido, el nombre ni el prompt en logs, auditoría ni `ai_usage`; un test de logs como el de F03.
 - **No tocar:** `DocumentView` (claves), `GET /api/ai/usage`, `guardian/` (solo lectura), `course/` (no lee material).
+
+## FASE 4 · Contrato que fijan los tests (ajustes a esta propuesta)
+
+Los tests de la FASE 4 concretan detalles que la propuesta dejaba abiertos. **Mandan los tests**; esta lista es lo que la FASE 6 debe cumplir además de lo anterior.
+
+- **Configuración:** los límites van en un registro anidado de `MaterialProperties` para no cambiar su constructor: `app.material.photos.max-mb` (5), `max-pixels` (25 000 000), `max-side` (1568) y `max-reads-per-day` (20). Variables de entorno: `MATERIAL_MAX_IMAGE_MB` y las de la tarea `APP_AI_TASKS_OCR_*`. En los tests: `app.ai.tasks.ocr.*` y `app.ai.pricing[fake/fake-vision]` (1 y 2 USD por millón).
+- **Puerto de IA:** `VisionCall(model, instructions, data, image, mime, maxOutputTokens, timeout)` lleva la audiencia en `data` (`adulto`/`menor`) y nunca imprime bytes, instrucciones ni datos. `AiProvider.vision(VisionCall)` devuelve `ChatResult`; OpenAI (data URI en el mensaje del usuario) y Google (`inline_data`) la implementan, Anthropic y Ollama lanzan `UnsupportedOperationException`. `AiGateway.readEnabled()` y `readImage(AiReadRequest.of(user, bytes, mime, audience))` → `AiReadResponse(raw, costUsd, provider, model)`. Una respuesta vacía de una llamada cobrada lanza `AiException` `INVALID_RESPONSE` con su coste. Un proveedor sin visión para `OCR` impide arrancar.
+- **`FakeProvider`:** ganchos nuevos `visionRespondsWith(raw, in, out)`, `visionFailsTimes(n, kind)`, `visionFailMessage(msg)`, `visionBefore(Runnable)` y `visionCalls()`.
+- **Imagen:** `new PhotoProcessor(maxPixels, maxSide)`; `inspect(bytes)` → `Inspected(format, width, height)` sin decodificar; `prepare(bytes)` → `Prepared(bytes, width, height)`; los rechazos son `PhotoRejectedException` con `kind()` = `IMAGE_INVALID` | `IMAGE_TOO_LARGE`. Una imagen mayor que el máximo de píxeles se rechaza solo con la cabecera; una pequeña no se amplía; se aplica la orientación EXIF antes de descartarla; lo que siga a la imagen (políglota) no llega al resultado.
+- **Parser:** `ImageReadParser.parse(raw, maxChars)` → `Optional<ReadResult(appropriate, text)>`; admite el sobre con valla Markdown; sin `appropriate` booleano o sin `text` de cadena → vacío; quita controles y HTML crudo; nunca lanza.
+- **HTTP:** una foto por encima del tamaño → 413 `MATERIAL_TOO_LARGE`; por encima de los píxeles → 413 `IMAGE_TOO_LARGE`; ilegible → 400 `IMAGE_INVALID`; WebP/GIF/SVG y fotos desactivadas → 415 `MATERIAL_TYPE_NOT_ALLOWED`; menor sin permiso → 403 `CHILD_IMAGES_NOT_ENABLED`; límite diario → 429 `IMAGE_READ_RATE_LIMIT`. Las rutas del tutor son `GET/PUT /api/tutor/students/{id}/photo-material`; un cuerpo sin booleano → 400; alumno desactivado: se lee, pero el `PUT` da 409; fotos desactivadas en el servidor: el `PUT` da 409. `GET /api/material/capabilities` devuelve solo `{images}`.
+- **Procesado:** una foto cuyo cerrojo está ocupado vuelve a `UPLOADED` con `attempts` sin cambiar (`releaseBusy`); al arrancar, un `IMAGE` en `PROCESSING` acaba en `ERROR` `READ_FAILED` (el resto de tipos vuelve a la cola como hoy); si las fotos se desactivan con una foto pendiente, esa foto acaba en `READ_FAILED`; en `READY` y en `ERROR` el original se borra; un fallo de embeddings tras la lectura da `INDEXING_FAILED` sin leer otra vez.
+- **Auditoría:** `DOCUMENT_BLOCKED` (con el id del documento), `CHILD_PHOTOS_ENABLED` y `CHILD_PHOTOS_DISABLED` (con ids), y el aviso `DOCUMENT_BLOCKED` aparece en `GET /api/tutor/students/{id}/alerts` sin texto.
+- **Frontend:** `api.getMaterialCapabilities()`, `api.getPhotoPermission(id)`, `api.setPhotoPermission(id, enabled)`; la tienda de material gana `capabilities` y `loadCapabilities()`; `DropZone` gana la propiedad `photos` (acepta `.jpg`/`.jpeg`/`.png` y los tipos `image/jpeg` y `image/png`, nunca `image/*` ni `capture`); `reasonText(kind, mediaType?)` distingue `NO_TEXT` de una foto; `MaterialList` pinta `data-kind="IMAGE"`, «Foto · 400 KB» y `doc-ai-read-{id}`; `GuardianStudentView` lleva el interruptor (`role="switch"`) y tolera que la lectura del permiso falle. Etiquetas de tarea: `OCR` → «Leer fotos» (Resultados) y una línea con «fotos» en el panel del tutor (`GuardianUsage`).
+- **Reglas que cambian en la documentación (FASE 5):** la regla de F03 «`material/` no construye prompts ni llama al modelo» pasa a «`material/` no construye prompts; solo `MaterialWorker` llama a `AiGateway.embed` y `readImage`» (lo comprueba `PhotoArchitectureTest`; `MaterialArchitectureTest` no cambia porque no prohíbe esas dos llamadas). El «solo texto» de ADR-34 se amplía con ADR-104.
