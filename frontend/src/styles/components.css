@@ -532,3 +532,6 @@ a.button-link {
   .nav-link.is-active { box-shadow: 0 3px 0 var(--zone-ink); }
 }
 .daypart { margin: 0 0 var(--space-3); color: var(--zone-ink); font-weight: 700; }
+.breadcrumb a { display: inline-flex; align-items: center; min-height: var(--size-tap); padding: 0 var(--space-3); border-radius: var(--radius-pill); background: color-mix(in srgb, var(--zone-fill) 25%, var(--color-surface)); color: var(--color-ink); font-weight: 600; text-decoration: none; }
+.breadcrumb a:hover { background: color-mix(in srgb, var(--zone-fill) 45%, var(--color-surface)); }
+.breadcrumb li { display: inline-flex; align-items: center; }

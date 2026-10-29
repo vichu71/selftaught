@@ -35,9 +35,9 @@ async function toggle() {
     <p v-if="error" class="error" role="alert" data-testid="done-error">No se pudo guardar. Inténtalo de nuevo.</p>
 
     <nav class="nav" aria-label="Lecciones">
-      <RouterLink v-if="navigation?.previous" :to="`/cursos/${courseId}/piezas/${navigation.previous}`" data-testid="nav-previous">← Lección anterior</RouterLink>
+      <RouterLink v-if="navigation?.previous" :to="`/cursos/${courseId}/piezas/${navigation.previous}`" class="ui-button ui-button--secondary" data-testid="nav-previous">← Lección anterior</RouterLink>
       <span v-else></span>
-      <RouterLink v-if="navigation?.next" :to="`/cursos/${courseId}/piezas/${navigation.next}`" data-testid="nav-next">Lección siguiente →</RouterLink>
+      <RouterLink v-if="navigation?.next" :to="`/cursos/${courseId}/piezas/${navigation.next}`" class="ui-button ui-button--primary" data-testid="nav-next">Lección siguiente →</RouterLink>
     </nav>
   </div>
 </template>

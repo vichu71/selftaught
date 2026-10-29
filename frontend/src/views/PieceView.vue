@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import PageHeader from '@/ui/PageHeader.vue'
 import { BookOpen as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref, watch } from 'vue'
@@ -47,7 +48,7 @@ watch(() => route.params.pieceId, (id, old) => {
     <PageHeader :icon="PageIcon">
       <h1 v-if="piece" data-testid="piece-title">{{ kindLabel }}: {{ piece.title }}</h1>
       <h1 v-else>Tu curso</h1>
-      <RouterLink :to="`/cursos/${courseId}`" data-testid="back-course">Volver al curso</RouterLink>
+      <BackLink :to="`/cursos/${courseId}`" label="Curso" aria-label="Volver al curso" data-testid="back-course" />
     </PageHeader>
 
     <p v-if="notFound" class="error" role="alert" data-testid="piece-not-found">No encontramos esta página del curso.</p>
@@ -76,11 +77,11 @@ watch(() => route.params.pieceId, (id, old) => {
           <ol class="exercises" data-testid="exercises">
             <ExercisePractice v-for="(exercise, i) in piece.exercises ?? []" :key="`${piece.id}-${i}`" :course-id="courseId" :piece-id="piece.id" :index="i" :exercise="exercise" />
           </ol>
-          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
+          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" class="ui-button ui-button--secondary" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
         </template>
         <template v-else>
           <ExamTake :key="piece.id" :course-id="courseId" :piece-id="piece.id" />
-          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
+          <p><RouterLink :to="`/cursos/${courseId}/piezas/${piece.id}/intentos`" class="ui-button ui-button--secondary" data-testid="history-link">Ver mis intentos anteriores</RouterLink></p>
         </template>
 
         <section v-if="sources.length > 0" data-testid="sources">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import PageHeader from '@/ui/PageHeader.vue'
 import { Users as PageIcon } from 'lucide-vue-next'
 import { computed, onMounted, ref } from 'vue'
@@ -37,7 +38,7 @@ onMounted(async () => {
     <PageHeader :icon="PageIcon">
       <h1 v-if="overview" data-testid="guardian-name">Actividad de {{ overview.student.displayName }}</h1>
       <h1 v-else>Actividad del alumno</h1>
-      <RouterLink to="/" data-testid="guardian-back">Volver</RouterLink>
+      <BackLink to="/" label="Inicio" aria-label="Volver al inicio" data-testid="guardian-back" />
     </PageHeader>
 
     <p v-if="loading" class="muted" data-testid="guardian-loading">Cargando…</p>

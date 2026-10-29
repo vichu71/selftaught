@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type TutorMessage } from '@/api/client'
@@ -29,7 +30,7 @@ onMounted(async () => {
   <div class="page wide" data-testid="guardian-thread">
     <header class="topbar">
       <h1>Conversación con el tutor</h1>
-      <RouterLink :to="`/alumnos/${studentId}`" data-testid="guardian-back">Volver al alumno</RouterLink>
+      <BackLink :to="`/alumnos/${studentId}`" label="Alumno" aria-label="Volver al alumno" data-testid="guardian-back" />
     </header>
 
     <p v-if="loading" class="muted" data-testid="guardian-loading">Cargando…</p>

@@ -44,7 +44,7 @@ async function submit() {
 
     <section v-if="done" class="card" data-testid="done">
       <p class="success">Contraseña cambiada. Se han cerrado tus otras sesiones.</p>
-      <RouterLink to="/login">Entrar</RouterLink>
+      <RouterLink to="/login" class="ui-button ui-button--primary">Entrar</RouterLink>
     </section>
 
     <form v-else class="card" novalidate @submit.prevent="submit">

@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { ref } from 'vue'
 import { api } from '@/api/client'
 
@@ -35,7 +36,7 @@ async function submit() {
 
     <section v-if="sent" class="card" data-testid="sent">
       <p>Si ese correo tiene una cuenta, recibirás un enlace para elegir una contraseña nueva. Caduca en 1 hora.</p>
-      <RouterLink to="/login">Volver a entrar</RouterLink>
+      <BackLink to="/login" label="Entrar" aria-label="Volver a entrar" />
     </section>
 
     <form v-else class="card" novalidate @submit.prevent="submit">
@@ -44,7 +45,7 @@ async function submit() {
       <input id="email" v-model="email" data-testid="email" type="email" autocomplete="email" />
       <p v-if="error" class="error" role="alert" data-testid="error">{{ error }}</p>
       <button class="primary" type="submit" data-testid="submit" :disabled="loading">Enviar enlace</button>
-      <div class="links"><RouterLink to="/login">Volver</RouterLink></div>
+      <div class="links"><BackLink to="/login" label="Entrar" aria-label="Volver a entrar" /></div>
     </form>
   </div>
 </template>

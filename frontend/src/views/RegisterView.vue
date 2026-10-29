@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import PageHeader from '@/ui/PageHeader.vue'
 import { UserPlus as PageIcon } from 'lucide-vue-next'
 import { reactive, ref } from 'vue'
@@ -43,7 +44,7 @@ async function submit() {
     <section v-if="sentTo" class="card" data-testid="check-email">
       <h2>Revisa tu correo</h2>
       <p>Te hemos enviado un enlace a <strong>{{ sentTo }}</strong> para activar tu cuenta. Caduca en 24 horas.</p>
-      <RouterLink to="/login">Volver a entrar</RouterLink>
+      <BackLink to="/login" label="Entrar" aria-label="Volver a entrar" />
     </section>
 
     <form v-else class="card" novalidate @submit.prevent="submit">

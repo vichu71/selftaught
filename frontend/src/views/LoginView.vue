@@ -57,8 +57,8 @@ async function submit() {
       </button>
 
       <div class="links">
-        <RouterLink to="/forgot-password">¿Has olvidado la contraseña?</RouterLink>
-        <RouterLink to="/register">Crear cuenta de adulto</RouterLink>
+        <RouterLink to="/forgot-password" class="ui-button ui-button--secondary">¿Has olvidado la contraseña?</RouterLink>
+        <RouterLink to="/register" class="ui-button ui-button--secondary">Crear cuenta de adulto</RouterLink>
       </div>
     </form>
   </div>

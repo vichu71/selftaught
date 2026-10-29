@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type Attempts, type ExamResult, type ExerciseResult } from '@/api/client'
@@ -40,7 +41,7 @@ async function open(attemptId: string) {
   <div class="page wide" data-testid="attempts-view">
     <header class="topbar">
       <h1>Tus intentos</h1>
-      <RouterLink :to="`/cursos/${courseId}/piezas/${pieceId}`" data-testid="back-piece">Volver</RouterLink>
+      <BackLink :to="`/cursos/${courseId}/piezas/${pieceId}`" label="Lección" aria-label="Volver a la lección" data-testid="back-piece" />
     </header>
 
     <p v-if="notFound" class="error" role="alert" data-testid="attempts-not-found">No encontramos esta parte del curso.</p>

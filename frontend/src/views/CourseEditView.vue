@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import BackLink from '@/ui/BackLink.vue'
 import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import { ApiError, api, type CourseDetail, type OutlineChapter, type OutlineTopic, type PieceRef, type TopicImage } from '@/api/client'
@@ -185,7 +186,7 @@ const pieces = (chapter: OutlineChapter): { label: string; piece: PieceRef }[] =
     <header class="topbar">
       <h1 v-if="course">Editar «{{ course.title }}»</h1>
       <h1 v-else>Editar curso</h1>
-      <RouterLink :to="`/cursos/${courseId}`" data-testid="back-course">Volver al curso</RouterLink>
+      <BackLink :to="`/cursos/${courseId}`" label="Curso" aria-label="Volver al curso" data-testid="back-course" />
     </header>
 
     <p v-if="notFound" class="error" role="alert" data-testid="edit-not-found">No encontramos este curso.</p>

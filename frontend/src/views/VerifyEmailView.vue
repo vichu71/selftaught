@@ -48,7 +48,7 @@ async function resend() {
 
     <section v-else-if="state === 'verified'" class="card" data-testid="verified">
       <p class="success">¡Correo confirmado! Tu cuenta ya está activa.</p>
-      <RouterLink to="/login">Entrar</RouterLink>
+      <RouterLink to="/login" class="ui-button ui-button--primary">Entrar</RouterLink>
     </section>
 
     <section v-else class="card">

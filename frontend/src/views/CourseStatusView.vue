@@ -119,7 +119,7 @@ onBeforeUnmount(() => {
         <p class="status-line" data-testid="course-status">{{ status }}</p>
         <p v-if="course.version" class="muted" data-testid="course-version">Versión {{ course.version }}</p>
         <p v-if="course.copy" class="muted" data-testid="copy-notice">Este curso es una copia de otro (versión {{ course.copy.originVersion }} del original).</p>
-        <p><RouterLink :to="`/cursos/${course.id}/editar`" data-testid="edit-link">Editar o compartir este curso</RouterLink></p>
+        <p><RouterLink :to="`/cursos/${course.id}/editar`" class="ui-button ui-button--secondary" data-testid="edit-link">Editar o compartir este curso</RouterLink></p>
         <p v-if="auth.user?.kind === 'ADULT'">
           <UiButton variant="danger" data-testid="course-delete-open" @click="deleteOpen = true">Borrar curso</UiButton>
         </p>
